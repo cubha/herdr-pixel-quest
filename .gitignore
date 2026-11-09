@@ -1,0 +1,6 @@
+mockups/screens/
+*.wav
+.DS_Store
+Thumbs.db
+mockups/canvas/
+mockups/render-v3/map.py

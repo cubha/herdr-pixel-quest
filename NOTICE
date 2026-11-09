@@ -1,0 +1,14 @@
+Pixel Quest for Herdr
+Copyright (c) 2026 cubha
+
+This project includes files modified from Herdr 0.1.14's shipped mods
+(spaces, agents, tabs, pane, workspace-chrome, workspace-status, menu,
+new-menu), licensed under the Apache License, Version 2.0. Those files are
+mods/pixel-quest/roles/{spaces,agents,tabs,pane,chrome,status,menu,newmenu}.js;
+each one states at its top that it was changed. The layout
+layouts/pixel-quest.json was cloned from Herdr's `main` layout and changed.
+The full license text is in mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt.
+
+Herdr: https://herdr.dev
+
+Galmuri fonts: Copyright (c) 2019-2025 Lee Minseo, SIL Open Font License 1.1.

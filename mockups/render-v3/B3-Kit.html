@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>B v3 심연 인벤토리 오버레이와 부품</title>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+@font-face{font-family:"Galmuri11";src:url("../../fonts/Galmuri11.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"Galmuri11";src:url("../../fonts/Galmuri11-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Galmuri9";src:url("../../fonts/Galmuri9.woff2") format("woff2")}
+@font-face{font-family:"GalmuriMono11";src:url("../../fonts/GalmuriMono11.woff2") format("woff2")}
+.k{width:1280px;height:1040px;position:relative;overflow:hidden;font-family:"Galmuri11",sans-serif;font-size:12px;line-height:16px;color:#ece3cc;-webkit-font-smoothing:none;
+background:#0b0e1c url("../../art/v3/bg-kit.png") 0 0/1280px 1040px no-repeat;image-rendering:pixelated}
+.k *{box-sizing:border-box}
+.k img{image-rendering:pixelated;display:block;flex:none}
+.k button{font:inherit;color:inherit;cursor:pointer}
+.px{shape-rendering:crispEdges;display:block;flex:none}
+.s{font-family:"Galmuri9",sans-serif;font-size:10px;line-height:12px}
+.grid{position:absolute;inset:40px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;align-items:start}
+.col{display:flex;flex-direction:column;gap:24px}
+.cap{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:700;color:#f6d870}
+.tag{padding:0 4px;border:2px solid #05060c;font-weight:400}
+.tag.m{background:#1a4a24;color:#9de48a}
+.tag.a{background:#5a3418;color:#f6d870}
+.fr{border:16px solid transparent;border-image:url("../../art/v3/frame-gold.png") 16 / 16px stretch;background:#121731 padding-box;display:flex;flex-direction:column;filter:drop-shadow(4px 4px 0 #05060c)}
+.fr.br{border-image-source:url("../../art/v3/frame-bronze.png")}
+.th{border:8px solid transparent;border-image:url("../../art/v3/thin-bronze.png") 8 / 8px stretch;background:#121731 padding-box;display:flex;flex-direction:column;padding:6px;filter:drop-shadow(4px 4px 0 #05060c)}
+.th.g{border-image-source:url("../../art/v3/thin-gold.png")}
+.th.r{border-image-source:url("../../art/v3/thin-red.png")}
+.wt{height:24px;flex:none;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;position:relative;background:#5a3418;border:2px solid #05060c;box-shadow:inset 0 2px 0 #8a5a2a,inset 0 -2px 0 #2e1a1e;color:#fff4c8;font-weight:700}
+.wt::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:4px;background:repeating-conic-gradient(#2e1a1e 0 25%,#121731 0 50%) 0 0/4px 4px}
+.wt .r{position:absolute;right:2px;top:0}
+.sb{height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;background:#252e55;border:2px solid #05060c;box-shadow:inset 2px 2px 0 #3a4468,inset -2px -2px 0 #1a2142;color:#ece3cc}
+.sb.go{background:#5a3418;box-shadow:inset 2px 2px 0 #8a5a2a,inset -2px -2px 0 #2e1a1e;color:#fff4c8;font-weight:700}
+.sb.no{background:#8a1a1a;box-shadow:inset 2px 2px 0 #c0392b,inset -2px -2px 0 #4a0e10;color:#fff4c8;font-weight:700}
+.sb.sm{height:20px;min-width:20px;padding:0 2px}
+.flat{background:#121731;border:1px solid #9a5a26;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.6);overflow:hidden}
+.in{height:36px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid #2e1a1e}
+.pi{display:flex;align-items:center;padding:6px 12px}
+.pi.s1{background:#262246;color:#fff4c8}
+.pi .kk{margin-left:auto;color:#8f8670}
+.mi{display:flex;align-items:center;gap:8px;height:24px;padding:0 6px 0 22px;position:relative;background:none;border:none;width:100%;text-align:left}
+.mi.s1{background:#262246;box-shadow:inset 0 0 0 2px #8a5a2a;color:#fff4c8}
+.mi .kk{margin-left:auto;color:#8f8670}
+.cur{position:absolute;left:4px;top:4px}
+.hr{height:2px;margin:4px 0;background:repeating-linear-gradient(90deg,#5a3418 0 2px,transparent 2px 4px)}
+.slot{width:32px;height:32px;flex:none;display:grid;place-items:center;background:#0b0e1c;border:2px solid #05060c;box-shadow:inset 2px 2px 0 #8a5a2a,inset -2px -2px 0 #2e1a1e;position:relative}
+.slot.sm{width:24px;height:24px}
+.toast{display:flex;gap:10px;align-items:center}
+.toast b{display:block}
+.field{height:32px;display:flex;align-items:center;padding:0 8px;background:#0b0e1c;border:2px solid #05060c;box-shadow:inset 2px 2px 0 #2e1a1e,inset -2px -2px 0 #8a5a2a}
+.term{padding:8px 10px;font-family:"GalmuriMono11",monospace;font-size:12px;line-height:16px;white-space:pre;background:#0b0e1c;color:#e6dcc3;border:2px solid #05060c}
+.a1{color:#e0564f}.a3{color:#e8b84a}.a8{color:#7f8199}.a10{color:#9de48a}
+.rail{display:flex;flex-direction:column;align-items:center;gap:10px}
+.lg{display:flex;align-items:center;gap:8px;height:24px}
+.lg .d{color:#8f8670}
+.sw{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.sw div{height:24px;border:2px solid #05060c;display:flex;align-items:flex-end;justify-content:center;color:#05060c}
+.icons{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.set{display:flex;height:180px}
+.snav{width:104px;border-right:1px solid #2e1a1e;padding:8px;display:flex;flex-direction:column;gap:2px}
+.snav div{padding:4px 8px;border-radius:6px}
+.snav .on{background:#262246;color:#fff4c8}
+.sbody{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.lay{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.lay div{height:40px;border-radius:6px;border:1px solid #2e1a1e;display:flex;align-items:flex-end;padding:2px 4px}
+</style>
+</helmet>
+<div class="k">
+  <div class="grid">
+    <div class="col">
+      <div>
+        <div class="cap">명령 팔레트 <span class="tag a s">앱 내장 · 테마색·폰트만 맞춤</span></div>
+        <div class="flat">
+          <div class="in"><svg class="px" width="12" height="12" viewBox="0 0 6 6" aria-hidden="true"><path fill="#b3a789" d="M1 0h3v1h-3zM0 1h1v3h-1zM4 1h1v3h-1zM1 4h3v1h-3zM4 4h1v1h-1zM5 5h1v1h-1z"></path></svg><span>pane spl</span><span style="background:#f6d870;width:8px;height:14px;display:inline-block"></span></div>
+          <div class="pi s1"><span>Pane: Split right</span><span class="kk s">Ctrl+Shift+O</span></div>
+          <div class="pi"><span>Pane: Split down</span><span class="kk s">Ctrl+Shift+E</span></div>
+          <div class="pi"><span>Layout: Switch</span><span class="kk s">Ctrl+Shift+L</span></div>
+          <div class="pi"><span>Duplicate layout</span></div>
+          <div class="pi"><span>Theme: pixel-quest</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">확인 다이얼로그 <span class="tag m s">confirm 복제</span></div>
+        <div class="fr">
+          <div class="wt"><img src="../../art/v3/orn-l.png" width="32" height="16" alt=""><span>스페이스 닫기</span><img src="../../art/v3/orn-r.png" width="32" height="16" alt=""></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:2px 0 12px">
+            <span class="slot"><img src="../../art/v3/gem-blocked.png" width="18" height="18" alt=""></span>
+            <div><b style="color:#fff4c8">workspace</b>를 닫을까요?<br><span class="s" style="color:#b3a789">터미널 3개와 에이전트 1개가 종료됩니다.</span></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px"><button class="sb">취소</button><button class="sb no">닫기</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">이름 바꾸기 입력 <span class="tag m s">prompt 복제</span></div>
+        <div class="fr br">
+          <div class="wt"><span>탭 이름 새기기</span></div>
+          <div class="field">로그인 수정<span style="background:#f6d870;width:8px;height:14px;display:inline-block;margin-left:2px"></span></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px"><button class="sb">취소</button><button class="sb go">저장</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div>
+        <div class="cap">우클릭 메뉴 · 새 탭 메뉴 <span class="tag m s">menu·new-menu 복제</span></div>
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div class="th" style="width:172px">
+            <button class="mi">복사<span class="kk s">C-S-C</span></button>
+            <button class="mi">붙여넣기<span class="kk s">C-V</span></button>
+            <div class="hr"></div>
+            <button class="mi s1"><img class="cur" src="../../art/v3/cursor.png" width="16" height="16" alt="">오른쪽 분할</button>
+            <button class="mi">아래 분할</button>
+            <button class="mi">확대</button>
+            <div class="hr"></div>
+            <button class="mi" style="color:#e0564f">창 닫기</button>
+          </div>
+          <div class="fr" style="flex:1">
+            <div class="wt"><span>파티원 소환</span></div>
+            <button class="mi s1" style="height:32px"><img class="cur" src="../../art/v3/cursor.png" width="16" height="16" alt="" style="top:8px"><img src="../../art/v3/face-helm-steel.png" width="24" height="24" alt="">터미널</button>
+            <button class="mi" style="height:32px"><img src="../../art/v3/face-hood-amber.png" width="24" height="24" alt="">Claude</button>
+            <button class="mi" style="height:32px"><img src="../../art/v3/face-hood-violet.png" width="24" height="24" alt="">Codex</button>
+            <button class="mi" style="height:32px"><img src="../../art/v3/face-helm-gold.png" width="24" height="24" alt="">Gemini</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">알림 토스트 <span class="tag m s">toast 복제 · 얇은 프레임</span></div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="th g"><div class="toast"><span class="slot"><img src="../../art/v3/face-hood-violet.png" width="24" height="24" alt=""></span><div style="flex:1"><b style="color:#9de48a">퀘스트 완료 · game-jam</b><span class="s" style="color:#b3a789">로그인 버그 수정 · 클릭해서 이동</span></div><img src="../../art/v3/gem-done.png" width="18" height="18" alt=""></div></div>
+          <div class="th r"><div class="toast"><span class="slot"><img src="../../art/v3/face-helm-gold.png" width="24" height="24" alt=""></span><div style="flex:1"><b style="color:#e0564f">도움 요청 · notes-app</b><span class="s" style="color:#b3a789">파일 삭제 권한을 묻고 있어요</span></div><img src="../../art/v3/gem-blocked.png" width="18" height="18" alt=""></div></div>
+          <div class="th"><div class="toast"><span class="slot"><img src="../../art/v3/ico-scroll.png" width="16" height="16" alt=""></span><div style="flex:1"><b>레이아웃 저장됨</b><span class="s" style="color:#b3a789">pixel-quest.json</span></div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">접힌 사이드바 · 상태 보석 <span class="tag m s">spaces·agents 복제</span></div>
+        <div style="display:flex;gap:16px;align-items:stretch">
+          <div class="th"><div class="rail">
+            <span class="slot sm" style="box-shadow:inset 2px 2px 0 #8a5a2a,inset -2px -2px 0 #2e1a1e,0 0 0 2px #f6d870"><img src="../../art/v3/crest-teal.png" width="16" height="16" alt=""></span>
+            <span class="slot sm"><img src="../../art/v3/crest-rose.png" width="16" height="16" alt=""><img src="../../art/v3/gem-blocked.png" width="18" height="18" alt="" style="position:absolute;right:-10px;top:-10px"></span>
+            <span class="slot sm"><img src="../../art/v3/crest-olive.png" width="16" height="16" alt=""></span>
+            <span class="slot sm"><img src="../../art/v3/crest-umber.png" width="16" height="16" alt=""></span>
+          </div></div>
+          <div class="th" style="flex:1">
+            <div class="lg"><img src="../../art/v3/gem-working.png" width="18" height="18" alt=""><img src="../../art/v3/gem-working-b.png" width="18" height="18" alt=""><b>작업 중</b><span class="d s">2프레임 반짝임</span></div>
+            <div class="lg"><img src="../../art/v3/gem-blocked.png" width="18" height="18" alt=""><b>입력 필요</b><span class="d s">! 각인 · 맥동</span></div>
+            <div class="lg"><img src="../../art/v3/gem-done.png" width="18" height="18" alt=""><b>완료</b><span class="d s">초록 + 별빛</span></div>
+            <div class="lg"><img src="../../art/v3/gem-idle.png" width="18" height="18" alt=""><b>대기</b><span class="d s">빈 보석</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div>
+        <div class="cap">하위 에이전트 Peek 창 <span class="tag m s">peek 복제</span></div>
+        <div class="fr">
+          <div class="wt"><span>dotfiles › test-runner</span><span class="r"><button class="sb sm" aria-label="닫기"><svg class="px" width="10" height="10" viewBox="0 0 5 5" aria-hidden="true"><path fill="currentColor" d="M0 0h1v1h-1zM4 0h1v1h-1zM1 1h1v1h-1zM3 1h1v1h-1zM2 2h1v1h-1zM1 3h1v1h-1zM3 3h1v1h-1zM0 4h1v1h-1zM4 4h1v1h-1z"></path></svg></button></span></div>
+<div class="term"><span class="a8">$</span> npm test -- --watch=false
+<span class="a10">✓</span> auth/session  <span class="a8">(12)</span>
+<span class="a10">✓</span> auth/token    <span class="a8">(8)</span>
+<span class="a1">✗</span> e2e/login     <span class="a8">timeout 5000ms</span>
+<span class="a3">재시도 2/3 …</span></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="sb">탭으로 꺼내기</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">설정 화면 <span class="tag a s">앱 내장 · 테마색·폰트만 맞춤</span></div>
+        <div class="flat set">
+          <div class="snav"><div class="on">Look</div><div>Machines</div><div>Alerts</div><div>Updates</div><div>Privacy</div></div>
+          <div class="sbody">
+            <b>레이아웃</b>
+            <div class="lay">
+              <div class="s" style="background:#0b0e1c;border:2px solid #f6d870;color:#f6d870">pixel-quest</div>
+              <div class="s" style="background:#2a2a2e;color:#ddd">Herdr</div>
+              <div class="s" style="background:#c0c0c0;color:#000">Herdr 98</div>
+            </div>
+            <b>텍스트 크기</b>
+            <div style="display:flex;gap:6px;align-items:center"><span style="border:1px solid #9a5a26;border-radius:6px;padding:2px 8px">−</span>100%<span style="border:1px solid #9a5a26;border-radius:6px;padding:2px 8px">+</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cap">도트 에셋 · 16색 · 폰트 <span class="tag m s">mods/pixel-quest/art</span></div>
+        <div class="fr" style="gap:10px">
+          <div class="icons">
+            <img src="../../art/v3/frame-gold.png" width="40" height="40" alt="금테">
+            <img src="../../art/v3/frame-bronze.png" width="40" height="40" alt="청동테">
+            <img src="../../art/v3/frame-red.png" width="40" height="40" alt="경고테">
+            <img src="../../art/v3/thin-gold.png" width="20" height="20" alt="얇은 금테">
+            <img src="../../art/v3/thin-red.png" width="20" height="20" alt="얇은 경고테">
+            <img src="../../art/v3/torch.png" width="18" height="38" alt="횃불">
+          </div>
+          <div class="icons">
+            <img src="../../art/v3/crest-teal.png" width="16" height="16" alt="">
+            <img src="../../art/v3/crest-olive.png" width="16" height="16" alt="">
+            <img src="../../art/v3/crest-rose.png" width="16" height="16" alt="">
+            <img src="../../art/v3/crest-umber.png" width="16" height="16" alt="">
+            <img src="../../art/v3/crest-slate.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-chest.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-chest-open.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-crystal.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-potion.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-key.png" width="16" height="16" alt="">
+            <img src="../../art/v3/ico-scroll.png" width="16" height="16" alt="">
+            <img src="../../art/v3/face-hood-amber.png" width="24" height="24" alt="">
+            <img src="../../art/v3/face-hood-violet.png" width="24" height="24" alt="">
+            <img src="../../art/v3/face-helm-steel.png" width="24" height="24" alt="">
+            <img src="../../art/v3/face-helm-gold.png" width="24" height="24" alt="">
+          </div>
+          <div class="sw s">
+            <div style="background:#3a3e58;color:#fff">0</div><div style="background:#e0564f">1</div><div style="background:#7cc46a">2</div><div style="background:#e8b84a">3</div><div style="background:#6f9cf0">4</div><div style="background:#b57be0">5</div><div style="background:#4fc1c1">6</div><div style="background:#cfc4aa">7</div>
+            <div style="background:#7f8199">8</div><div style="background:#ff7a6e">9</div><div style="background:#9de48a">10</div><div style="background:#ffd36b">11</div><div style="background:#8fb6ff">12</div><div style="background:#d6a0ff">13</div><div style="background:#7fe3e3">14</div><div style="background:#fff6df">15</div>
+          </div>
+          <div><b style="color:#f6d870">본문 · Galmuri11 12px</b> 다람쥐 헌 쳇바퀴에 타고파</div>
+          <div class="s" style="color:#b3a789">보조 · Galmuri9 10px — 두 크기 외에는 쓰지 않음</div>
+          <div style="font-family:'GalmuriMono11',monospace"><span style="color:#f6d870">터미널 · GalmuriMono11</span> 0O 1lI {} =&gt; 가나다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
