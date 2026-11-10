@@ -61,6 +61,30 @@ export function root(u, el, o = {}) {
   return el.font_family(o.font ?? FONT).text_size(u(o.size ?? 12)).line_height(`${u(o.line ?? 16)}px`).text_color(o.color ?? P.text);
 }
 
+/**
+ * A texture laid behind a clipping box's content, at its own size from the
+ * top-left corner. The box must be relative().overflow_hidden(): the texture
+ * is cut to the box, never stretched (stretching blurs pixel art).
+ */
+export function texture(u, name, w, h) {
+  return pic(u, name, w, h).absolute().top(0).left(0);
+}
+
+/** The big stone floor behind a panel (480x1600 flagstones). */
+export const FLOOR = ["floor", 480, 1600];
+
+/** A cobweb for one inner corner of a box: corner is tl | tr | bl | br. */
+export function web(u, corner) {
+  const v = corner[0] === "t" ? "top" : "bottom";
+  const h = corner[1] === "l" ? "left" : "right";
+  return pic(u, `web-${corner}`, 24, 20).absolute()[v](0)[h](0);
+}
+
+/** One chain segment (4x8): two hang between the sidebar's panels. */
+export function chain(u) {
+  return pic(u, "chain", 4, 8);
+}
+
 /** Small caption text (Galmuri9 10px). */
 export function small(u, text, color = P.dim) {
   return div().font_family(SMALL).text_size(u(10)).line_height(`${u(12)}px`).text_color(color).child(text);
@@ -87,13 +111,19 @@ function layer(u, tl, br, child) {
 
 /**
  * The inventory window frame: ink / light-dark bevel / mid / ink, with gem
- * knobs on the corners. kind: gold | bronze | red. o: { bg, pad, knobs }.
+ * knobs on the corners. kind: gold | bronze | red.
+ * o: { bg, pad, knobs, floor (stone floor behind the content), web (tl|tr|bl|br) }.
  */
 export function frame(u, kind, content, o = {}) {
   const r = RAMPS[kind] ?? RAMPS.gold;
   const pad = Array.isArray(o.pad) ? o.pad : [o.pad ?? 0, o.pad ?? 0];
-  const inner = div().flex().flex_col().flex_1().min_w(0).min_h(0).bg(o.bg ?? P.fill)
-    .pt(u(pad[0])).pb(u(pad[0])).pl(u(pad[1])).pr(u(pad[1])).child(content);
+  let inner = div().flex().flex_col().flex_1().min_w(0).min_h(0).bg(o.bg ?? P.fill)
+    .pt(u(pad[0])).pb(u(pad[0])).pl(u(pad[1])).pr(u(pad[1]));
+  // A stone floor (and a cobweb) under the content, cut to the window.
+  if (o.floor || o.web) inner = inner.relative().overflow_hidden();
+  if (o.floor) inner = inner.child(texture(u, ...FLOOR));
+  if (o.web) inner = inner.child(web(u, o.web));
+  inner = inner.child(content);
   const body = div().flex().flex_col().flex_1().min_w(0).min_h(0).border(u(2)).border_color(P.ink)
     .child(layer(u, r.tl, r.br,
       div().flex().flex_col().flex_1().min_w(0).min_h(0).border(u(2)).border_color(r.mid)
@@ -182,7 +212,7 @@ export function panel(u, title, right, content, o = {}) {
   const body = div().flex().flex_col().flex_1().min_h(0).gap(u(6))
     .when(Boolean(title), (el) => el.child(plaque(u, title, right)))
     .child(content);
-  return frame(u, o.kind ?? "gold", body, { pad: o.pad ?? [6, 6], margin: 4 }).flex_1().min_h(0);
+  return frame(u, o.kind ?? "gold", body, { pad: o.pad ?? [6, 6], margin: 4, floor: o.floor, web: o.web }).flex_1().min_h(0);
 }
 
 /** A thin bronze outline that marks the selected row (no fill change). */

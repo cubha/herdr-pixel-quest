@@ -28,6 +28,10 @@ B = ['#2e1a1e', '#5a3418', '#8a5a2a', '#b8864a']
 CHROME = '#0e1226'
 
 
+def hx(c):
+    return tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+
+
 # ---------- layout preview: drawn at 160x100, doubled ----------
 def preview(path):
     W, H = 160, 100
@@ -105,6 +109,38 @@ def preview(path):
     d.line([42, 94, W - 1, 94], fill=INK)
     for i, c in enumerate(['#c0392b', '#3f74e0', '#3f9a4a']):
         d.rectangle([60 + i * 5, 96, 63 + i * 5, 98], fill=c)
+    # dungeon details (see gen_dungeon.py): brick bands, stone floors, chains,
+    # sconces, the sill and the terminal area's lit slabs
+    px = im.load()
+    chrome, fill = hx(CHROME), hx(FILL)
+    for y0, y1 in ((0, 8), (95, H - 1)):
+        for y in range(y0, y1 + 1):
+            for x in range(W):
+                if px[x, y] != chrome:
+                    continue
+                row = (y - y0) // 3
+                if (y - y0) % 3 == 2 or (x + row * 4) % 8 == 7:
+                    px[x, y] = hx(INK)
+                elif (y - y0) % 3 == 0:
+                    px[x, y] = (30, 37, 72)
+    for x0, x1, y0, y1 in ((4, 38, 13, 50), (4, 38, 56, 88)):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if px[x, y] == fill and ((y - y0) % 6 == 5 or (x + (y - y0) // 6 * 5) % 11 == 10):
+                    px[x, y] = (12, 16, 34)
+    for x0, y0, x1, y1 in ((45, 20, 154, 51), (45, 63, 154, 91)):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if px[x, y] == fill:
+                    t = max(0.0, 1 - math.hypot((x - (x0 + x1) / 2) / 70, (y - y0) / 30))
+                    t = round(t * 4) / 4 * 0.45
+                    px[x, y] = tuple(int(a * (1 - t) + b * t) for a, b in zip(fill, (75, 52, 48)))
+    for x in (12, 30):
+        px[x, 53] = (138, 132, 150)
+    for x in (88, 114):
+        px[x, 2], px[x, 3] = hx(G[3]), hx(G[1])
+    for x in range(44, 156):
+        px[x, 93] = (58, 56, 84)
     im.resize((W * 2, H * 2), Image.NEAREST).save(path)
 
 

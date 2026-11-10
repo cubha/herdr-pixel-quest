@@ -10,7 +10,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand } from "herdr";
-import { P, unit, root, small, button } from "../kit.js";
+import { P, unit, root, small, button, pic, texture } from "../kit.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 
@@ -67,18 +67,27 @@ export default class Status {
     const needs = list.filter((a) => a.status === "blocked").length;
     const key = this.hint();
     const cell = (a) => div().w(u(14)).h_full().bg(COLOR[a.status] ?? P.idle).border_r(u(2)).border_color(P.ink);
-    return root(u, h_flex().size_full().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
+    // Text sits on dark stone plates so the brick band doesn't eat its contrast.
+    const plate = () => h_flex().h(u(20)).px(u(6)).gap(u(12)).items_center().bg(P.chrome).border(u(2)).border_color(P.ink);
+    const moss = (side, at) => pic(u, "moss", 22, 6).absolute().top(0)[side](u(at));
+    const left = plate()
       .child(div().text_color(P.muted).child(space?.machine ?? "이 컴퓨터"))
       .child(h_flex().gap(u(6)).items_center()
         .child(small(u, "파티", P.g2))
         .child(h_flex().h(u(12)).border(u(2)).border_color(P.ink).bg(P.ink).children(list.slice(0, 12).map(cell)))
         .when(list.length === 0, (el) => el.child(small(u, "없음"))))
       .when(needs > 0, (el) => el.child(small(u, `! ${needs} 입력 필요`, P.blocked).loop("opacity", { from: 0.5, to: 1, period: 900 })))
-      .when(Boolean(space?.branch), (el) => el.child(small(u, space.branch, P.muted)))
-      .child(div().flex_1())
+      .when(Boolean(space?.branch), (el) => el.child(small(u, space.branch, P.muted)));
+    const right = plate()
       .child(small(u, `퀘스트 ${shared("pq.quests") ?? 0}`, P.g2))
       .child(h_flex().id("palette").gap(u(6)).items_center().cursor_pointer().on_click(() => run("app.palette"))
         .when(Boolean(key), (el) => el.child(div().border(u(2)).border_color(P.b1).bg(P.raised).px(u(4)).child(small(u, key, P.text))))
-        .child(small(u, "명령", P.dim))));
+        .child(small(u, "명령", P.dim)));
+    return root(u, h_flex().size_full().relative().overflow_hidden().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
+      .child(texture(u, "strip", 2560, 48))
+      .child(left)
+      .child(div().flex_1())
+      .child(right)
+      .child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260)));
   }
 }

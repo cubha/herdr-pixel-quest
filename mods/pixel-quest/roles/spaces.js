@@ -9,7 +9,7 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, button, crest, cursor, selected, small, gem } from "../kit.js";
+import { P, unit, root, pic, panel, button, crest, cursor, selected, small, gem, chain } from "../kit.js";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
 
 function find(node, id) {
@@ -479,6 +479,11 @@ export default class Spaces {
         .children(this.grouped(t, collapsed));
     const add = button(u, "space-new", div().text_color(P.g3).child("+"), () => run("space.new"), { pad: [0, 4], tooltip: "새 스페이스" });
     if (collapsed) return root(u, v_flex().size_full().min_h(0).items_center().pt(u(6)).gap(u(4)).child(add).child(list));
-    return root(u, v_flex().size_full().min_h(0).p(u(4)).child(panel(u, "스페이스", add, list)));
+    // Stone floor, a cobweb low on the left, and the top half of the chains
+    // the party panel hangs from (roles/agents.js draws the lower half).
+    return root(u, v_flex().size_full().min_h(0).p(u(4)).relative()
+      .child(panel(u, "스페이스", add, list, { floor: true, web: "bl" }))
+      .child(chain(u).absolute().bottom(0).left(u(34)))
+      .child(chain(u).absolute().bottom(0).right(u(34))));
   }
 }

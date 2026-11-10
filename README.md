@@ -22,6 +22,8 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 퀘스트 완료 | 에이전트가 작업 중에서 **완료**로 바뀌면(Herdr의 `done`: 보고 있지 않을 때 끝난 경우) 반짝이는 금테 배너가 4.5초 동안 떠 있음. 퀘스트 5개마다 브랜드 옆 `Lv`이 오름 |
 | 파티 서랍 | 오른쪽 가장자리의 플로팅 서랍. 보석과 초상만 보이다가 마우스를 올리면 이름이 나옴 |
 | 접힌 사이드바 | 문장과 보석만 남은 레일 |
+| 던전 디테일 | 사이드바 패널 안쪽 석판 바닥, 두 패널 사이 쇠사슬과 거미줄, 탭바·상태바 벽돌 띠, 횃불 양옆 벽 촛대(깜빡임), 상태바 이끼, 작업 영역 아래 돌 문턱. 그림은 늘리지 않고 원래 크기로 잘라 씀 |
+| 터미널 석판·횃불빛 | 터미널 영역 전체에 던전 석판 한 장(`slabs.png`)을 깔고, 탭바 횃불 바로 아래에서 따뜻한 빛이 번짐. 칸 바탕은 투명이라 칸을 나눠도 빛과 석판이 한 공간처럼 이어짐. `terminal_opacity` 0.5. ANSI 8번(회색)은 가장 밝은 곳에서도 대비 3 이상이 되도록 `#78729a`로 밝힘 |
 | 소리 | 8비트 효과음 `quest-done.mp3`(상승 아르페지오)와 `quest-blocked.mp3`(두 번 부르는 경고음) |
 
 | | |
@@ -63,6 +65,7 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
 | `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을 담당 |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
+| `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
 | `art/` | 생성된 에셋(v3 최종, v2 이력, extras) |
 | `mockups/render-v3/` | 최종 디자인 시안(v3). 브라우저로 바로 열림 |
 | `tools/` | `demo.ps1`(미리보기용 데모 화면), `redact.py`(캡처 속 이름을 데모 이름으로 바꾸기) |
