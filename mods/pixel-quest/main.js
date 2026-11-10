@@ -7,6 +7,7 @@
 //   menu     right-click menus         newmenu  the + menu
 //   quest    the "quest complete" banner overlay
 //   party    the floating party drawer (agents at a glance)
+//   sill     the stone ledge under the work area
 //
 // Roles adapted from Herdr's shipped mods are marked in their files
 // (Apache-2.0, Herdr 0.1.14). Copyright (c) 2026 cubha. MIT License.
@@ -23,8 +24,9 @@ import Menu from "./roles/menu.js";
 import NewMenu from "./roles/newmenu.js";
 import Quest from "./roles/quest.js";
 import Party from "./roles/party.js";
+import Sill from "./roles/sill.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill };
 
 export default class PixelQuest extends View {
   init(p, cx) {

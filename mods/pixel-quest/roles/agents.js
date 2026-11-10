@@ -7,7 +7,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, face, cursor, selected, small, button } from "../kit.js";
+import { P, unit, root, pic, panel, gem, face, cursor, selected, small, button, chain } from "../kit.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
 function find(node, id) {
@@ -439,6 +439,11 @@ export default class Agents {
         .child(h_flex().h(u(28)).items_center().justify_center()
           .child(div().id("collapse").text_color(P.g3).hover((s) => s.text_color(P.g4)).on_click(toggleSidebar).child("»"))));
     }
-    return root(u, v_flex().size_full().min_h(0).p(u(4)).child(panel(u, `파티 · ${list.length}`, sortBtn, body)));
+    // Stone floor, a cobweb in the top-right corner, and the lower half of
+    // the chains hanging from the spaces panel above.
+    return root(u, v_flex().size_full().min_h(0).p(u(4)).relative()
+      .child(panel(u, `파티 · ${list.length}`, sortBtn, body, { floor: true, web: "tr" }))
+      .child(chain(u).absolute().top(0).left(u(34)))
+      .child(chain(u).absolute().top(0).right(u(34))));
   }
 }

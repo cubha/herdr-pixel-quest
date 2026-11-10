@@ -3,7 +3,7 @@
 // "소지품" (Files) and "변경" (Changes) as bronze buttons, pixel window buttons.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root as pxRoot, pic, gem, button as pxButton } from "../kit.js";
+import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture } from "../kit.js";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
@@ -98,14 +98,26 @@ export default class Tabs {
         }, { on, pad: [2, 6] });
     };
     const winIcon = (n) => ico(`mods/pixel-quest/icons/${n}.svg`, 12, P.text);
-    return pxRoot(u, h_flex().size_full().min_w(0).relative().px(u(10)).pl(lightsPadding).gap(u(4)).items_center().bg(P.chrome).border_b(u(2)).border_color(P.ink)
+    // A wall sconce with its light pool; the second flame frame flickers in.
+    const sconce = (side, left, period) => [
+      pic(u, "sconce-halo", 36, 28).absolute().top(u(14)).left(u(left - 10)).loop("opacity", { from: 0.6, to: 1, period: period * 2 }),
+      div().id(`sconce-${side}`).absolute().top(u(20)).left(u(left)).w(u(16)).h(u(16))
+        .child(pic(u, "sconce", 16).absolute().top(0).left(0))
+        .child(pic(u, "sconce-b", 16).absolute().top(0).left(0).loop("opacity", { from: 0, to: 1, period })),
+    ];
+    return pxRoot(u, h_flex().size_full().min_w(0).relative().overflow_hidden().px(u(10)).pl(lightsPadding).gap(u(4)).items_center().bg(P.chrome).border_b(u(2)).border_color(P.ink)
+      // Brick band behind everything, cut to the bar.
+      .child(texture(u, "strip", 2560, 48))
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       // The torch hangs in the middle of the bar, its glow dithered behind it.
       .child(div().absolute().top(u(-14)).left(u(0)).right(u(0)).flex().justify_center()
-        .child(div().relative().w(u(96)).h(u(60))
-          .child(pic(u, "torch-glow", 96, 60).absolute().top(0).left(0).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
-          .child(pic(u, "torch", 18, 38).absolute().top(u(12)).left(u(39)))))
+        // ... flanked by two wall sconces.
+        .child(div().relative().w(u(232)).h(u(60))
+          .children(sconce("l", 42, 520))
+          .children(sconce("r", 174, 650))
+          .child(pic(u, "torch-glow", 96, 60).absolute().top(0).left(u(68)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
+          .child(pic(u, "torch", 18, 38).absolute().top(u(12)).left(u(107)))))
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(u(4)).overflow_x_scrollbar().children(shown.map(item)))
       .child(button("tab-new", div().text_color(P.g3).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 512, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "소지품", "ico-chest")))

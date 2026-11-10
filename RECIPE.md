@@ -68,19 +68,32 @@ are Korean; every picture is original pixel art.
   background image, `terminal_padding: [12, 10]`, `terminal_menu: "pixel-quest"`,
   `preview: "layouts/pixel-quest.png"`), every block's `content.mod` set to `pixel-quest` with
   `props.role`, the pane frame above, the gold-bordered `panel`, and a `floating` party block on `work-body`.
+  Dungeon details: an 8px `sill` block (role `sill`) in the `work` column above `status`; the tab
+  block `main` has `background: { "image": "mods/pixel-quest/art/slabs.png", "fit": "cover" }` (lit
+  dungeon slabs, light from the top centre under the tab bar's torch), the pane frame's `background`
+  is `#00000000`, and the root has `terminal_opacity: 0.5`. One backdrop sits behind all panes, so
+  split panes share one light instead of each getting its own. Measured: Herdr's opacity is not
+  linear (0.82 barely showed, 0.5 matches the mockup); Herdr caches images by path, so a redrawn
+  PNG needs a new file name before it shows.
 - `themes/pixel-quest.json`: background `#121731`, foreground `#e8dcc0`, cursor `#f6d870`,
-  16 ANSI colors tuned for that background, panel colors (accent `#d49a3a`; working/blocked/done/idle
+  16 ANSI colors tuned for that background (ANSI 8 `#78729a`, contrast 3.2 at the brightest
+  lit slab; the idle status color stays `#6a6488`), panel colors (accent `#d49a3a`; working/blocked/done/idle
   `#3f74e0`/`#c0392b`/`#3f9a4a`/`#6a6488`).
 - `mods/pixel-quest/`: one mod in roles (like Herdr 98). Mods can't import from another mod's
   folder, so everything shares `kit.js` inside this folder: palette, `unit()` (art px ÷ zoom so PNGs
-  stay 1:1), `pic`, `frame`, `thin`, `plaque`, `panel`, `gem`, `button`, `cursor`, `crest`, `face`.
+  stay 1:1), `pic`, `frame`, `thin`, `plaque`, `panel`, `gem`, `button`, `cursor`, `crest`, `face`, and for the dungeon details
+  `texture` (a big PNG at its own size, cut by a `relative().overflow_hidden()` box), `FLOOR`,
+  `web`, `chain`; `frame`/`panel` take `{ floor, web }`.
   Roles `spaces`, `agents`, `tabs`, `pane`, `chrome`, `status`, `menu`, `newmenu` are Herdr's shipped
-  mods restyled (their data logic is unchanged); `quest` and `party` are new.
+  mods restyled (their data logic is unchanged); `quest`, `party` and `sill` are new.
 - Herdr functions: `spaces`, `agents`, `terminals`, `panes`, `focused`, `run`, `openOverlay`,
   `closeOverlay`, `shared`/`setShared`, `nextCommand`, `placement`, `knownAgents`, `exec`/`hc` (the
   spaces role's git and machine checks, as in Herdr's own).
 - Art: `art-src/gen_v3.py` (every PNG, drawn at 1x and doubled with nearest neighbour) and
   `art-src/gen_extras.py` (the preview, and the MP3s via ffmpeg).
+- Dungeon details: `art-src/gen_dungeon.py` writes the floor, brick band, sill, lit slabs,
+  sconce, chain, cobweb and moss PNGs. Big textures sit at their own size in a
+  `relative().overflow_hidden()` box (`kit.js` `texture()`), so they are cut, never stretched.
 - Fonts: Galmuri11, Galmuri11 Bold, Galmuri9, GalmuriMono11 TTFs in `mods/pixel-quest/fonts/` (OFL).
 
 ## Watch out
