@@ -55,7 +55,7 @@ export default class NewMenu {
     const installed = this.agents.filter(a => a.installed);
     const choices = [...installed, ...this.agents.filter(a => !a.installed).slice(0, 2)];
     const u = unit();
-    return root(u, thin(u, "gold", v_flex().min_h(0).w_full().h(Math.min(491, 167 + Math.max(1, choices.length) * 31) - 8).bg(P.fill).p(5).text_size(12)
+    return root(u, thin(u, "gold", v_flex().min_h(0).w_full().h(Math.min(491, 179 + Math.max(1, choices.length) * 31) - 8).bg(P.fill).p(5).text_size(12)
       .id("new-menu").track_focus(this.handle)
       .on_key_down((e) => {
         if (e.modifiers.control || e.modifiers.platform || e.modifiers.alt) return;
