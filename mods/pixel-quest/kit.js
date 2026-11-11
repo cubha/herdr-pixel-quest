@@ -9,7 +9,7 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused } from "herdr";
+import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, layout } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
 
@@ -254,6 +254,24 @@ export function openGoto() {
 
 export function openPalette() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
+}
+
+/** The terminal font size. The layout sets its own (12), which beats settings.json, and
+ *  Herdr keeps the layout's tree in layouts/.state, so it changes through layout.set on the
+ *  shown layout. The choice is kept (shared pq.font_size) and given to the other look when
+ *  it shows (keepTermFont). */
+export function setTermFont(n) {
+  if (!Number.isFinite(Number(n))) return null;
+  const size = Math.max(9, Math.min(20, Math.round(n)));
+  setShared("pq.font_size", size);
+  const l = layout();
+  if (l && typeof l === "object") run("layout.set", { layout: { ...l, font_size: size } });
+  return size;
+}
+/** Gives the shown layout the kept font size, if it has another one. */
+export function keepTermFont() {
+  const want = Number(shared("pq.font_size"));
+  if (want && Number(settings()?.font_size) !== want) setTermFont(want);
 }
 
 /** Renames a tab or a space (id; none: the one shown) in the theme's window (role prompt),

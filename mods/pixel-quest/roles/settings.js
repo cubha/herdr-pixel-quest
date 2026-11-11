@@ -1,7 +1,7 @@
 // "설정": the theme's settings window, opened by the sidebar footer's 설정
 // button (and `pixel-quest.settings`). Three tabs:
 //   모양        the dark / light layout (layout.switch), screen zoom
-//               (app.zoom_in/out) and the terminal font size (settings.json)
+//               (app.zoom_in/out) and the terminal font size (the layout's, kit setTermFont)
 //   알림        alert sounds on/off, 8-bit or Herdr's own, try each
 //   퀘스트·파티  the quest banner, the quest count reset, the party effects,
 //               the usage gauges, portraits back to automatic
@@ -12,7 +12,7 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont } from "../kit.js";
 import { titleOf } from "../progress.js";
 
 const SOUNDS = { done: "mods/pixel-quest/sounds/quest-done.mp3", blocked: "mods/pixel-quest/sounds/quest-blocked.mp3" };
@@ -105,9 +105,8 @@ export default class Settings {
         .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : P.text).child(label)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
     };
     const zoom = Number(settings()?.zoom) || 1;
-    const data = this.json() ?? {};
-    const font = Number(data.font_size ?? settings()?.font_size) || 12;
-    const setFont = (cx, n) => this.edit(cx, (d) => { d.font_size = Math.max(9, Math.min(20, n)); }, `터미널 글꼴 크기 ${Math.max(9, Math.min(20, n))}`);
+    const font = Number(settings()?.font_size) || 12;
+    const setFont = (cx, n) => { this.note = `터미널 글꼴 크기 ${setTermFont(n)}`; cx.notify(); };
     return v_flex().gap(u(6))
       .child(small(u, "레이아웃", P.gt2))
       .child(h_flex().gap(u(8)).children(LOOKS.map(card)))

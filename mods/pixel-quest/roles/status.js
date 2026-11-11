@@ -14,13 +14,14 @@
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto, openRename, openHelp } from "../kit.js";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, keepTermFont } from "../kit.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick } from "../progress.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 
 export default class Status {
   init(_p, cx) {
+    keepTermFont();
     // Claude usage: pixel-quest-usage.json in the app folder (tools/pq-usage.js writes it).
     this.usage = null;
     const load = (cx) => cx.spawn(async (cx) => {
