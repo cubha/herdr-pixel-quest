@@ -14,7 +14,7 @@ are Korean; every picture is original pixel art.
   (a low-contrast dungeon wall, `#0b0e1c`–`#1a2142`, `fit: cover`), divider 2px `#05060c`.
   Fonts: Galmuri11 for mods (12px; captions Galmuri9 10px), GalmuriMono11 12px for terminals.
 - **Sidebar, left, 268px**:
-  - Brand bar, 46px: a shield emblem (24×28), the "HERDR" wordmark (76×22), a `Lv.n` chip
+  - Brand bar, 42px (as tall as the tab bar, so the panels' gold tops line up with the terminal's): a shield emblem (24×28), the "HERDR" wordmark (76×22), a `Lv.n` chip
     (bronze outline, gold text), then pixel buttons for search and folding the sidebar.
   - **스페이스** (spaces) panel: a gold frame (ink 2px, light `#f6d870`/dark `#9a5a26` bevel 2px,
     mid `#d49a3a` 2px, ink 2px, fill `#121731`) with 16×16 ruby knobs on its corners, then a bronze
@@ -23,11 +23,13 @@ are Korean; every picture is original pixel art.
     space's stored color), the name, and the branch on the right in `#7a7090`. The selected row has a
     2px bronze `#8a5a2a` outline on `#1a2142` and a pointing-hand cursor that nudges 2px left and right.
   - **파티 · n** (party) panel: the same frame. Group headers are "입력 필요 / 완료 / 작업 중 / 대기".
-    Each agent row is a 44px card: a 24×24 portrait (one of four helm/hood faces, chosen
-    from the program name) in a brown box, the status gem on its corner, the name (gold when focused)
+    Each agent row is a 44px card: a 24×24 portrait (one of sixteen: helm and hood in eight
+    colorways each, chosen by the agent's space name, distinct while there are faces to go round;
+    a click picks the next free one, kept in shared state `pixel-quest.faces`) in a brown box, the status gem on its corner, the name (gold when focused)
     with machine and age, and a status line under it (or a moving blue bar while working).
     A blocked agent's card has a red outline.
-  - Footer, 69px: "설정" (settings) and "머신 추가" (add machine) as bronze pixel buttons.
+  - Footer, 32px: "설정" (settings) and "머신 추가" (add machine) as bronze pixel buttons, on the
+    status bar's line; the panels' gold bottoms line up with the terminal's.
 - **Tab bar, 42px**, `#0e1226` with a 2px ink bottom line: tabs are bevelled boxes with an ink
   number cell, then the name (an automatic number shows the program's name instead), and a gem when
   the tab isn't idle. The active tab is brown `#5a3418` with gold text. A torch (18×38)
@@ -38,8 +40,20 @@ are Korean; every picture is original pixel art.
   `#1a2142` with gold knobs at both ends. Hovering shows four 16px item-icon buttons: split right,
   split down, zoom and close.
 - **Status bar, 28px**: the machine, "파티" and one 14px cell per agent in its status color,
-  "! n 입력 필요" pulsing when someone is blocked, the branch, "퀘스트 n", and the palette key in a bronze chip.
-- **Side panel** (Files / Changes, hidden by default): Herdr's own mods inside a 2px gold border.
+  "! n 입력 필요" pulsing when someone is blocked, the branch, two usage gauges ("5H", "7D": ten 5px
+  cells each in a bronze box, the percent and the time to reset; blue under 50%, orange to 79%, red
+  from 80% with the last cell pulsing), "퀘스트 n", and the palette key in a bronze chip.
+  Clicking the gauges opens the usage card: a 340×296 frameless popup with a gold frame and stone
+  floor, a "사용량" plaque, then for 5시간 and 주간 a big percent, a 20-cell bar and "초기화까지 3시간 18분 · 11/11 13:30",
+  and the last update time with a 닫기 button.
+- **Side panel** (Files / Changes, hidden by default) inside a 2px gold border. Files is role
+  `files`: a bronze header ("소지품", the folder), a search box (search icon, input on a sunk well,
+  clear ×) and a 이름 / 내용 switch, then the tree with chevrons, folder/file icons and git marks.
+  Typing lists name matches (with the folder dimmed beside) or content hits (file, `:line`, the line).
+  A file opens as a read-only preview with line numbers. Changes is Herdr's own mod.
+- **Light look** (`pixel-quest-light`): blue-grey slate wall and tablet, panels `#e4e8f0`, ink
+  `#1f2638`, text `#1c2233`, gold text `#7a4a0c`; `kit.js` switches palette and the `-slate` textures
+  when the shown theme's background is light.
 - **Party drawer**: a floating block on the right edge of the work area, peeking 58px:
   gems and portraits on the edge side; hover slides out names and status words.
 
@@ -68,15 +82,16 @@ are Korean; every picture is original pixel art.
   background image, `terminal_padding: [12, 10]`, `terminal_menu: "pixel-quest"`,
   `preview: "layouts/pixel-quest.png"`), every block's `content.mod` set to `pixel-quest` with
   `props.role`, the pane frame above, the gold-bordered `panel`, and a `floating` party block on `work-body`.
-  Dungeon details: an 8px `sill` block (role `sill`) in the `work` column above `status`; the tab
-  block `main` has `background: { "image": "mods/pixel-quest/art/slabs.png", "fit": "cover" }` (lit
-  dungeon slabs, light from the top centre under the tab bar's torch), the pane frame's `background`
-  is `#00000000`, and the root has `terminal_opacity: 0.5`. One backdrop sits behind all panes, so
+  Dungeon details: an 8px `sill` block (role `sill`) in the `work` column above `status`; the
+  block `main` has `background: { "image": "mods/pixel-quest/art/tablet.png", "fit": "cover" }` (one
+  cracked stone tablet at screen resolution, light from the top centre under the tab bar's torch), the
+  pane frame's `background` is `#00000000`, and the root has `terminal_opacity: 0.3`. The `files`
+  block is `{ "mod": "pixel-quest", "props": { "role": "files" } }`. One backdrop sits behind all panes, so
   split panes share one light instead of each getting its own. Measured: Herdr's opacity is not
   linear (0.82 barely showed, 0.5 matches the mockup); Herdr caches images by path, so a redrawn
   PNG needs a new file name before it shows.
 - `themes/pixel-quest.json`: background `#121731`, foreground `#e8dcc0`, cursor `#f6d870`,
-  16 ANSI colors tuned for that background (ANSI 8 `#78729a`, contrast 3.2 at the brightest
+  16 ANSI colors tuned for that background (ANSI 8 `#807aa4`, contrast 3.1 at the brightest
   lit slab; the idle status color stays `#6a6488`), panel colors (accent `#d49a3a`; working/blocked/done/idle
   `#3f74e0`/`#c0392b`/`#3f9a4a`/`#6a6488`).
 - `mods/pixel-quest/`: one mod in roles (like Herdr 98). Mods can't import from another mod's
@@ -85,7 +100,14 @@ are Korean; every picture is original pixel art.
   `texture` (a big PNG at its own size, cut by a `relative().overflow_hidden()` box), `FLOOR`,
   `web`, `chain`; `frame`/`panel` take `{ floor, web }`.
   Roles `spaces`, `agents`, `tabs`, `pane`, `chrome`, `status`, `menu`, `newmenu` are Herdr's shipped
-  mods restyled (their data logic is unchanged); `quest`, `party` and `sill` are new.
+  mods restyled (their data logic is unchanged), `files` is Herdr's files mod with search added;
+  `quest`, `party`, `sill` and `usage` are new. Search: names from `git ls-files -co --exclude-standard`
+  (else a bounded walk skipping .git and node_modules), content from `git grep -n -I -i -F --untracked`
+  (else grep / Select-String), 350ms after typing stops, at most 300 hits; the box is gpui-base
+  `InputState`/`Input`.
+- Usage: `tools/pq-usage.js` saves `rate_limits.five_hour` / `seven_day` from Claude Code's status line
+  input into `<app home>/pixel-quest-usage.json` (only when changed); `status` reads it with
+  `readTextFile` every 20s. No per-model limits: Claude Code doesn't pass them to the status line.
 - Herdr functions: `spaces`, `agents`, `terminals`, `panes`, `focused`, `run`, `openOverlay`,
   `closeOverlay`, `shared`/`setShared`, `nextCommand`, `placement`, `knownAgents`, `exec`/`hc` (the
   spaces role's git and machine checks, as in Herdr's own).
@@ -94,6 +116,7 @@ are Korean; every picture is original pixel art.
 - Dungeon details: `art-src/gen_dungeon.py` writes the floor, brick band, sill, lit slabs,
   sconce, chain, cobweb and moss PNGs. Big textures sit at their own size in a
   `relative().overflow_hidden()` box (`kit.js` `texture()`), so they are cut, never stretched.
+- Portraits: `art-src/gen_faces.py`; tablet: `art-src/gen_tablet.py` (numpy).
 - Fonts: Galmuri11, Galmuri11 Bold, Galmuri9, GalmuriMono11 TTFs in `mods/pixel-quest/fonts/` (OFL).
 
 ## Watch out
@@ -109,13 +132,15 @@ are Korean; every picture is original pixel art.
   app-opened menus are Herdr's: they take the theme and fonts only.
 - `herdr-app check` renders the mod without props; to check each role, copy the folder and
   force `props.role` in `main.js`.
+- Herdr's JS `Date` ignores `toLocaleString` options: format dates by hand.
+- A light theme needs its own well color for inputs: text on `P.ink` vanishes there (`P.well`).
 - Galmuri is crisp at 12px (11) and 10px (9); other sizes blur. At Windows display scaling of
   125% or 150% the 2x art is resampled.
 
 ## Done when
 
 - `herdr-app check mods/pixel-quest` passes, and with `role` forced to each of `pane spaces agents
-  tabs chrome status menu newmenu quest party` it still passes.
+  tabs chrome status menu newmenu quest party sill usage files` it still passes.
 - `layout.switch {name: "pixel-quest"}` leaves `herdr-app status` with no errors and no `layout.error`.
 - A `herdr-app shot` at zoom 1 shows: the gold knobs crisp (no blur), Galmuri in the sidebar and
   terminals, the torch over the tab bar, a cursor on the selected space.

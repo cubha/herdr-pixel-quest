@@ -7,7 +7,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, face, cursor, selected, small, button, chain } from "../kit.js";
+import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, nextFace } from "../kit.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
 function find(node, id) {
@@ -286,6 +286,8 @@ export default class Agents {
     // otherwise read the same.
     // Read the pane snapshot once: every host read copies the whole list into JS.
     const leads = leadPanes(panes());
+    // Portraits: by space, a click picks another (kept for next time).
+    const faces = faceMap(agents());
     const tabs = new Map(spaces().flatMap(s => s.tabs).map(tab => [tab.id, tab]));
     const labels = new Map(list.map(a => {
       const tab = tabs.get(a.tab);
@@ -371,11 +373,16 @@ export default class Agents {
             this.folded.has(a.address) ? this.folded.delete(a.address) : this.folded.add(a.address);
             cx.notify();
           }))
-          .child(div().border(u(2)).border_color(P.ink).bg(P.b1).p(u(2)).child(face(u, a.program?.name ?? name, 24)))
+          .child(div().id(`face-${a.address}`).border(u(2)).border_color(P.ink).bg(P.b1).p(u(2)).cursor_pointer()
+            .hover((s) => s.border_color(P.g2))
+            .tooltip("초상 바꾸기")
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click((_e, cx) => { cx.stop_propagation(); nextFace(faces, a.address); })
+            .child(agentFace(u, faces.get(a.address), a.program?.name ?? name, 24)))
           .child(div().absolute().top(u(-6)).right(u(-8)).child(this.status(t, a))))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().min_w(0).gap(u(6)).items_center()
-            .child(div().min_w(0).truncate().text_color(a.focused ? P.g3 : idle ? P.muted : P.text).child(name))
+            .child(div().min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text).child(name))
             .when(Boolean(machine), el => el.child(small(u, machine)))
             .child(div().flex_1())
             .when(subs.length > 0, el => el.child(fold(a, subs)))
@@ -428,7 +435,7 @@ export default class Agents {
       : groups.flatMap((g) => [header(g), ...(this.folded.has(g.id) ? [] : g.members.flatMap(withKids))]);
 
     const u = unit();
-    const sortBtn = button(u, "ag-sort", svg(`mods/pixel-quest/icons/${sort.icon}.svg`).size(u(12)).text_color(P.g3),
+    const sortBtn = button(u, "ag-sort", svg(`mods/pixel-quest/icons/${sort.icon}.svg`).size(u(12)).text_color(P.gt),
       () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 200, height: 140, props: { role: "agents", sortMenu: true } }),
       { pad: [1, 3], tooltip: `정렬: ${sort.label}` });
     const body = v_flex().id("ag-list").flex_1().min_h(0).gap(u(2)).overflow_y_scrollbar()
@@ -437,7 +444,7 @@ export default class Agents {
     if (collapsed) {
       return root(u, v_flex().size_full().min_h(0).items_center().gap(u(2)).child(body)
         .child(h_flex().h(u(28)).items_center().justify_center()
-          .child(div().id("collapse").text_color(P.g3).hover((s) => s.text_color(P.g4)).on_click(toggleSidebar).child("»"))));
+          .child(div().id("collapse").text_color(P.gt).hover((s) => s.text_color(P.g4)).on_click(toggleSidebar).child("»"))));
     }
     // Stone floor, a cobweb in the top-right corner, and the lower half of
     // the chains hanging from the spaces panel above.

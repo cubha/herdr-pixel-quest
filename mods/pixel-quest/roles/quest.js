@@ -24,7 +24,7 @@ export default class Quest {
     const body = v_flex().relative().size_full().items_center().justify_center().gap(u(4))
       .child(h_flex().gap(u(8)).items_center()
         .child(pic(u, "ico-chest-open", 16))
-        .child(div().text_color(P.g3).child("퀘스트 완료!"))
+        .child(div().text_color(P.gt).child("퀘스트 완료!"))
         .child(pic(u, "ico-chest-open", 16)))
       .child(div().max_w(u(300)).truncate().text_color(P.text).child(p.title ?? ""))
       .child(small(u, `보상: 경험치 +1 · 누적 퀘스트 ${p.quests ?? 1}`, P.done))

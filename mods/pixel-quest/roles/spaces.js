@@ -435,7 +435,7 @@ export default class Spaces {
           .items_center()
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/pixel-quest/icons/branch.svg").size(13).text_color(t.dim)))
           .when(!tree, el => el.child(crest(u, ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"].indexOf(color))))
-          .child(div().flex_shrink(0).max_w(150).truncate().text_color(on ? P.g3 : P.text).child(w.name))
+          .child(div().flex_shrink(0).max_w(150).truncate().text_color(on ? P.gt : P.text).child(w.name))
           .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
       );
   }
@@ -477,7 +477,7 @@ export default class Spaces {
     const list = v_flex().flex_1().min_h(0).px(collapsed ? 0 : u(2)).gap(u(2)).overflow_y_scrollbar()
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(this.grouped(t, collapsed));
-    const add = button(u, "space-new", div().text_color(P.g3).child("+"), () => run("space.new"), { pad: [0, 4], tooltip: "새 스페이스" });
+    const add = button(u, "space-new", div().text_color(P.gt).child("+"), () => run("space.new"), { pad: [0, 4], tooltip: "새 스페이스" });
     if (collapsed) return root(u, v_flex().size_full().min_h(0).items_center().pt(u(6)).gap(u(4)).child(add).child(list));
     // Stone floor, a cobweb low on the left, and the top half of the chains
     // the party panel hangs from (roles/agents.js draws the lower half).

@@ -91,7 +91,7 @@ export default class Tabs {
     this.syncPanel(space, panel, body, enabled);
     const panelButton = (id, label, art) => {
       const on = panel && !panel.hidden && body?.active === id;
-      return button(`panel-${id}`, h_flex().gap(u(5)).items_center().child(pic(u, art, 16)).child(div().text_color(on ? P.g3 : P.text).child(label)),
+      return button(`panel-${id}`, h_flex().gap(u(5)).items_center().child(pic(u, art, 16)).child(div().text_color(on ? P.gt : P.text).child(label)),
         () => {
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
@@ -119,7 +119,7 @@ export default class Tabs {
           .child(pic(u, "torch-glow", 96, 60).absolute().top(0).left(u(68)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
           .child(pic(u, "torch", 18, 38).absolute().top(u(12)).left(u(107)))))
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(u(4)).overflow_x_scrollbar().children(shown.map(item)))
-      .child(button("tab-new", div().text_color(P.g3).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 512, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
+      .child(button("tab-new", div().text_color(P.gt).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 512, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "소지품", "ico-chest")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "변경", "ico-scroll")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? winIcon("win-min") : "−", () => run("window.minimize")))

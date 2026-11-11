@@ -20,7 +20,7 @@
             }
           },
           "size": {
-            "px": 46
+            "px": 42
           },
           "window_drag": true
         },
@@ -69,7 +69,7 @@
             }
           },
           "size": {
-            "px": 69
+            "px": 32
           }
         }
       ],
@@ -134,7 +134,7 @@
                 }
               },
               "background": {
-                "image": "mods/pixel-quest/art/slabs.png",
+                "image": "mods/pixel-quest/art/tablet.png",
                 "fit": "cover"
               }
             },
@@ -150,7 +150,10 @@
                       "id": "files",
                       "type": "block",
                       "content": {
-                        "mod": "files"
+                        "mod": "pixel-quest",
+                        "props": {
+                          "role": "files"
+                        }
                       }
                     },
                     {
@@ -233,7 +236,7 @@
     12,
     10
   ],
-  "terminal_opacity": 0.5,
+  "terminal_opacity": 0.3,
   "divider": {
     "width": 2,
     "color": "#05060c"

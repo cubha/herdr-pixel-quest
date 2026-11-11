@@ -1,6 +1,7 @@
 // Pixel Quest status bar. Modified from Herdr's shipped `workspace-status` mod
 // (Apache-2.0, Herdr 0.1.14): machine, a party health bar (one cell per agent,
-// in its status color), "! n 입력 필요", the branch, and the palette key.
+// in its status color), "! n 입력 필요", the branch, the palette key, and two
+// mana gauges for Claude's 5-hour / 7-day usage (tools/pq-usage.js saves them).
 //
 // It also keeps the quest log: when an agent turns done, the "퀘스트 완료"
 // banner opens over the window (role "quest") and the quest count goes up;
@@ -9,13 +10,25 @@
 
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand } from "herdr";
-import { P, unit, root, small, button, pic, texture } from "../kit.js";
+import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome } from "herdr";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE } from "../kit.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 
 export default class Status {
   init(_p, cx) {
+    // Claude usage: pixel-quest-usage.json in the app folder (tools/pq-usage.js writes it).
+    this.usage = null;
+    const load = (cx) => cx.spawn(async (cx) => {
+      try {
+        const text = await readTextFile(`${appHome()}/${USAGE_FILE}`);
+        const next = text ? JSON.parse(text) : null;
+        if (JSON.stringify(next) !== JSON.stringify(this.usage)) this.usage = next;
+      } catch { /* keep the last reading */ }
+      cx.notify();   // also moves the countdowns on
+    });
+    load(cx);
+    cx.timer.every(20000, load);
     // Only status changes seen while this runs count: no fanfare for the past.
     this.last = new Map(agents().map((a) => [a.address, a.status]));
     // `pixel-quest.quest` (a key or `herdr-app do`) shows the banner once, to try it.
@@ -59,6 +72,17 @@ export default class Status {
     setShared("pq.banner.open", id);
   }
 
+  // One usage window as a mana gauge: label, ten cells, percent, time to reset.
+  gauge(u, id, label, long, w) {
+    const r = usageWindow(w);
+    return h_flex().id(id).gap(u(4)).items_center()
+      .tooltip(r.over ? `${long} 한도: 기록 없음` : `${long} 한도 ${Math.round(r.pct)}% 사용 · ${r.at} 초기화`)
+      .child(small(u, label, P.gt2))
+      .child(cells(u, r))
+      .child(small(u, r.over ? "--" : `${Math.round(r.pct)}%`, r.over ? P.dim : P.text))
+      .when(r.left != null, (el) => el.child(small(u, span(r.left), P.dim)));
+  }
+
   render() {
     const u = unit();
     const list = agents();
@@ -73,13 +97,20 @@ export default class Status {
     const left = plate()
       .child(div().text_color(P.muted).child(space?.machine ?? "이 컴퓨터"))
       .child(h_flex().gap(u(6)).items_center()
-        .child(small(u, "파티", P.g2))
+        .child(small(u, "파티", P.gt2))
         .child(h_flex().h(u(12)).border(u(2)).border_color(P.ink).bg(P.ink).children(list.slice(0, 12).map(cell)))
         .when(list.length === 0, (el) => el.child(small(u, "없음"))))
       .when(needs > 0, (el) => el.child(small(u, `! ${needs} 입력 필요`, P.blocked).loop("opacity", { from: 0.5, to: 1, period: 900 })))
       .when(Boolean(space?.branch), (el) => el.child(small(u, space.branch, P.muted)));
+    const use = this.usage;
+    // Click: the usage card above the bar (a popup at the pointer).
+    const mana = use && (use.five_hour || use.seven_day) ? plate().id("usage").cursor_pointer()
+      .hover((s) => s.border_color(P.g2))
+      .on_click(() => openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 340, height: 296, props: { role: "usage" } }))
+      .child(this.gauge(u, "use-5h", "5H", "5시간", use.five_hour))
+      .child(this.gauge(u, "use-7d", "7D", "7일", use.seven_day)) : null;
     const right = plate()
-      .child(small(u, `퀘스트 ${shared("pq.quests") ?? 0}`, P.g2))
+      .child(small(u, `퀘스트 ${shared("pq.quests") ?? 0}`, P.gt2))
       .child(h_flex().id("palette").gap(u(6)).items_center().cursor_pointer().on_click(() => run("app.palette"))
         .when(Boolean(key), (el) => el.child(div().border(u(2)).border_color(P.b1).bg(P.raised).px(u(4)).child(small(u, key, P.text))))
         .child(small(u, "명령", P.dim)));
@@ -87,6 +118,7 @@ export default class Status {
       .child(texture(u, "strip", 2560, 48))
       .child(left)
       .child(div().flex_1())
+      .when(Boolean(mana), (el) => el.child(mana))
       .child(right)
       .child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260)));
   }

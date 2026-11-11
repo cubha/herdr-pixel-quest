@@ -2,14 +2,14 @@
 // (Apache-2.0, Herdr 0.1.14): restyled as an inventory-window title bar with
 // a status gem, pixel buttons and gold knobs on the focused pane.
 //
-// Shows the program's portrait, the agent's name or the terminal's title,
+// Shows the agent's portrait (click: another one), the agent's name or the terminal's title,
 // the folder and the agent's status gem; buttons split, zoom and close this
 // pane. Props from the app: { pane, terminal }. Click: focus the pane.
 
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { panes, props, run, home } from "herdr";
-import { P, unit, root, pic, gem, button, small, face } from "../kit.js";
+import { panes, props, run, home, agents } from "herdr";
+import { P, unit, root, pic, gem, button, small, face, faceMap, agentFace, nextFace } from "../kit.js";
 
 function folder(cwd) {
   if (!cwd) return "";
@@ -25,6 +25,19 @@ export default class Pane {
 
   me() {
     return panes().find((p) => p.pane === props()?.pane);
+  }
+
+  // An agent's portrait follows its space (the same one the agents list and the
+  // party show) and a click picks another; other programs keep one by name.
+  portrait(u, p, name) {
+    const all = agents();
+    const a = all.find((x) => x.pane === p.pane);
+    if (!a) return face(u, p.program?.name ?? name, 24).w(u(24)).h(u(24));
+    const faces = faceMap(all);
+    return div().id(`pane-face-${p.pane}`).flex_none().cursor_pointer()
+      .tooltip("초상 바꾸기")
+      .on_click((_e, cx) => { cx.stop_propagation(); nextFace(faces, a.address); })
+      .child(agentFace(u, faces.get(a.address), name, 24).w(u(24)).h(u(24)));
   }
 
   render() {
@@ -54,8 +67,8 @@ export default class Pane {
         .child(pic(u, "knob-gold", 16).absolute().top(u(5)).left(u(1)))
         .child(pic(u, "knob-gold", 16).absolute().top(u(5)).right(u(1))))
       .child(gem(u, st, `gem-${pane}`))
-      .child(face(u, p.program?.name ?? name, 24).w(u(24)).h(u(24)))
-      .child(div().flex_none().truncate().max_w(u(260)).text_color(on ? P.g3 : P.text).child(name))
+      .child(this.portrait(u, p, name))
+      .child(div().flex_none().truncate().max_w(u(260)).text_color(on ? P.gt : P.text).child(name))
       .child(div().flex_1().min_w(0).truncate().child(small(u, folder(p.cwd), P.dim)))
       .when(Boolean(LABEL[st]), (el) => el.child(small(u, LABEL[st], COLOR[st]).flex_none()))
       .when(this.hovered, (el) => el

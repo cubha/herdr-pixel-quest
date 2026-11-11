@@ -9,7 +9,7 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings } from "herdr";
+import { settings, theme, shared, setShared } from "herdr";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -35,7 +35,34 @@ export const P = {
   b0: "#2e1a1e", b1: "#5a3418", b2: "#8a5a2a", b3: "#b8864a",
   // meanings (gold is decoration and selection only)
   done: "#3f9a4a", warn: "#ff9a2a", blocked: "#c0392b", working: "#3f74e0", idle: "#6a6488",
+  // gold text on panel surfaces (bright gold on dark, deep gold on parchment)
+  gt: "#f6d870", gt2: "#d49a3a",
+  // wells (inputs, tab tracks) sunk into a panel, and text on bronze plates
+  well: "#05060c", onb: "#e8dcc0",
+  light: false,
 };
+
+// The daylight palette for the pixel-quest-light layout: blue-grey slate
+// walls, pale stone panels, navy ink. Gold and bronze ramps stay (frames, plaques).
+const DARK = { ...P };
+const LIGHT = {
+  ...P,
+  ink: "#1f2638", wall: "#a9b2c4", chrome: "#c3cad8", fill: "#e4e8f0", raised: "#d6dce8",
+  hover: "#eef1f7", stone: "#8a94aa", text: "#1c2233", muted: "#3e4760", dim: "#5f6880",
+  gt: "#7a4a0c", gt2: "#8a5a1a", idle: "#7a8296", well: "#f6f8fb",
+  light: true,
+};
+
+/** Art with a daylight version (`<name>-slate.png`) used in the light look. */
+const LIGHT_ART = new Set(["floor", "strip", "sill"]);
+
+/** Light when the shown theme's terminal background is light. */
+function isLight() {
+  const hex = String(theme()?.background ?? "").replace("#", "");
+  if (hex.length < 6) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b > 140;
+}
 
 const RAMPS = {
   gold: { tl: P.g3, br: P.g1, mid: P.g2 },
@@ -45,6 +72,8 @@ const RAMPS = {
 
 /** u(n): n screen px at zoom 1, in layout px (so art stays 1:1 on screen). */
 export function unit() {
+  // Every render starts here, so this is where the palette follows the theme.
+  Object.assign(P, isLight() ? LIGHT : DARK);
   const z = Number(settings()?.zoom) || 1;
   const u = (n) => n / z;
   u.z = z;
@@ -53,7 +82,8 @@ export function unit() {
 
 /** A PNG from the art folder at its own size (w, h: file px). */
 export function pic(u, name, w, h = w) {
-  return image(`${ART}/${name}.png`).flex_none().w(u(w)).h(u(h));
+  const file = P.light && LIGHT_ART.has(name) ? `${name}-slate` : name;
+  return image(`${ART}/${file}.png`).flex_none().w(u(w)).h(u(h));
 }
 
 /** The root of every pq mod: pixel font, 12px, parchment text. */
@@ -187,12 +217,70 @@ export function crest(u, i) {
   return pic(u, `crest-${CRESTS[((i % 5) + 5) % 5]}`, 16);
 }
 
-/** Program -> one of the four portraits (stable per name). */
-export const FACES = ["helm-gold", "hood-violet", "helm-steel", "hood-amber"];
+/** The sixteen portraits (art-src/gen_faces.py): two silhouettes, eight colorways each. */
+export const FACES = [
+  "helm-gold", "hood-violet", "helm-steel", "hood-amber", "helm-jade", "hood-teal", "helm-crimson", "hood-navy",
+  "helm-azure", "hood-forest", "helm-rose", "hood-scarlet", "helm-bronze", "hood-plum", "helm-obsidian", "hood-ash",
+];
+const hash = (s) => { let h = 0; for (const ch of String(s ?? "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+
+/** A portrait by any stable key (programs that aren't agents: shells, editors). */
 export function face(u, key, size = 24) {
-  let h = 0;
-  for (const ch of String(key ?? "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return pic(u, `face-${FACES[h % FACES.length]}`, size);
+  return pic(u, `face-${FACES[hash(key) % FACES.length]}`, size);
+}
+
+// Agents get a portrait by where they work, not by program (they are mostly the
+// same program): the space's name, and the order within the space when it has
+// more than one. A click picks another one; the choice is kept in shared state
+// (persisted, and every copy of the mod re-renders when it changes).
+const PICKS = "pixel-quest.faces";
+function faceKeys(list) {
+  const seen = new Map(), keys = new Map();
+  for (const a of list) {
+    const base = a.space_name || a.space || a.address;
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    keys.set(a.address, n ? `${base}#${n + 1}` : base);
+  }
+  return keys;
+}
+
+/** address -> { key, name } for every agent: picks first, then a hash slot, distinct while
+ *  there are portraits to go round. Call once per render with agents(). */
+export function faceMap(list) {
+  const keys = faceKeys(list);
+  const picks = shared(PICKS) ?? {};
+  const out = new Map(), used = new Set();
+  for (const [addr, key] of keys) {
+    const p = picks[key];
+    if (FACES.includes(p)) { out.set(addr, { key, name: p }); used.add(p); }
+  }
+  for (const [addr, key] of [...keys].sort((x, y) => (x[1] < y[1] ? -1 : 1))) {
+    if (out.has(addr)) continue;
+    let i = hash(key) % FACES.length;
+    for (let k = 0; k < FACES.length && used.has(FACES[i]); k++) i = (i + 1) % FACES.length;
+    out.set(addr, { key, name: FACES[i] });
+    used.add(FACES[i]);
+  }
+  return out;
+}
+
+/** An agent's portrait from a faceMap() entry (falls back to the program key). */
+export function agentFace(u, entry, fallback, size = 24) {
+  return entry ? pic(u, `face-${entry.name}`, size) : face(u, fallback, size);
+}
+
+/** Moves an agent to the next portrait no other agent shows. */
+export function nextFace(map, address) {
+  const me = map.get(address);
+  if (!me) return;
+  const taken = new Set([...map.values()].filter((e) => e !== me).map((e) => e.name));
+  let i = FACES.indexOf(me.name);
+  for (let k = 0; k < FACES.length; k++) {
+    i = (i + 1) % FACES.length;
+    if (!taken.has(FACES[i]) || k === FACES.length - 1) break;
+  }
+  setShared(PICKS, { ...(shared(PICKS) ?? {}), [me.key]: FACES[i] });
 }
 
 /** A bronze name plaque for a panel: ornaments around gold text, an optional control. */
@@ -218,4 +306,33 @@ export function panel(u, title, right, content, o = {}) {
 /** A thin bronze outline that marks the selected row (no fill change). */
 export function selected(u, el, on) {
   return on ? el.border(u(2)).border_color(P.b2).bg(P.raised) : el.border(u(2)).border_color("#00000000");
+}
+
+// ---- Claude usage (tools/pq-usage.js saves it in the app folder) ----
+export const USAGE_FILE = "pixel-quest-usage.json";
+/** One window's reading: { pct, over, left (s to reset), at ("11/11 13:30"), tone }. */
+export function usageWindow(w) {
+  const now = Date.now() / 1000;
+  const over = !w || (w.resets_at && w.resets_at <= now);
+  const pct = over ? 0 : Math.max(0, Math.min(100, w.used_percentage));
+  const left = over || !w.resets_at ? null : w.resets_at - now;
+  // By hand: this runtime's Date ignores locale options.
+  const d = new Date((w?.resets_at ?? 0) * 1000), two = (n) => String(n).padStart(2, "0");
+  const at = left == null ? "" : `${d.getMonth() + 1}/${d.getDate()} ${two(d.getHours())}:${two(d.getMinutes())}`;
+  const tone = over ? P.idle : pct >= 80 ? P.blocked : pct >= 50 ? P.warn : P.working;
+  return { pct, over, left, at, tone };
+}
+/** Seconds as "3h38" / "2일4h" / "12m"; long: "3시간 38분". */
+export function span(s, long = false) {
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if (long) return [d && `${d}일`, h && `${h}시간`, (m || (!d && !h)) && `${Math.max(1, m)}분`].filter(Boolean).join(" ");
+  return d ? `${d}일${h}h` : h ? `${h}h${String(m).padStart(2, "0")}` : `${Math.max(1, m)}m`;
+}
+/** A row of mana cells (10% each when n = 10), lit up to pct in tone. */
+export function cells(u, r, n = 10, cw = 5, ch = 12) {
+  const lit = Math.round((r.pct / 100) * n);
+  // cw 0: the cells share the row's width (a bar that fills its box).
+  return h_flex().h(u(ch)).gap(u(1)).p(u(1)).bg(P.b1).border(u(2)).border_color(P.ink).when(!cw, (el) => el.w_full())
+    .children([...Array(n)].map((_, i) => (cw ? div().w(u(cw)) : div().flex_1()).h_full().bg(i < lit ? r.tone : P.ink)
+      .when(i === lit - 1 && r.pct >= 80, (el) => el.loop("opacity", { from: 0.55, to: 1, period: 900 }))));
 }

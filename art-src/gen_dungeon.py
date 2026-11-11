@@ -1,4 +1,5 @@
-"""Pixel Quest dungeon details: stone floors, brick bands, lit slabs behind the terminals.
+"""Pixel Quest dungeon details: stone floors, brick bands, sconces, chains, cobwebs, moss.
+(The stone tablet behind the terminals is art-src/gen_tablet.py.)
 
     python3 art-src/gen_dungeon.py <out-folder>
 
@@ -6,7 +7,8 @@ Writes into <out> (normally mods/pixel-quest/art):
   floor.png       480x1600  flagstones behind the sidebar panels (clipped, never stretched)
   strip.png       2560x48   brick band behind the tab bar and the status bar
   sill.png        2560x8    stone ledge under the work area
-  slabs.png       1280x800  lit dungeon slabs behind the whole terminal area (cover)
+  floor-slate.png, strip-slate.png, sill-slate.png  the same in daylight blue-grey slate
+  bg-slate.png    1280x800  the light layout's outer wall
   sconce.png, sconce-b.png  16x16 wall sconce, two flame frames
   sconce-halo.png 36x28     round halo behind a sconce's flame
   chain.png       4x8       one chain segment (hangs between the two panels)
@@ -125,45 +127,12 @@ save(flagstones(240, 800, 7, (19, 24, 51), (-2, -1, 0, 1, 2, 3), (11, 14, 30)), 
 save(bricks(1280, 24, 11, (21, 26, 54), (-2, 0, 2, 4), INK, hi=9, lo=-4), 'strip.png')
 save(bricks(1280, 4, 3, (58, 56, 84), (-4, 0, 4), INK, bw=12, bh=4, hi=16, lo=-10), 'sill.png')
 
-# Lit slabs: big dungeon flagstones under warm, banded light from the top
-# centre (below the tab bar's torch), fading to shadow at the edges. Laid once
-# behind the whole terminal area, so split panes share one light.
-W, H = 640, 400
-sl = Image.new('RGB', (W, H), (6, 8, 16))
-r = random.Random(21)
-p = sl.load()
-y = 0
-while y < H:
-    rh = r.randint(22, 30)
-    x = -r.randint(0, 30)
-    while x < W:
-        sw = r.randint(34, 60)
-        base = add((42, 46, 74), r.choice((-5, -2, 0, 2, 5)))
-        for yy in range(y, min(H, y + rh - 1)):
-            for xx in range(max(0, x), min(W, x + sw - 1)):
-                c = base
-                if yy == y or xx == x:
-                    c = add(base, 10)
-                elif yy == y + rh - 2 or xx == x + sw - 2:
-                    c = add(base, -8)
-                elif r.random() < 0.04:
-                    c = add(base, r.choice((-6, 6)))
-                p[xx, yy] = c
-        if r.random() < 0.25:
-            cx, cy = x + r.randint(5, max(6, sw - 6)), y + 2
-            for _ in range(r.randint(5, rh - 4)):
-                if 0 <= cx < W and cy < H:
-                    p[cx, cy] = add(base, -12)
-                cy += 1
-                cx += r.choice((-1, 0, 0, 1))
-        x += sw
-    y += rh
-for yy in range(H):
-    for xx in range(W):
-        t = round(max(0.0, 1 - math.hypot((xx - W / 2) / (W * 0.6), yy / H)) * 6) / 6
-        lit = mix(p[xx, yy], (170, 110, 60), 0.55 * t)
-        p[xx, yy] = mix(lit, (6, 7, 15), 0.55 * (1 - t))
-save(sl, 'slabs.png')
+# Light (daylight blue-grey slate) versions of the floor, the brick band, the sill
+# and the outer wall, for the pixel-quest-light layout.
+save(flagstones(240, 800, 7, (208, 214, 226), (-3, -1, 0, 1, 2, 3), (164, 172, 190)), 'floor-slate.png')
+save(bricks(1280, 24, 11, (170, 178, 196), (-4, 0, 3, 6), (92, 100, 120), hi=12, lo=-10), 'strip-slate.png')
+save(bricks(1280, 4, 3, (128, 136, 156), (-4, 0, 4), (62, 70, 90), bw=12, bh=4, hi=18, lo=-14), 'sill-slate.png')
+save(bricks(640, 400, 5, (160, 168, 186), (-8, -4, 0, 4, 8), (104, 112, 132), hi=12, lo=-10), 'bg-slate.png')
 
 # Wall sconce: an iron cup on a bracket, two flame frames.
 CUP = ['.bbbbbb.', '..bBBb..', '...bb...', '...bb...']
