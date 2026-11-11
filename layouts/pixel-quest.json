@@ -160,7 +160,10 @@
                       "id": "changes",
                       "type": "block",
                       "content": {
-                        "mod": "changes"
+                        "mod": "pixel-quest",
+                        "props": {
+                          "role": "changes"
+                        }
                       }
                     }
                   ],

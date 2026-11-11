@@ -30,6 +30,20 @@ function target() {
   return path.join(home, "pixel-quest-usage.json");
 }
 
+// Every Claude Code session runs the status line and reports the limits as of its
+// own last response, so an idle session hands in old numbers. Usage inside one
+// window only goes up: keep the newer window (later resets_at), and inside the
+// same window the higher percent; a window that has already reset is dropped.
+function merge(next, old, now = Date.now() / 1000) {
+  const live = (w) => w && (!w.resets_at || w.resets_at > now) ? w : undefined;
+  next = live(next); old = live(old);
+  if (!next) return old;
+  if (!old) return next;
+  if ((next.resets_at ?? 0) > (old.resets_at ?? 0)) return next;
+  if ((next.resets_at ?? 0) < (old.resets_at ?? 0)) return old;
+  return next.used_percentage >= old.used_percentage ? next : old;
+}
+
 /** Saves `input.rate_limits` (the windows present) when it changed. Never throws. */
 function save(input, file = target()) {
   try {
@@ -37,11 +51,11 @@ function save(input, file = target()) {
     if (!rl) return false;
     const pick = (w) => (w && typeof w.used_percentage === "number"
       ? { used_percentage: w.used_percentage, resets_at: w.resets_at ?? null } : undefined);
-    const data = { five_hour: pick(rl.five_hour), seven_day: pick(rl.seven_day) };
-    if (!data.five_hour && !data.seven_day) return false;
-    const body = JSON.stringify(data);
     let old = null;
     try { old = JSON.parse(fs.readFileSync(file, "utf8")); } catch {}
+    const data = { five_hour: merge(pick(rl.five_hour), old?.five_hour), seven_day: merge(pick(rl.seven_day), old?.seven_day) };
+    if (!data.five_hour && !data.seven_day) return false;
+    const body = JSON.stringify(data);
     if (old && JSON.stringify({ five_hour: old.five_hour, seven_day: old.seven_day }) === body) return false;
     const tmp = `${file}.${process.pid}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify({ ...data, updated_at: Date.now() }));
@@ -52,7 +66,7 @@ function save(input, file = target()) {
   }
 }
 
-module.exports = { save, target };
+module.exports = { save, target, merge };
 
 if (require.main === module) {
   const raw = fs.readFileSync(0, "utf8");

@@ -15,15 +15,20 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 화면 | 내용 |
 |---|---|
 | 사이드바 | 금테 패널(모서리 보석). **스페이스**는 문장 아이콘으로, 선택한 항목은 청동 테두리와 흔들리는 커서로 표시. **파티**(에이전트)는 초상, 상태 보석, 상태 한 줄로 표시. 패널 위·아래 끝이 터미널 금테와 같은 줄 |
-| 파티 초상 | 투구·두건 두 모양 × 8색 = 16종. 에이전트마다 **스페이스 이름**으로 정해져 서로 겹치지 않음(16명까지). 초상을 누르면 다음 초상으로 바뀌고, 선택은 Herdr 공유 상태에 저장되어 다시 켜도 유지 |
+| 파티 초상 | 투구·두건·마법사·뿔 해골·왕·슬라임 여섯 모양 × 8색 = 48종(투구·두건 16종은 처음부터, 나머지는 레벨로 해금). 에이전트마다 **스페이스 이름**으로 정해져 서로 겹치지 않음. 초상을 누르면 **초상 선택창**(6줄×8칸: 지금 초상은 금테로 뜨고, 다른 에이전트가 쓰는 초상은 흐리게 금색 점, 잠긴 초상은 실루엣과 열쇠, 마우스를 올리면 이름·해금 레벨). "자동"은 직접 고른 것을 지움. 선택은 Herdr 공유 상태에 저장 |
+| 초상 액자·전투 | 초상은 고른 **액자**(나무·청동·은·금·룬·왕관) 안에 들어감. 작업 중인 에이전트는 초상 옆에서 두 칼이 부딪히고 불꽃이 튐(파티 목록·칸 머리, 설정에서 끌 수 있음) |
 | 탭 바 | 번호 칸이 붙은 인벤토리 탭, 가운데 횃불(빛이 일렁임), 소지품·변경 패널 버튼, 도트 창 버튼 |
 | 칸 머리줄 | 상태 보석, 초상, 제목, 폴더. 포커스된 칸에만 금 모서리 보석. 마우스를 올리면 도트 버튼(누르면 2px 들어감) |
-| 상태바 | 파티 체력바(에이전트마다 한 칸, 상태 색), `! n 입력 필요`(깜빡임), 브랜치, Claude 사용량 게이지(5H·7D), 퀘스트 수, 명령 키 |
+| 상태바 | 파티 체력바(에이전트마다 한 칸, 상태 색), `! n 입력 필요`(깜빡임), 브랜치, Claude 사용량 게이지(5H·7D), 퀘스트 수와 다음 레벨까지 칸(누르면 모험 일지), 명령 키 |
 | 사용량 게이지·카드 | Claude Code 5시간·7일 한도 사용률을 10칸 마나 게이지로 표시(50% 미만 파랑, 50–79% 주황, 80% 이상 빨강). 누르면 금테 카드에 20칸 막대, 초기화까지 남은 시간과 시각. 아래 **사용량 게이지 연결** 참고 |
 | 소지품 검색 | 파일 패널 위 검색창. **이름** 탭은 파일 이름(git 저장소면 git이 아는 파일), **내용** 탭은 파일 안의 글자(git grep / grep). 결과를 누르면 줄 번호 있는 미리보기 |
 | 라이트 버전 | 레이아웃 `pixel-quest-light`: 청회색 슬레이트 벽과 석판, 밝은 돌 패널, 남색 글자. 금테·청동은 그대로 |
-| 메뉴 | 얇은 금테, 선택 항목에 커서, 한글 항목명 |
-| 퀘스트 완료 | 에이전트가 작업 중에서 **완료**로 바뀌면(Herdr의 `done`: 보고 있지 않을 때 끝난 경우) 반짝이는 금테 배너가 4.5초 동안 떠 있음. 퀘스트 5개마다 브랜드 옆 `Lv`이 오름 |
+| 메뉴 | 얇은 금테, 석판 바닥, 벽돌 띠 머리, 모서리 거미줄, 선택 항목에 커서, 한글 항목명. 스페이스·마지막 탭 닫기는 테마 확인창으로 물음 |
+| 변경 패널 | 소지품처럼 테마가 그리는 git 변경 목록·비교·커밋(Herdr `changes` 개조), 석판 바닥 |
+| 던전 설정 | 사이드바 "설정" 버튼: 모양(다크·라이트 미리보기, 화면 크기, 터미널 글꼴 크기), 알림(알림음 켜기, 8비트/Herdr 기본, 들어보기), 퀘스트·파티(배너, 퀘스트 초기화, 전투 연출, 사용량 게이지, 초상 자동 배정 되돌리기). 머신·업데이트는 "Herdr 기본 설정 열기" |
+| 명령 팔레트 | Herdr 팔레트와 같은 명령·단축키를 한글 이름(영어로도 찾음), 무리별 아이템 아이콘, 커서, 금테·석판으로. 던전 설정·모험 일지·Herdr 기본 팔레트도 목록에 있음. `Ctrl+Shift+P` 연결은 아래 설치 참고 |
+| 퀘스트·레벨 | **퀘스트 = 에이전트가 일을 끝낸 횟수**(작업 중·입력 필요 → 완료). 완료 배너가 4.5초 동안 뜸. 레벨은 갈수록 느려짐: Lv.n에서 다음 레벨까지 `5 + ⌊(n−1)²/4⌋`퀘스트(Lv.10 누적 95, Lv.20 누적 620). Lv.2~20마다 꾸미기를 얻음(새 초상, 액자, 배너 장식 깃발·횃불·보석 비·왕관·전설, 칭호 견습·모험가·기사·영웅·전설, Lv.19 금장 배지). 기능은 잠그지 않음. 레벨이 오르면 레벨 업 배너. 퀘스트 수를 초기화해도 이미 얻은 것은 남음 |
+| 모험 일지 | 브랜드의 `Lv` 배지나 상태바 퀘스트를 누르면 열림: 레벨·칭호·다음 레벨까지, 해금표, 꾸미기(액자·배너 고르기), 최근 퀘스트 30개 |
 | 파티 서랍 | 오른쪽 가장자리의 플로팅 서랍. 보석과 초상만 보이다가 마우스를 올리면 이름이 나옴 |
 | 접힌 사이드바 | 문장과 보석만 남은 레일 |
 | 던전 디테일 | 사이드바 패널 안쪽 석판 바닥, 두 패널 사이 쇠사슬과 거미줄, 탭바·상태바 벽돌 띠, 횃불 양옆 벽 촛대(깜빡임), 상태바 이끼, 작업 영역 아래 돌 문턱. 그림은 늘리지 않고 원래 크기로 잘라 씀 |
@@ -42,7 +47,9 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 
 ## 설치
 
-**Windows:** `powershell -ExecutionPolicy Bypass -File install.ps1` (`-Sounds`: 8비트 알림음, `-Light`: 라이트 버전으로 전환). git 없이 zip만으로도 됩니다.
+**Windows:** `powershell -ExecutionPolicy Bypass -File install.ps1` (`-Sounds`: 8비트 알림음, `-Light`: 라이트 버전으로 전환, `-Palette`: `Ctrl+Shift+P`로 테마 팔레트 열기). git 없이 zip만으로도 됩니다.
+
+**테마 팔레트 연결 (선택):** `keys.json`에서 `"ctrl-shift-p": "app.palette"`를 `"ctrl-shift-p": "pixel-quest.palette"`로 바꿉니다(`-Palette`가 백업 후 이 한 줄만 바꿈). 되돌리려면 그 줄을 원래대로 돌립니다. 테마 팔레트 안의 "Herdr 기본 팔레트 열기"로 원래 팔레트도 쓸 수 있습니다.
 
 직접 복사할 때는 Herdr 설정 폴더(`~/.config/herdr-app`, Windows는 `%USERPROFILE%\.config\herdr-app`)에 세 폴더를 복사합니다. 예전 버전이 있으면 `mods/pixel-quest`를 지우고 새로 복사하세요(Herdr는 그림을 파일 이름으로 기억하므로 바꾼 뒤 한 번 다시 켜는 것이 좋습니다).
 
@@ -65,7 +72,7 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
   "blocked": "mods/pixel-quest/sounds/quest-blocked.mp3" } }
 ```
 
-**사용량 게이지 연결 (선택):** 게이지는 Claude Code가 상태줄 명령에 넘겨 주는 `rate_limits`(claude.ai Pro·Max, 세션의 첫 응답 이후)를 씁니다. `tools/pq-usage.js`가 그 값만 Herdr 설정 폴더의 `pixel-quest-usage.json`에 저장하고, 상태바가 20초마다 읽습니다. 토큰을 읽거나 네트워크로 보내지 않습니다. `~/.claude/settings.json`:
+**사용량 게이지 연결 (선택):** 게이지는 Claude Code가 상태줄 명령에 넘겨 주는 `rate_limits`(claude.ai Pro·Max, 세션의 첫 응답 이후)를 씁니다. `tools/pq-usage.js`가 그 값만 Herdr 설정 폴더의 `pixel-quest-usage.json`에 저장하고, 상태바와 사용량 카드는 파일이 바뀌는 즉시 다시 읽습니다. Claude 세션이 여럿이면 쉬던 세션이 옛 값을 넘기므로, 같은 시간 창에서는 더 큰 값을, 새 창이 오면 새 값을 남깁니다. 토큰을 읽거나 네트워크로 보내지 않습니다. `~/.claude/settings.json`:
 
 ```json
 { "statusLine": { "type": "command",
@@ -74,7 +81,7 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
 
 상태줄이 없으면 `node /path/to/pq-usage.js`만 넣습니다. Node로 만든 상태줄이면 그 안에서 `require("/path/to/pq-usage.js").save(input)`를 불러도 됩니다. Claude Code는 WSL에, Herdr는 Windows에 있으면 `PQ_USAGE_FILE=/mnt/c/Users/<나>/.config/herdr-app/pixel-quest-usage.json`을 지정하세요. 파일이 없으면 게이지는 나오지 않습니다. 모델별(예: Fable) 주간 한도는 상태줄 값에 없어서 표시하지 않습니다.
 
-**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다.
+**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.settings` · `pixel-quest.journal`은 팔레트·설정·모험 일지를 엽니다. keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
 
 ## 폴더
 
@@ -83,14 +90,16 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
 | `layouts/pixel-quest.json` | 레이아웃. Herdr 기본 `main`을 복제한 뒤 모양과 모드 연결을 바꿈 |
 | `layouts/pixel-quest-light.json` | 라이트 레이아웃(청회색 슬레이트) |
 | `themes/pixel-quest-light.json` | 라이트 테마 |
-| `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`) |
+| `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
-| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을 담당 |
+| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를 담당 |
+| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
 | `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
 | `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy) |
-| `art-src/gen_faces.py` | 파티 초상 16종 생성기. `python3 art-src/gen_faces.py mods/pixel-quest/art` |
+| `art-src/gen_faces.py` | 파티 초상 48종(+잠긴 초상 실루엣) 생성기. `python3 art-src/gen_faces.py mods/pixel-quest/art` |
+| `art-src/gen_rewards.py` · `gen_battle.py` · `gen_thumbs.py` | 액자 6종·깃발·왕관, 칼·불꽃, 설정 창 레이아웃 미리보기 생성기(같은 방식으로 실행) |
 | `art/` | 생성된 에셋(v3 최종, v2 이력, extras) |
 | `mockups/render-v3/` | 최종 디자인 시안(v3). 브라우저로 바로 열림 |
 | `tools/` | `demo.ps1`(미리보기용 데모 화면), `redact.py`(캡처 속 이름을 데모 이름으로 바꾸기), `pq-usage.js`(사용량 게이지 연결) |
@@ -107,7 +116,8 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
 ## 한계 (Herdr 0.1.14 기준)
 
 - 도트 PNG는 `zoom`과 상관없이 화면 1:1로 그립니다(`kit.js`의 `unit()`). 125%·150% Windows 화면 배율에서는 이미지가 보간되어 조금 흐려질 수 있습니다. 이 구성은 100% 배율에서 확인했습니다.
-- 알림 토스트, 확인·입력 대화상자, 명령 팔레트, 설정, 환영 화면은 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다. 퀘스트 배너는 별도 창으로 띄웁니다.
+- 알림 토스트, 입력 대화상자, 환영 화면, 그리고 **단축키로 닫을 때의** 확인 대화상자는 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다(설정·명령 팔레트·테마 메뉴에서 닫을 때의 확인창은 테마가 그림). 퀘스트 배너는 별도 창으로 띄웁니다.
+- Herdr 애니메이션은 위치·투명도를 오가는 것만 되므로, 보석 비는 배너가 떠 있는 동안 타이머로 움직입니다.
 - 파티 서랍과 기본 우클릭 메뉴의 바깥 틀(둥근 모서리, 그림자)은 Herdr가 그립니다.
 - 소지품(Files) 패널은 Herdr 기본 모드를 고쳐 검색을 붙였고, 변경(Changes) 패널은 기본 모드를 그대로 씁니다. 미리보기는 특정 줄로 이동하는 기능이 Herdr 편집기에 없어서 줄 번호만 머리에 표시합니다.
 - 패널을 열면 오른쪽 파티 서랍이 패널 위에 겹칩니다.
@@ -116,5 +126,5 @@ herdr-app do layout.switch '{"name":"pixel-quest"}'
 ## 라이선스
 
 - 이 저장소의 레이아웃, 테마, 도트 에셋, 효과음, 생성기, 모드 코드: MIT — `LICENSE` 참고. Copyright (c) 2026 cubha
-- `mods/pixel-quest/roles/` 중 `spaces` `agents` `tabs` `pane` `chrome` `status` `menu` `newmenu` `files`는 Herdr 0.1.14 기본 모드(Apache License 2.0)를 고친 파일입니다. 각 파일 머리에 변경 사실을 적었습니다. 원문: `mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt`, `NOTICE`
+- `mods/pixel-quest/roles/` 중 `spaces` `agents` `tabs` `pane` `chrome` `status` `menu` `newmenu` `files` `changes`는 Herdr 0.1.14 기본 모드, `palette`는 Herdr의 명령 팔레트(Apache License 2.0)를 고친 파일입니다. 각 파일 머리에 변경 사실을 적었습니다. 원문: `mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt`, `NOTICE`
 - Galmuri 폰트: © Lee Minseo, SIL Open Font License 1.1 — `mods/pixel-quest/fonts/`

@@ -1,10 +1,11 @@
 ﻿# Pixel Quest for Herdr - offline installer (no git needed)
 # Usage: right-click > Run with PowerShell, or:
-#   powershell -ExecutionPolicy Bypass -File install.ps1 [-Sounds] [-Light]
+#   powershell -ExecutionPolicy Bypass -File install.ps1 [-Sounds] [-Light] [-Palette]
 # Copies the dark and light layouts and themes, and replaces mods\pixel-quest whole.
 # -Sounds: 8-bit alert sounds in settings.json (backup kept). -Light: switch to the light look.
+# -Palette: Ctrl+Shift+P opens the theme's palette (keys.json, backup kept; undo: set it back to app.palette).
 # Copyright (c) 2026 cubha. MIT License.
-param([switch]$Sounds, [switch]$Light)
+param([switch]$Sounds, [switch]$Light, [switch]$Palette)
 $ErrorActionPreference = 'Stop'
 $src  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $home_ = if ($env:HERDR_APP_HOME) { $env:HERDR_APP_HOME } else { Join-Path $env:USERPROFILE '.config\herdr-app' }
@@ -26,6 +27,18 @@ if ($Sounds) {
   if ((Test-Path $sp) -and -not (Test-Path "$sp.bak")) { Copy-Item $sp "$sp.bak" }
   [IO.File]::WriteAllText($sp, ($s | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding $false))
   Write-Host "8-bit sounds set in settings.json (backup: settings.json.bak)"
+}
+if ($Palette) {
+  $kp = Join-Path $home_ 'keys.json'
+  if (Test-Path $kp) {
+    $text = Get-Content $kp -Raw -Encoding UTF8
+    if ($text -match '"ctrl-shift-p"\s*:\s*"app\.palette"') {
+      if (-not (Test-Path "$kp.bak")) { Copy-Item $kp "$kp.bak" }
+      $text = $text -replace '"ctrl-shift-p"(\s*):(\s*)"app\.palette"', '"ctrl-shift-p"$1:$2"pixel-quest.palette"'
+      [IO.File]::WriteAllText($kp, $text, (New-Object Text.UTF8Encoding $false))
+      Write-Host 'Ctrl+Shift+P now opens the theme palette (backup: keys.json.bak)'
+    } else { Write-Host 'keys.json: ctrl-shift-p is not app.palette; left as is' }
+  } else { Write-Host 'keys.json not found yet: start Herdr once, then run with -Palette again' }
 }
 $exe = Join-Path $env:LOCALAPPDATA 'Programs\herdr-app\herdr-app.exe'
 if (Test-Path $exe) {

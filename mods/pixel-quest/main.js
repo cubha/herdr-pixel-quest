@@ -10,6 +10,12 @@
 //   sill     the stone ledge under the work area
 //   usage    the Claude usage card (opens from the status bar gauges)
 //   files    the file panel with name / content search
+//   picker   the portrait picker (opens from an agent's portrait)
+//   journal  the adventure log: levels, unlocks, looks, recent quests
+//   changes  the git changes panel (beside 소지품)
+//   settings the theme's settings window (the sidebar's 설정 button)
+//   palette  the command palette (keys.json "pixel-quest.palette")
+//   confirm  "close it?" for closes started from the theme's own menus
 //
 // Roles adapted from Herdr's shipped mods are marked in their files
 // (Apache-2.0, Herdr 0.1.14). Copyright (c) 2026 cubha. MIT License.
@@ -29,8 +35,14 @@ import Party from "./roles/party.js";
 import Sill from "./roles/sill.js";
 import Usage from "./roles/usage.js";
 import Files from "./roles/files.js";
+import Picker from "./roles/picker.js";
+import Journal from "./roles/journal.js";
+import Changes from "./roles/changes.js";
+import Settings from "./roles/settings.js";
+import Palette from "./roles/palette.js";
+import Confirm from "./roles/confirm.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm };
 
 export default class PixelQuest extends View {
   init(p, cx) {

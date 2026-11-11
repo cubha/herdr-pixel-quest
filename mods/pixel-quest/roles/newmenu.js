@@ -2,7 +2,7 @@
 // (Apache-2.0, Herdr 0.1.14): a thin gold frame, Korean labels, pixel text.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root, thin } from "../kit.js";
+import { P, unit, root, thin, texture, FLOOR, web, bandHead } from "../kit.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
 
@@ -55,7 +55,12 @@ export default class NewMenu {
     const installed = this.agents.filter(a => a.installed);
     const choices = [...installed, ...this.agents.filter(a => !a.installed).slice(0, 2)];
     const u = unit();
-    return root(u, thin(u, "gold", v_flex().min_h(0).w_full().h(Math.min(491, 179 + Math.max(1, choices.length) * 31) - 8).bg(P.fill).p(5).text_size(12)
+    // Stone floor, a brick band on top, a cobweb in the corner (the band adds 22px).
+    return root(u, thin(u, "gold", v_flex().relative().overflow_hidden().w_full().bg(P.fill)
+      .child(texture(u, ...FLOOR))
+      .child(bandHead(u, "새로 만들기"))
+      .child(web(u, "br"))
+      .child(v_flex().min_h(0).w_full().h(Math.min(491, 179 + Math.max(1, choices.length) * 31) - 8).p(5).text_size(12)
       .id("new-menu").track_focus(this.handle)
       .on_key_down((e) => {
         if (e.modifiers.control || e.modifiers.platform || e.modifiers.alt) return;
@@ -73,6 +78,6 @@ export default class NewMenu {
       .child(div().h(1).mx(4).my(5).bg(t.border))
       .child(this.row("space", div().w(14).child("+"), "새 스페이스", () => run("space.new"), shortcut("space.new")))
       .child(this.row("worktree", svg("mods/pixel-quest/icons/branch.svg").size(14), "새 워크트리…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
-      .child(this.row("worktree-open", svg("mods/pixel-quest/icons/branch.svg").size(14), "워크트리 열기…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)))));
+      .child(this.row("worktree-open", svg("mods/pixel-quest/icons/branch.svg").size(14), "워크트리 열기…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space))))));
   }
 }

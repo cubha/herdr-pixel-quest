@@ -7,7 +7,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, nextFace } from "../kit.js";
+import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, battle } from "../kit.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
 function find(node, id) {
@@ -373,13 +373,13 @@ export default class Agents {
             this.folded.has(a.address) ? this.folded.delete(a.address) : this.folded.add(a.address);
             cx.notify();
           }))
-          .child(div().id(`face-${a.address}`).border(u(2)).border_color(P.ink).bg(P.b1).p(u(2)).cursor_pointer()
-            .hover((s) => s.border_color(P.g2))
-            .tooltip("초상 바꾸기")
+          .child(div().id(`face-${a.address}`).cursor_pointer()
+            .tooltip("초상 고르기")
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-            .on_click((_e, cx) => { cx.stop_propagation(); nextFace(faces, a.address); })
-            .child(agentFace(u, faces.get(a.address), a.program?.name ?? name, 24)))
+            .on_click((_e, cx) => { cx.stop_propagation(); openPicker(faces.get(a.address)); })
+            .child(portrait(u, agentFace(u, faces.get(a.address), a.program?.name ?? name, 24))))
           .child(div().absolute().top(u(-6)).right(u(-8)).child(this.status(t, a))))
+        .child(battle(u, a.status === "working"))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().min_w(0).gap(u(6)).items_center()
             .child(div().min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text).child(name))

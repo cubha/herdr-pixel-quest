@@ -9,7 +9,7 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, thin, cursor } from "../kit.js";
+import { P, unit, root, thin, cursor, texture, FLOOR, web, bandHead, closeSpace, closeTab } from "../kit.js";
 import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
@@ -126,7 +126,9 @@ export default class Menu {
     const it = items(props(), this.git)[i];
     if (!it) return;
     closeOverlay(props()?.overlay);
-    if (it[1] === "worktree") openOverlay({ mod: "worktree", kind: "dialog", ...(it[2].action === "open" ? { width: 560, height: 480 } : { width: 440, height: 260 }), props: it[2] });
+    if (it[1] === "space.close") closeSpace(spaces().find((s) => s.id === it[2].id));
+    else if (it[1] === "tab.close") closeTab(spaces().find((s) => s.tabs?.some((t) => t.id === it[2].id)), it[2].id);
+    else if (it[1] === "worktree") openOverlay({ mod: "worktree", kind: "dialog", ...(it[2].action === "open" ? { width: 560, height: 480 } : { width: 440, height: 260 }), props: it[2] });
     else run(it[1], it[2]);
   }
 
@@ -135,13 +137,13 @@ export default class Menu {
     const list = items(props(), this.git);
     const u = unit();
     const framed = props()?.frameless;
+    const kind = props()?.tab;
     const body = v_flex()
       .id("menu")
       .track_focus(this.handle)
       .w_full()
       .min_h(0)
       .p(5)
-      .bg(t.popover)
       .text_size(12)
       .on_key_down((e, cx) => {
         if (e.key === "down") this.at = (this.at + 1) % list.length;
@@ -174,6 +176,12 @@ export default class Menu {
             .child(div().font_family("Galmuri9").text_size(10).text_color(t.dim).child(shortcut(it[1], it[2])))),
         ),
       );
-    return root(u, framed ? thin(u, "gold", body.bg(P.fill)).size_full() : body);
+    // Stone floor under the items, a brick band on top, a cobweb in a corner.
+    const dungeon = v_flex().relative().overflow_hidden().w_full().bg(P.fill)
+      .child(texture(u, ...FLOOR))
+      .child(bandHead(u, kind === "space" ? "스페이스" : kind === "tab" ? "탭" : "칸"))
+      .child(body)
+      .child(web(u, "br"));
+    return root(u, framed ? thin(u, "gold", dungeon).size_full() : dungeon);
   }
 }

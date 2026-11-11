@@ -9,7 +9,7 @@
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { panes, props, run, home, agents } from "herdr";
-import { P, unit, root, pic, gem, button, small, face, faceMap, agentFace, nextFace } from "../kit.js";
+import { P, unit, root, pic, gem, button, small, face, faceMap, agentFace, openPicker, battle, portraitSmall } from "../kit.js";
 
 function folder(cwd) {
   if (!cwd) return "";
@@ -28,16 +28,17 @@ export default class Pane {
   }
 
   // An agent's portrait follows its space (the same one the agents list and the
-  // party show) and a click picks another; other programs keep one by name.
+  // party show) and a click opens the picker; other programs keep one by name.
   portrait(u, p, name) {
     const all = agents();
     const a = all.find((x) => x.pane === p.pane);
     if (!a) return face(u, p.program?.name ?? name, 24).w(u(24)).h(u(24));
     const faces = faceMap(all);
     return div().id(`pane-face-${p.pane}`).flex_none().cursor_pointer()
-      .tooltip("초상 바꾸기")
-      .on_click((_e, cx) => { cx.stop_propagation(); nextFace(faces, a.address); })
-      .child(agentFace(u, faces.get(a.address), name, 24).w(u(24)).h(u(24)));
+      .tooltip("초상 고르기")
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+      .on_click((_e, cx) => { cx.stop_propagation(); openPicker(faces.get(a.address)); })
+      .child(portraitSmall(u, agentFace(u, faces.get(a.address), name, 24)));
   }
 
   render() {
@@ -68,6 +69,7 @@ export default class Pane {
         .child(pic(u, "knob-gold", 16).absolute().top(u(5)).right(u(1))))
       .child(gem(u, st, `gem-${pane}`))
       .child(this.portrait(u, p, name))
+      .when(Boolean(agents().find((x) => x.pane === pane)), (el) => el.child(battle(u, st === "working")))
       .child(div().flex_none().truncate().max_w(u(260)).text_color(on ? P.gt : P.text).child(name))
       .child(div().flex_1().min_w(0).truncate().child(small(u, folder(p.cwd), P.dim)))
       .when(Boolean(LABEL[st]), (el) => el.child(small(u, LABEL[st], COLOR[st]).flex_none()))

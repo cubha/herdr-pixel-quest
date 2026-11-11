@@ -9,7 +9,8 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings, theme, shared, setShared } from "herdr";
+import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome } from "herdr";
+import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -103,6 +104,14 @@ export function texture(u, name, w, h) {
 /** The big stone floor behind a panel (480x1600 flagstones). */
 export const FLOOR = ["floor", 480, 1600];
 
+/** A brick-band header for menus and small windows: the strip texture behind a gold caption. */
+export function bandHead(u, title) {
+  return h_flex().flex_none().relative().overflow_hidden().h(u(20)).px(u(8)).items_center().border_b(u(2)).border_color(P.ink)
+    .child(texture(u, "strip", 2560, 48))
+    .child(div().relative().bg(P.chrome).border(u(2)).border_color(P.ink).px(u(6))
+      .child(div().font_family(SMALL).text_size(u(10)).line_height(`${u(12)}px`).text_color(P.gt).child(title)));
+}
+
 /** A cobweb for one inner corner of a box: corner is tl | tr | bl | br. */
 export function web(u, corner) {
   const v = corner[0] === "t" ? "top" : "bottom";
@@ -151,7 +160,8 @@ export function frame(u, kind, content, o = {}) {
     .pt(u(pad[0])).pb(u(pad[0])).pl(u(pad[1])).pr(u(pad[1]));
   // A stone floor (and a cobweb) under the content, cut to the window.
   if (o.floor || o.web) inner = inner.relative().overflow_hidden();
-  if (o.floor) inner = inner.child(texture(u, ...FLOOR));
+  // The floor is 480px wide: a second copy covers windows wider than that.
+  if (o.floor) inner = inner.child(texture(u, ...FLOOR)).child(pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1])));
   if (o.web) inner = inner.child(web(u, o.web));
   inner = inner.child(content);
   const body = div().flex().flex_col().flex_1().min_w(0).min_h(0).border(u(2)).border_color(P.ink)
@@ -217,24 +227,72 @@ export function crest(u, i) {
   return pic(u, `crest-${CRESTS[((i % 5) + 5) % 5]}`, 16);
 }
 
-/** The sixteen portraits (art-src/gen_faces.py): two silhouettes, eight colorways each. */
-export const FACES = [
-  "helm-gold", "hood-violet", "helm-steel", "hood-amber", "helm-jade", "hood-teal", "helm-crimson", "hood-navy",
-  "helm-azure", "hood-forest", "helm-rose", "hood-scarlet", "helm-bronze", "hood-plum", "helm-obsidian", "hood-ash",
-];
+// ---- portraits, frames, levels (the numbers live in progress.js) ----
+export { FACES } from "./progress.js";
 const hash = (s) => { let h = 0; for (const ch of String(s ?? "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+
+/** Quests so far, and the best level ever reached (unlocks follow this one). */
+export const quests = () => Number(shared("pq.quests")) || 0;
+/** Level, quests and the way to the next level (pq.floor: the old level kept on update day). */
+export const lvInfo = () => progressAt(quests(), shared("pq.floor"));
+export const best = () => Math.max(bestAfter(shared("pq.best"), quests()), lvInfo().lv);
+
+/** Opens the adventure log (levels, unlocks, looks, recent quests). */
+export function openJournal(tab = "map") {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 520, props: { role: "journal", tab } });
+}
+
+/** The theme's settings window and command palette (roles settings / palette). */
+export function openSettings() {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 560, height: 470, props: { role: "settings" } });
+}
+export function openPalette() {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
+}
+
+/** Closes a space, asking first in the theme's dialog (role confirm). */
+export function closeSpace(space) {
+  if (!space) return;
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 340, height: 150, props: {
+    role: "confirm", title: "스페이스를 닫을까요?", detail: `"${space.name}"의 탭과 터미널이 모두 끝납니다.`,
+    command: { name: "space.close", args: { id: space.id, confirmed: true } } } });
+}
+/** Closes a tab; its space's last tab closes the space, so that one asks first. */
+export function closeTab(space, tabId) {
+  if (space && space.tabs?.length === 1) {
+    openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 340, height: 150, props: {
+      role: "confirm", title: "마지막 탭을 닫을까요?", detail: `"${space.name}"의 마지막 탭이라 스페이스도 함께 닫힙니다.`,
+      command: { name: "tab.close", args: { id: tabId, confirmed: true } } } });
+  } else run("tab.close", { id: tabId });
+}
+
+/** The icon for an unlock (lists in the adventure log, the level-up banner). */
+export function rewardIcon(u, r) {
+  if (r.kind === "faces") return pic(u, `face-${r.shape}-${ROWS[r.shape][r.from]}`, 24);
+  if (r.kind === "frame") return r.key === "crown" ? pic(u, "pft-crown", 18, 22) : pic(u, `pft-${r.key}`, 18);
+  if (r.kind === "banner") return bannerIcon(u, r.key);
+  if (r.kind === "title") return pic(u, "ico-scroll", 16);
+  return pic(u, "knob-gold", 16);
+}
+export function bannerIcon(u, key) {
+  if (key === "flag") return pic(u, "pennant-s", 8, 16);
+  if (key === "torch") return pic(u, "sconce", 16);
+  if (key === "gems") return pic(u, "gem-done", 18);
+  if (key === "crown" || key === "legend") return pic(u, "crown-s", 22, 12);
+  return pic(u, "ico-chest-open", 16);
+}
 
 /** A portrait by any stable key (programs that aren't agents: shells, editors). */
 export function face(u, key, size = 24) {
-  return pic(u, `face-${FACES[hash(key) % FACES.length]}`, size);
+  return pic(u, `face-${BASE[hash(key) % BASE.length]}`, size);
 }
 
 // Agents get a portrait by where they work, not by program (they are mostly the
 // same program): the space's name, and the order within the space when it has
-// more than one. A click picks another one; the choice is kept in shared state
-// (persisted, and every copy of the mod re-renders when it changes).
-const PICKS = "pixel-quest.faces";
-function faceKeys(list) {
+// more than one. A click opens the picker (role "picker"); the choice is kept in
+// shared state (persisted, and every copy of the mod re-renders when it changes).
+export const PICKS = "pixel-quest.faces";
+export function faceKeys(list) {
   const seen = new Map(), keys = new Map();
   for (const a of list) {
     const base = a.space_name || a.space || a.address;
@@ -245,22 +303,25 @@ function faceKeys(list) {
   return keys;
 }
 
-/** address -> { key, name } for every agent: picks first, then a hash slot, distinct while
- *  there are portraits to go round. Call once per render with agents(). */
+/** address -> { key, name, picked } for every agent: picks first, then a hash slot,
+ *  distinct while there are portraits to go round. Automatic ones come from the
+ *  sixteen first (so nobody's changes when a level opens more), then opened ones. */
 export function faceMap(list) {
   const keys = faceKeys(list);
   const picks = shared(PICKS) ?? {};
+  const lv = best();
+  const pool = autoPool(lv);
   const out = new Map(), used = new Set();
   for (const [addr, key] of keys) {
     const p = picks[key];
-    if (FACES.includes(p)) { out.set(addr, { key, name: p }); used.add(p); }
+    if (FACES.includes(p) && faceLevel(p) <= lv) { out.set(addr, { key, name: p, picked: true }); used.add(p); }
   }
   for (const [addr, key] of [...keys].sort((x, y) => (x[1] < y[1] ? -1 : 1))) {
     if (out.has(addr)) continue;
-    let i = hash(key) % FACES.length;
-    for (let k = 0; k < FACES.length && used.has(FACES[i]); k++) i = (i + 1) % FACES.length;
-    out.set(addr, { key, name: FACES[i] });
-    used.add(FACES[i]);
+    let i = hash(key) % BASE.length;
+    for (let k = 0; k < pool.length && used.has(pool[i]); k++) i = (i + 1) % pool.length;
+    out.set(addr, { key, name: pool[i], picked: false });
+    used.add(pool[i]);
   }
   return out;
 }
@@ -270,17 +331,40 @@ export function agentFace(u, entry, fallback, size = 24) {
   return entry ? pic(u, `face-${entry.name}`, size) : face(u, fallback, size);
 }
 
-/** Moves an agent to the next portrait no other agent shows. */
-export function nextFace(map, address) {
-  const me = map.get(address);
-  if (!me) return;
-  const taken = new Set([...map.values()].filter((e) => e !== me).map((e) => e.name));
-  let i = FACES.indexOf(me.name);
-  for (let k = 0; k < FACES.length; k++) {
-    i = (i + 1) % FACES.length;
-    if (!taken.has(FACES[i]) || k === FACES.length - 1) break;
-  }
-  setShared(PICKS, { ...(shared(PICKS) ?? {}), [me.key]: FACES[i] });
+/** The party's frame (pq.frame), or wood while the chosen one is locked. */
+export const frameKey = () => pick("frame", shared("pq.frame"), best());
+
+/** A portrait in the party's frame: 36x36 (the crown frame rises 8px above). */
+export function portrait(u, faceEl) {
+  const f = frameKey();
+  return div().relative().flex_none().w(u(36)).h(u(36))
+    .child(f === "crown" ? pic(u, "pf-crown", 36, 44).absolute().bottom(0).left(0) : pic(u, `pf-${f}`, 36).absolute().top(0).left(0))
+    .when(f === "rune", (el) => el.child(pic(u, "pf-rune-glow", 36).absolute().top(0).left(0).loop("opacity", { from: 0.2, to: 1, period: 1400 })))
+    .child(faceEl.absolute().top(u(6)).left(u(6)));
+}
+
+/** The same frame, small (30x30), for the 32px pane header. */
+export function portraitSmall(u, faceEl) {
+  return div().relative().flex_none().w(u(30)).h(u(30))
+    .child(pic(u, `pfs-${frameKey()}`, 30).absolute().top(0).left(0))
+    .child(faceEl.absolute().top(u(3)).left(u(3)));
+}
+
+/** Opens the portrait picker for an agent (a popup at the pointer). */
+export function openPicker(entry) {
+  if (!entry) return;
+  openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 392, height: 352, props: { role: "picker", key: entry.key, face: entry.name } });
+}
+
+/** The working-agent battle: two swords meet and spark. A fixed 24px slot (empty
+ *  when not working, so names never move). Off with shared pq.battle = false. */
+export function battle(u, working) {
+  const box = div().relative().flex_none().w(u(24)).h(u(24));
+  if (!working || shared("pq.battle") === false) return box;
+  return box
+    .child(pic(u, "sword-l", 16).absolute().top(u(4)).loop("left", { from: 0, to: u(4), period: 560 }))
+    .child(pic(u, "sword-r", 16).absolute().top(u(4)).loop("left", { from: u(8), to: u(4), period: 560 }))
+    .child(pic(u, "spark", 16).absolute().top(0).left(u(4)).loop("opacity", { from: 0, to: 1, period: 560, easing: "ease-in" }));
 }
 
 /** A bronze name plaque for a panel: ornaments around gold text, an optional control. */
@@ -310,6 +394,19 @@ export function selected(u, el, on) {
 
 // ---- Claude usage (tools/pq-usage.js saves it in the app folder) ----
 export const USAGE_FILE = "pixel-quest-usage.json";
+/** Calls load at once, whenever the usage file changes (folder watch), and every
+ *  `every` ms as a fallback (the countdowns move on too). */
+export function watchUsage(cx, load, every = 15000) {
+  load(cx);
+  cx.timer.every(every, load);
+  cx.spawn(async (cx) => {
+    for (;;) {
+      let batch;
+      try { batch = await watchFolder(appHome()); } catch { return; }
+      if (batch.some((p) => p.replace(/\\/g, "/").endsWith(USAGE_FILE) || p.replace(/\\/g, "/").replace(/\/$/, "") === appHome().replace(/\\/g, "/"))) load(cx);
+    }
+  });
+}
 /** One window's reading: { pct, over, left (s to reset), at ("11/11 13:30"), tone }. */
 export function usageWindow(w) {
   const now = Date.now() / 1000;

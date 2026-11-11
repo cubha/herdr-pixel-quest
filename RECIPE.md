@@ -14,8 +14,8 @@ are Korean; every picture is original pixel art.
   (a low-contrast dungeon wall, `#0b0e1c`–`#1a2142`, `fit: cover`), divider 2px `#05060c`.
   Fonts: Galmuri11 for mods (12px; captions Galmuri9 10px), GalmuriMono11 12px for terminals.
 - **Sidebar, left, 268px**:
-  - Brand bar, 42px (as tall as the tab bar, so the panels' gold tops line up with the terminal's): a shield emblem (24×28), the "HERDR" wordmark (76×22), a `Lv.n` chip
-    (bronze outline, gold text), then pixel buttons for search and folding the sidebar.
+  - Brand bar, 42px (as tall as the tab bar, so the panels' gold tops line up with the terminal's): a shield emblem (24×28), the "HERDR" wordmark (76×22), a `Lv.n 칭호` chip
+    (bronze outline, gold text; gold and pulsing from Lv.19; a click opens the adventure log), then pixel buttons for search and folding the sidebar.
   - **스페이스** (spaces) panel: a gold frame (ink 2px, light `#f6d870`/dark `#9a5a26` bevel 2px,
     mid `#d49a3a` 2px, ink 2px, fill `#121731`) with 16×16 ruby knobs on its corners, then a bronze
     plaque (`#5a3418`, gold text `#f6d870`, small spear ornaments) and a `+` pixel button. Machine
@@ -23,9 +23,12 @@ are Korean; every picture is original pixel art.
     space's stored color), the name, and the branch on the right in `#7a7090`. The selected row has a
     2px bronze `#8a5a2a` outline on `#1a2142` and a pointing-hand cursor that nudges 2px left and right.
   - **파티 · n** (party) panel: the same frame. Group headers are "입력 필요 / 완료 / 작업 중 / 대기".
-    Each agent row is a 44px card: a 24×24 portrait (one of sixteen: helm and hood in eight
-    colorways each, chosen by the agent's space name, distinct while there are faces to go round;
-    a click picks the next free one, kept in shared state `pixel-quest.faces`) in a brown box, the status gem on its corner, the name (gold when focused)
+    Each agent row is a 44px card: a 24×24 portrait (one of 48: helm, hood, wizard, horned skull,
+    king and slime in eight colorways each; helm and hood from the start, the rest by level; chosen
+    by the agent's space name, distinct while there are faces to go round) inside the party's 36×36
+    frame (wood, bronze, silver, gold, rune with a pulsing glow, crown rising 8px above), the status
+    gem on its corner, then a 24px battle slot (working: two 16px swords slide together 4px and back
+    every 0.56s while a spark fades in; empty otherwise, so names never move), the name (gold when focused)
     with machine and age, and a status line under it (or a moving blue bar while working).
     A blocked agent's card has a red outline.
   - Footer, 32px: "설정" (settings) and "머신 추가" (add machine) as bronze pixel buttons, on the
@@ -36,13 +39,14 @@ are Korean; every picture is original pixel art.
   with a dithered glow (96×60, opacity loop 0.7–1, 1.6s) hangs in the middle. On the right: `+`,
   "소지품" (Files, chest icon), "변경" (Changes, scroll icon), and the window buttons (close is red).
 - **Panes**: 8px gaps, no radius, border 2px ink, focus 2px `#d49a3a`. Header 32px: a status gem,
-  a portrait, the name, the folder (Galmuri9, dim) and a status word. The focused pane's header is
+  a portrait (click: the picker), the battle slot, the name, the folder (Galmuri9, dim) and a status word. The focused pane's header is
   `#1a2142` with gold knobs at both ends. Hovering shows four 16px item-icon buttons: split right,
   split down, zoom and close.
 - **Status bar, 28px**: the machine, "파티" and one 14px cell per agent in its status color,
   "! n 입력 필요" pulsing when someone is blocked, the branch, two usage gauges ("5H", "7D": ten 5px
   cells each in a bronze box, the percent and the time to reset; blue under 50%, orange to 79%, red
-  from 80% with the last cell pulsing), "퀘스트 n", and the palette key in a bronze chip.
+  from 80% with the last cell pulsing), "퀘스트 n" with ten cells filling toward the next level (click: the adventure log), and the palette
+  key in a bronze chip (click: the theme palette).
   Clicking the gauges opens the usage card: a 340×296 frameless popup with a gold frame and stone
   floor, a "사용량" plaque, then for 5시간 and 주간 a big percent, a 20-cell bar and "초기화까지 3시간 18분 · 11/11 13:30",
   and the last update time with a 닫기 button.
@@ -50,12 +54,27 @@ are Korean; every picture is original pixel art.
   `files`: a bronze header ("소지품", the folder), a search box (search icon, input on a sunk well,
   clear ×) and a 이름 / 내용 switch, then the tree with chevrons, folder/file icons and git marks.
   Typing lists name matches (with the folder dimmed beside) or content hits (file, `:line`, the line).
-  A file opens as a read-only preview with line numbers. Changes is Herdr's own mod.
+  A file opens as a read-only preview with line numbers. Changes is role `changes` (Herdr's
+  changes mod restyled): a bronze "변경" header with the count and +/−, the changed files on the
+  stone floor, the diff, and a commit message well with a 커밋 button. Both panels have the stone floor.
 - **Light look** (`pixel-quest-light`): blue-grey slate wall and tablet, panels `#e4e8f0`, ink
   `#1f2638`, text `#1c2233`, gold text `#7a4a0c`; `kit.js` switches palette and the `-slate` textures
   when the shown theme's background is light.
 - **Party drawer**: a floating block on the right edge of the work area, peeking 58px:
-  gems and portraits on the edge side; hover slides out names and status words.
+  gems and framed portraits on the edge side over the stone floor; hover slides out names and status words.
+- **Portrait picker** (click a portrait): a 392×352 popup, gold frame, stone floor, "초상 고르기"
+  plaque, six rows of eight 30px tiles. The current one is raised with a gold border; one another
+  agent shows is at 40% with a gold dot; a locked one is a black silhouette with a key. The line
+  at the bottom names the hovered one ("청록 두건 · web-shop이(가) 쓰는 중", "Lv.9에 해금 · 34 퀘스트 남음");
+  "자동" drops the pick, "닫기" closes. Picks live in `pixel-quest.faces`.
+- **Adventure log** (role `journal`, 380×520 dialog): "모험 일지" plaque, `Lv.n · 칭호`, quests and
+  how many to the next level, a 20-cell bar, the next reward, then tabs 해금표 (Lv.1–20 with icons,
+  locked ones dim with "n 남음"), 꾸미기 (frame and banner slots; locked: dim art, key, "Lv.n") and
+  최근 퀘스트 (`pq.log`, newest 30: time and space).
+- **Settings** (sidebar 설정, role `settings`, 560×470 dialog) and **palette** (`pixel-quest.palette`,
+  role `palette`, 520×400 dialog): gold frame, stone floor, brick band; see the README for what they hold.
+- **Confirm** (role `confirm`, 340×150): closing a space, or a space's last tab, from the theme's
+  menus or tab ×: a brick band "확인", the question, the detail, 취소 and a red 닫기 (Enter/Esc).
 
 ## How it behaves
 
@@ -65,13 +84,20 @@ are Korean; every picture is original pixel art.
 - Pixel buttons: bronze bevel; while pressed the bevel flips and the face moves 2px down-right.
 - When an agent changes to **done** (Herdr's done: it finished while the person wasn't looking; seen while the layout runs), the status bar opens the
   quest banner: a 360×112 frameless window, gold frame, "퀘스트 완료!", the agent's space, "보상: 경험치 +1 · 누적
-  퀘스트 n", four twinkling crystals. It closes after 4.5s; clicking it focuses that agent's pane.
-  The quest count is shared state `pq.quests`; the brand's level is `1 + floor(quests / 5)`.
+  퀘스트 n" and the chosen decoration: 기본 (four twinkling crystals), 깃발 (four swaying pennants and
+  crystals), 횃불 (a torch with a pulsing glow at each end), 보석 비 (gems falling, moved by a 50ms timer
+  since loops go there and back), 왕관 (a crown on the top edge and a pulsing pale border), 전설 (torches,
+  gems and crown, "전설의 퀘스트 완료!"). It closes after 4.5s; clicking it focuses that agent's pane.
+  The quest count is shared state `pq.quests`, the log `pq.log`. Levels (`progress.js`): from Lv.n the
+  next takes `5 + floor((n-1)^2/4)` quests (Lv.10 at 95, Lv.20 at 620). Unlocks follow the best level
+  `pq.best`; on update day the old level (`1 + floor(quests/5)`) is kept as `pq.floor` so nobody drops.
+  A new level opens the level-up banner instead (6s): "레벨 업!", "Lv.n · 칭호", "새로 얻음:" with icons.
 - `pixel-quest.quest` shows the banner once without counting; `pixel-quest.quest_reset` sets the count to 0.
 - Space rows: click selects, drag reorders, right-click opens the menu. Agent rows: click focuses the pane;
   hover shows a pin button. Tabs: click selects, double-click renames, drag moves, right-click opens the menu, scroll switches.
-- Menus opened from the spaces list and tab bar are frameless popups with a thin gold frame; the
-  chosen item shows the cursor. Herdr's item names are shown in Korean.
+- Menus opened from the spaces list and tab bar are frameless popups with a thin gold frame; every
+  menu (the terminal's too) has the stone floor, a 20px brick-band header ("스페이스", "탭", "칸",
+  "새로 만들기") and a cobweb; the chosen item shows the cursor. Herdr's item names are shown in Korean.
 - Narrower than 160px the sidebar becomes a rail: crests with a corner gem for spaces that need
   you, agent numbers with gems, icon-only footer buttons.
 

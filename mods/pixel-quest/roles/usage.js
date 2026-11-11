@@ -6,7 +6,7 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { readTextFile, appHome, closeOverlay, props } from "herdr";
-import { P, unit, root, frame, plaque, small, cells, usageWindow, span, USAGE_FILE, button } from "../kit.js";
+import { P, unit, root, frame, plaque, small, cells, usageWindow, span, USAGE_FILE, button, watchUsage } from "../kit.js";
 
 export default class Usage {
   init(_p, cx) {
@@ -16,8 +16,7 @@ export default class Usage {
       catch { this.usage = this.usage ?? null; }
       cx.notify();
     });
-    load(cx);
-    cx.timer.every(10000, load);
+    watchUsage(cx, load, 10000);
   }
 
   row(u, title, sub, w) {

@@ -3,7 +3,7 @@
 // "소지품" (Files) and "변경" (Changes) as bronze buttons, pixel window buttons.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture } from "../kit.js";
+import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture, closeTab } from "../kit.js";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
@@ -72,7 +72,7 @@ export default class Tabs {
             .child(div().max_w(u(170)).truncate().child(c.zoomed ? `${name} ◆` : name))
             .when(c.status && c.status !== "idle", el => el.child(gem(u, c.status, `tab-gem-${c.id}`)))
             .when(on, el => el.child(div().id(`close-${c.id}`).flex_none().text_color(P.g2).hover(s => s.text_color(P.g4)).on_mouse_down("left", stop)
-              .on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(ico("mods/pixel-quest/icons/close.svg", 10, P.g2))))))
+              .on_click((_e, cx) => { cx.stop_propagation(); closeTab(space, c.id); }).child(ico("mods/pixel-quest/icons/close.svg", 10, P.g2))))))
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
         .on_mouse_up("left", () => {
           const from = this.pressed; this.pressed = null;
@@ -119,7 +119,7 @@ export default class Tabs {
           .child(pic(u, "torch-glow", 96, 60).absolute().top(0).left(u(68)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
           .child(pic(u, "torch", 18, 38).absolute().top(u(12)).left(u(107)))))
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(u(4)).overflow_x_scrollbar().children(shown.map(item)))
-      .child(button("tab-new", div().text_color(P.gt).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 512, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
+      .child(button("tab-new", div().text_color(P.gt).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 534, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "소지품", "ico-chest")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "변경", "ico-scroll")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? winIcon("win-min") : "−", () => run("window.minimize")))

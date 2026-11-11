@@ -7,7 +7,7 @@
 import { div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, InputState, Input } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, theme, settings, window } from "herdr";
-import { P, unit, root, small, button, frame } from "../kit.js";
+import { P, unit, root, small, button, frame, texture, FLOOR } from "../kit.js";
 
 const ICON = (n) => `mods/pixel-quest/icons/${n}.svg`;
 const MAX_FILES = 20000, MAX_HITS = 300, SHOW = 200;
@@ -333,7 +333,9 @@ export default class Files {
       : list.children(this.rows("", 0, [], u))
         .when(Boolean(this.error) || !this.entries.get("")?.length, (el) => el.child(small(u, this.error || (this.loading ? "파일을 읽는 중…" : this.root ? "파일 없음" : "폴더 없음")).p(u(8))))
         .when(this.limited, (el) => el.child(small(u, "폴더당 500개, 전체 5,000개까지만 보여 줍니다").p(u(8))));
-    return root(u, v_flex().id("files").size_full().min_h(0).overflow_hidden().bg(P.fill).border(u(2)).border_color(P.ink)
+    // Stone floor under the panel (the header and search box have their own fill).
+    return root(u, v_flex().id("files").relative().size_full().min_h(0).overflow_hidden().bg(P.fill).border(u(2)).border_color(P.ink)
+      .child(texture(u, ...FLOOR))
       .child(head)
       .when(!this.file, (el) => el.child(searchBox).child(tree))
       .when(Boolean(this.file), (el) => el.child(this.code ? Editor.new(this.code).flex_1().min_h(0) : small(u, this.fileError || "파일을 여는 중…").p(u(12)))));
