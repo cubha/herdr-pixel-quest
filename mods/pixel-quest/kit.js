@@ -246,6 +246,11 @@ export function openJournal(tab = "map") {
 export function openSettings() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 560, height: 470, props: { role: "settings" } });
 }
+/** The theme's "찾기" (go to a tab, space or agent), in place of Herdr's picker. */
+export function openGoto() {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 420, props: { role: "goto" } });
+}
+
 export function openPalette() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
 }
@@ -356,15 +361,33 @@ export function openPicker(entry) {
   openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 392, height: 352, props: { role: "picker", key: entry.key, face: entry.name } });
 }
 
-/** The working-agent battle: two swords meet and spark. A fixed 24px slot (empty
- *  when not working, so names never move). Off with shared pq.battle = false. */
-export function battle(u, working) {
+/** The party slot beside a portrait, 24px in every row so names line up, its art
+ *  by status: working = two swords meet and spark, done = a reward chest opens and
+ *  shuts with a glint, blocked = a "!" bubble bobs, idle = a campfire flickers with
+ *  rising embers. Herdr's loops go there and back: the second frame fades in and
+ *  out over the first, which stays solid (two half-faded frames would look washed out).
+ *  Empty with shared pq.battle = false (the party effects switch). */
+export function battle(u, status) {
   const box = div().relative().flex_none().w(u(24)).h(u(24));
-  if (!working || shared("pq.battle") === false) return box;
-  return box
+  if (shared("pq.battle") === false) return box;
+  const fade = (art, from, to, period, easing) => pic(u, art, 24).absolute().top(0).left(0).loop("opacity", { from, to, period, easing });
+  if (status === "working") return box
     .child(pic(u, "sword-l", 16).absolute().top(u(4)).loop("left", { from: 0, to: u(4), period: 560 }))
     .child(pic(u, "sword-r", 16).absolute().top(u(4)).loop("left", { from: u(8), to: u(4), period: 560 }))
     .child(pic(u, "spark", 16).absolute().top(0).left(u(4)).loop("opacity", { from: 0, to: 1, period: 560, easing: "ease-in" }));
+  if (status === "done") return box
+    .child(pic(u, "chest-shut", 24).absolute().top(0).left(0))
+    .child(fade("chest-open", 0, 1, 1200, "ease-in-out"))
+    .child(pic(u, "spark", 16).absolute().top(u(-6)).left(u(12)).loop("opacity", { from: 0, to: 1, period: 600, easing: "ease-in" }));
+  if (status === "blocked") return box
+    .child(pic(u, "call-bubble", 24).absolute().left(0).loop("top", { from: 0, to: u(4), period: 380, easing: "ease-in-out" }));
+  // An ember: the holder rises, the dot inside fades.
+  const ember = (left, period) => div().absolute().left(u(left)).w(u(2)).h(u(2)).loop("top", { from: u(14), to: 0, period })
+    .child(pic(u, "ember", 2).loop("opacity", { from: 1, to: 0, period }));
+  return box
+    .child(pic(u, "camp-a", 24).absolute().top(0).left(0))
+    .child(fade("camp-b", 0, 1, 450))
+    .child(ember(6, 1100)).child(ember(17, 1400));
 }
 
 /** A bronze name plaque for a panel: ornaments around gold text, an optional control. */

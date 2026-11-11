@@ -3,7 +3,7 @@
 //   모양        the dark / light layout (layout.switch), screen zoom
 //               (app.zoom_in/out) and the terminal font size (settings.json)
 //   알림        alert sounds on/off, 8-bit or Herdr's own, try each
-//   퀘스트·파티  the quest banner, the quest count reset, the battle effect,
+//   퀘스트·파티  the quest banner, the quest count reset, the party effects,
 //               the usage gauges, portraits back to automatic
 // Herdr's own settings (machines, updates, keys) open from the bottom button.
 // Resets ask twice: the first press only arms the button.
@@ -152,7 +152,7 @@ export default class Settings {
       .child(this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너는 남습니다",
         this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; })))
       .child(small(u, "파티", P.gt2))
-      .child(this.row(u, "작업 중 전투 연출", "초상 옆 칼날 부딪힘", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))))
+      .child(this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))))
       .child(this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges")))))
       .child(this.row(u, "초상 자동 배정으로 되돌리기", `직접 고른 초상 ${picks}개`,
         this.twice(u, "f-reset", "되돌리기", () => { setShared(PICKS, {}); this.note = "초상을 모두 자동 배정으로 되돌렸습니다"; })));

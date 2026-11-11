@@ -3,7 +3,8 @@
 #   powershell -ExecutionPolicy Bypass -File install.ps1 [-Sounds] [-Light] [-Palette]
 # Copies the dark and light layouts and themes, and replaces mods\pixel-quest whole.
 # -Sounds: 8-bit alert sounds in settings.json (backup kept). -Light: switch to the light look.
-# -Palette: Ctrl+Shift+P opens the theme's palette (keys.json, backup kept; undo: set it back to app.palette).
+# -Palette: Ctrl+Shift+P opens the theme's palette and Ctrl+Shift+K its go-to window
+#   (keys.json, backup kept; undo: set them back to app.palette / mod.open:picker).
 # Copyright (c) 2026 cubha. MIT License.
 param([switch]$Sounds, [switch]$Light, [switch]$Palette)
 $ErrorActionPreference = 'Stop'
@@ -32,12 +33,22 @@ if ($Palette) {
   $kp = Join-Path $home_ 'keys.json'
   if (Test-Path $kp) {
     $text = Get-Content $kp -Raw -Encoding UTF8
-    if ($text -match '"ctrl-shift-p"\s*:\s*"app\.palette"') {
+    $orig = $text
+    # Each key only when it still has Herdr's own action.
+    $swaps = @(
+      @('ctrl-shift-p', 'app\.palette', 'pixel-quest.palette', 'Ctrl+Shift+P: theme command palette'),
+      @('ctrl-shift-k', 'mod\.open:picker', 'pixel-quest.goto', 'Ctrl+Shift+K: theme go-to window')
+    )
+    foreach ($w in $swaps) {
+      $pat = '"' + $w[0] + '"(\s*):(\s*)"' + $w[1] + '"'
+      if ($text -match $pat) { $text = $text -replace $pat, ('"' + $w[0] + '"$1:$2"' + $w[2] + '"'); Write-Host $w[3] }
+      else { Write-Host ("keys.json: {0} is not Herdr's default; left as is" -f $w[0]) }
+    }
+    if ($text -ne $orig) {
       if (-not (Test-Path "$kp.bak")) { Copy-Item $kp "$kp.bak" }
-      $text = $text -replace '"ctrl-shift-p"(\s*):(\s*)"app\.palette"', '"ctrl-shift-p"$1:$2"pixel-quest.palette"'
       [IO.File]::WriteAllText($kp, $text, (New-Object Text.UTF8Encoding $false))
-      Write-Host 'Ctrl+Shift+P now opens the theme palette (backup: keys.json.bak)'
-    } else { Write-Host 'keys.json: ctrl-shift-p is not app.palette; left as is' }
+      Write-Host 'keys.json changed (backup: keys.json.bak)'
+    }
   } else { Write-Host 'keys.json not found yet: start Herdr once, then run with -Palette again' }
 }
 $exe = Join-Path $env:LOCALAPPDATA 'Programs\herdr-app\herdr-app.exe'

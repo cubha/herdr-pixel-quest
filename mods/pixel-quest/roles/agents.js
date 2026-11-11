@@ -7,7 +7,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, battle } from "../kit.js";
+import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, battle, thin, texture, FLOOR, web, bandHead } from "../kit.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
 function find(node, id) {
@@ -147,30 +147,38 @@ export default class Agents {
     return sawDone ? RANK.done : RANK[a.status] ?? 0;
   }
 
+  // The sort menu (popup from the panel's clock button), dressed like the theme's
+  // menus: thin gold frame, stone floor, a brick band head, the cursor on the
+  // sort in use.
   sortMenu(t) {
+    const u = unit();
     const on = sortOf().id;
-    return v_flex()
-      .w_full()
-      .p(5)
-      .bg(t.popover)
-      .text_size(12)
-      .child(div().px(8).pt(4).pb(6).font_family("Galmuri9").text_size(10).text_color(t.dim).child("Sort agents"))
+    const body = v_flex().w_full().p(u(5)).text_size(u(12))
       .children(SORTS.map((s) => h_flex()
         .id(`sort-${s.id}`)
-        .h(31)
-        .px(8)
-        .gap(9)
-        .rounded(0)
+        .relative()
+        .h(u(31))
+        .pl(u(18))
+        .pr(u(8))
+        .gap(u(9))
         .items_center()
-        .text_color(t.foreground)
-        .hover((el) => el.bg(t.hover))
+        .cursor_pointer()
+        .text_color(s.id === on ? P.gt : P.text)
+        .when(s.id === on, (el) => el.bg(P.raised).child(cursor(u).absolute().top(u(7)).left(0)))
+        .hover((el) => el.bg(P.hover))
         .on_click(() => {
           setShared("agents.sort", s.id);
           closeOverlay(props().overlay);
         })
-        .child(svg(`mods/pixel-quest/icons/${s.icon}.svg`).size(14).flex_none().text_color(t.muted))
+        .child(svg(`mods/pixel-quest/icons/${s.icon}.svg`).size(u(14)).flex_none().text_color(P.gt2))
         .child(div().flex_1().child(s.label))
-        .when(s.id === on, (el) => el.child(svg("mods/pixel-quest/icons/check.svg").size(14).flex_none().text_color(t.foreground)))));
+        .when(s.id === on, (el) => el.child(svg("mods/pixel-quest/icons/check.svg").size(u(14)).flex_none().text_color(P.gt)))));
+    const dungeon = v_flex().relative().overflow_hidden().size_full().bg(P.fill)
+      .child(texture(u, ...FLOOR))
+      .child(bandHead(u, "파티 정렬"))
+      .child(body)
+      .child(web(u, "br"));
+    return root(u, thin(u, "gold", dungeon).size_full());
   }
 
   peek(addr) {
@@ -379,7 +387,7 @@ export default class Agents {
             .on_click((_e, cx) => { cx.stop_propagation(); openPicker(faces.get(a.address)); })
             .child(portrait(u, agentFace(u, faces.get(a.address), a.program?.name ?? name, 24))))
           .child(div().absolute().top(u(-6)).right(u(-8)).child(this.status(t, a))))
-        .child(battle(u, a.status === "working"))
+        .child(battle(u, a.status))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().min_w(0).gap(u(6)).items_center()
             .child(div().min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text).child(name))
@@ -436,7 +444,7 @@ export default class Agents {
 
     const u = unit();
     const sortBtn = button(u, "ag-sort", svg(`mods/pixel-quest/icons/${sort.icon}.svg`).size(u(12)).text_color(P.gt),
-      () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 200, height: 140, props: { role: "agents", sortMenu: true } }),
+      () => openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 180, height: 100, props: { role: "agents", sortMenu: true } }),
       { pad: [1, 3], tooltip: `정렬: ${sort.label}` });
     const body = v_flex().id("ag-list").flex_1().min_h(0).gap(u(2)).overflow_y_scrollbar()
       .when(list.length === 0, (el) => el.child(div().p(u(6)).child(small(u, "아직 파티가 없습니다. 에이전트가 상태를 알리면 여기에 모입니다."))))

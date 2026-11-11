@@ -14,7 +14,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings } from "../kit.js";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto } from "../kit.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick } from "../progress.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
@@ -48,6 +48,7 @@ export default class Status {
         if (c === "quest") this.fanfare({ space_name: "시험 퀘스트", address: "demo" }, false);
         else if (c === "quest_reset") { setShared("pq.quests", 0); setShared("pq.floor", null); }
         else if (c === "palette") openPalette();
+        else if (c === "goto") openGoto();
         else if (c === "settings") openSettings();
         else if (c === "journal") openJournal();
         cx.notify();

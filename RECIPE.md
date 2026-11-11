@@ -27,8 +27,11 @@ are Korean; every picture is original pixel art.
     king and slime in eight colorways each; helm and hood from the start, the rest by level; chosen
     by the agent's space name, distinct while there are faces to go round) inside the party's 36×36
     frame (wood, bronze, silver, gold, rune with a pulsing glow, crown rising 8px above), the status
-    gem on its corner, then a 24px battle slot (working: two 16px swords slide together 4px and back
-    every 0.56s while a spark fades in; empty otherwise, so names never move), the name (gold when focused)
+    gem on its corner, then a 24px party slot in every row, so names line up (working: two 16px swords
+    slide together 4px and back every 0.56s while a spark fades in; idle: a campfire whose second flame
+    frame fades in over the first every 0.45s, two embers rising; done: the open chest fades in over the
+    shut one over 1.2s with a glint; blocked: a "!" bubble bobbing 4px; all off with shared pq.battle =
+    false, the slot stays), the name (gold when focused)
     with machine and age, and a status line under it (or a moving blue bar while working).
     A blocked agent's card has a red outline.
   - Footer, 32px: "설정" (settings) and "머신 추가" (add machine) as bronze pixel buttons, on the
@@ -39,7 +42,7 @@ are Korean; every picture is original pixel art.
   with a dithered glow (96×60, opacity loop 0.7–1, 1.6s) hangs in the middle. On the right: `+`,
   "소지품" (Files, chest icon), "변경" (Changes, scroll icon), and the window buttons (close is red).
 - **Panes**: 8px gaps, no radius, border 2px ink, focus 2px `#d49a3a`. Header 32px: a status gem,
-  a portrait (click: the picker), the battle slot, the name, the folder (Galmuri9, dim) and a status word. The focused pane's header is
+  a portrait (click: the picker), the party slot, the name, the folder (Galmuri9, dim) and a status word. The focused pane's header is
   `#1a2142` with gold knobs at both ends. Hovering shows four 16px item-icon buttons: split right,
   split down, zoom and close.
 - **Status bar, 28px**: the machine, "파티" and one 14px cell per agent in its status color,
@@ -73,6 +76,10 @@ are Korean; every picture is original pixel art.
   최근 퀘스트 (`pq.log`, newest 30: time and space).
 - **Settings** (sidebar 설정, role `settings`, 560×470 dialog) and **palette** (`pixel-quest.palette`,
   role `palette`, 520×400 dialog): gold frame, stone floor, brick band; see the README for what they hold.
+- **Go to** (sidebar search button, `pixel-quest.goto`, role `goto`, 520×420 dialog): Herdr's `picker`
+  rows and keys (Apache-2.0) in a gold frame on stone with a brick band "찾기", the space's crest over its
+  tabs, status gems, the cursor; Korean words. **Party sort** (the clock button): a frameless 180×100 popup
+  dressed like the theme menus (thin gold, stone, band "파티 정렬", cursor on the sort in use).
 - **Confirm** (role `confirm`, 340×150): closing a space, or a space's last tab, from the theme's
   menus or tab ×: a brick band "확인", the question, the detail, 취소 and a red 닫기 (Enter/Esc).
 

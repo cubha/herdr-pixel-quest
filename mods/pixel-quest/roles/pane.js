@@ -69,7 +69,7 @@ export default class Pane {
         .child(pic(u, "knob-gold", 16).absolute().top(u(5)).right(u(1))))
       .child(gem(u, st, `gem-${pane}`))
       .child(this.portrait(u, p, name))
-      .when(Boolean(agents().find((x) => x.pane === pane)), (el) => el.child(battle(u, st === "working")))
+      .when(Boolean(agents().find((x) => x.pane === pane)), (el) => el.child(battle(u, st)))
       .child(div().flex_none().truncate().max_w(u(260)).text_color(on ? P.gt : P.text).child(name))
       .child(div().flex_1().min_w(0).truncate().child(small(u, folder(p.cwd), P.dim)))
       .when(Boolean(LABEL[st]), (el) => el.child(small(u, LABEL[st], COLOR[st]).flex_none()))

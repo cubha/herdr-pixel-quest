@@ -3,7 +3,7 @@
 // pixel buttons, "설정" / "머신 추가" as bronze buttons.
 
 import { View, div, image, svg } from "gpui-kit";
-import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings } from "../kit.js";
+import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto } from "../kit.js";
 import { titleOf, goldBadge } from "../progress.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, run, props, window, shared, setShared, updates, layout, spaces, agents } from "herdr";
@@ -61,7 +61,7 @@ export default class WorkspaceChrome {
       .when(!collapsed, (el) => el.child(h_flex().flex_1().gap(u(8)).items_center()
         .child(pic(u, "wordmark", 76, 22))
         .child(this.badge(u))))
-      .when(!collapsed, (el) => el.child(button(u, "search", icon("search"), () => run("mod.open", { name: "picker" }), { pad: [3, 4], tooltip: "찾기" })))
+      .when(!collapsed, (el) => el.child(button(u, "search", icon("search"), () => openGoto(), { pad: [3, 4], tooltip: "찾기" })))
       .when(!(collapsed && window()?.platform === "macos"), (el) => el.child(button(u, "sidebar-toggle", icon("sidebar"), toggleSidebar, { pad: [3, 4], tooltip: "사이드바 접기" }))));
   }
 }

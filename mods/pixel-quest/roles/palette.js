@@ -9,7 +9,7 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
-import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal } from "../kit.js";
+import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto } from "../kit.js";
 
 const SHOWN = 8, ROW_H = 28, HEAD_H = 22;
 const GROUPS = ["최근", "탭", "칸", "스페이스", "레이아웃", "터미널", "에이전트", "창", "앱"];
@@ -19,7 +19,7 @@ const ICON = { 최근: "ico-scroll", 탭: "ico-chest", 칸: "ico-scroll", 스페
 const DIR = { left: "왼쪽", right: "오른쪽", up: "위쪽", down: "아래쪽" };
 const NAMED = [
   ["tab.new", {}, "탭", "새 탭", "new tab agent task"],
-  ["mod.open", { name: "picker" }, "탭", "스페이스나 탭으로 이동…", "go to switch jump find"],
+  ["pq:goto", {}, "탭", "찾기: 스페이스나 탭으로 이동…", "go to switch jump find picker search"],
   ["tab.rename", {}, "탭", "탭 이름 바꾸기", "rename tab"],
   ["tab.close", {}, "탭", "탭 닫기", "close tab kill"],
   ["tab.next", {}, "탭", "다음 탭", "next tab"],
@@ -99,7 +99,9 @@ function entries() {
 function keyOf(e, bound) {
   const v = Object.values(e.args)[0];
   const want = e.name.startsWith("pq:") ? `pixel-quest.${e.name.slice(3)}` : e.name.startsWith("pixel-quest.") ? e.name : v === undefined ? e.name : `${e.name}:${v}`;
-  const k = bound.find((b) => b.section === "global" && b.action === want);
+  // 찾기 is Herdr's picker key until it is rebound to the theme's.
+  const k = bound.find((b) => b.section === "global" && b.action === want)
+    ?? (e.name === "pq:goto" ? bound.find((b) => b.section === "global" && b.action === "mod.open:picker") : null);
   return k ? k.keys : null;
 }
 
@@ -150,6 +152,7 @@ export default class Palette {
     this.close();
     if (e.name === "pq:settings") openSettings();
     else if (e.name === "pq:journal") openJournal();
+    else if (e.name === "pq:goto") openGoto();
     else run(e.name, e.name === "layout.clone" ? { name: shared("layout") ?? "main" } : e.args);
   }
 

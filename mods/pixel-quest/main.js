@@ -15,6 +15,7 @@
 //   changes  the git changes panel (beside 소지품)
 //   settings the theme's settings window (the sidebar's 설정 button)
 //   palette  the command palette (keys.json "pixel-quest.palette")
+//   goto     "찾기": go to a tab, space or agent (the search button, "pixel-quest.goto")
 //   confirm  "close it?" for closes started from the theme's own menus
 //
 // Roles adapted from Herdr's shipped mods are marked in their files
@@ -40,9 +41,10 @@ import Journal from "./roles/journal.js";
 import Changes from "./roles/changes.js";
 import Settings from "./roles/settings.js";
 import Palette from "./roles/palette.js";
+import Goto from "./roles/goto.js";
 import Confirm from "./roles/confirm.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto };
 
 export default class PixelQuest extends View {
   init(p, cx) {
