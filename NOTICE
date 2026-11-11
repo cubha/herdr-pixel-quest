@@ -3,10 +3,12 @@ Copyright (c) 2026 cubha
 
 This project includes files modified from Herdr 0.1.14's shipped mods
 (spaces, agents, tabs, pane, workspace-chrome, workspace-status, menu,
-new-menu, files, changes, picker) and from Herdr's own command palette (frame/palette),
+new-menu, files, changes, picker, prompt, help, worktree, machine-add) and from Herdr's own
+command palette (frame/palette),
 licensed under the Apache License, Version 2.0. Those files are
-mods/pixel-quest/roles/{spaces,agents,tabs,pane,chrome,status,menu,newmenu,files,changes,goto,palette}.js
-(goto.js is the changed picker);
+mods/pixel-quest/roles/{spaces,agents,tabs,pane,chrome,status,menu,newmenu,files,changes,goto,palette,
+prompt,help,worktree,machine}.js and mods/pixel-quest/dialogs.js (goto.js is the changed picker,
+machine.js the changed machine-add; dialogs.js holds helpers from worktree);
 each one states at its top that it was changed. The layout
 layouts/pixel-quest.json was cloned from Herdr's `main` layout and changed.
 The full license text is in mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt.

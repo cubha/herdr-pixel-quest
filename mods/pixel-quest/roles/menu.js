@@ -5,11 +5,11 @@
 // Context menus (Herdr's items). Opened as a popup with
 // props { tab: "pane" | "tab" | "space" | "global", target }.
 // ↑/↓ move, Enter runs, Esc closes. An item is [label, command, args];
-// a command "worktree" opens the worktree dialog instead.
+// "worktree", renames and 단축키 open the theme's own windows instead.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, thin, cursor, texture, FLOOR, web, bandHead, closeSpace, closeTab } from "../kit.js";
+import { P, unit, root, thin, cursor, texture, FLOOR, web, bandHead, closeSpace, closeTab, openRename, openHelp, openWorktree } from "../kit.js";
 import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
@@ -98,11 +98,15 @@ function menuIcon(command) {
   return `mods/pixel-quest/icons/${name}.svg`;
 }
 
+const THEME_KEY = { "tab.rename": "pixel-quest.rename_tab", "space.rename": "pixel-quest.rename_space", "app.help": "pixel-quest.help" };
+
 // The key bound to a command, for the hint on the right.
 function shortcut(name, args) {
   // `pane.split:right` binds pane.split with { direction: "right" }.
   const value = args && Object.values(args)[0];
-  const k = keys().find((b) => b.section === "global" && (b.action === name || b.action === `${name}:${value}`));
+  // Renames and the key list open the theme's windows, whose keys may be rebound to them.
+  const theirs = THEME_KEY[name];
+  const k = keys().find((b) => b.section === "global" && (b.action === name || b.action === `${name}:${value}` || b.action === theirs));
   return k ? k.keys : "";
 }
 
@@ -128,7 +132,10 @@ export default class Menu {
     closeOverlay(props()?.overlay);
     if (it[1] === "space.close") closeSpace(spaces().find((s) => s.id === it[2].id));
     else if (it[1] === "tab.close") closeTab(spaces().find((s) => s.tabs?.some((t) => t.id === it[2].id)), it[2].id);
-    else if (it[1] === "worktree") openOverlay({ mod: "worktree", kind: "dialog", ...(it[2].action === "open" ? { width: 560, height: 480 } : { width: 440, height: 260 }), props: it[2] });
+    else if (it[1] === "worktree") openWorktree(it[2]);
+    else if (it[1] === "tab.rename") openRename("tab", it[2].id);
+    else if (it[1] === "space.rename") openRename("space", it[2].id);
+    else if (it[1] === "app.help") openHelp();
     else run(it[1], it[2]);
   }
 

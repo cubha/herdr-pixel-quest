@@ -27,6 +27,8 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 변경 패널 | 소지품처럼 테마가 그리는 git 변경 목록·비교·커밋(Herdr `changes` 개조), 석판 바닥 |
 | 던전 설정 | 사이드바 "설정" 버튼: 모양(다크·라이트 미리보기, 화면 크기, 터미널 글꼴 크기), 알림(알림음 켜기, 8비트/Herdr 기본, 들어보기), 퀘스트·파티(배너, 퀘스트 초기화, 파티 연출, 사용량 게이지, 초상 자동 배정 되돌리기). 머신·업데이트는 "Herdr 기본 설정 열기" |
 | 찾기 | 사이드바 돋보기 버튼(`Ctrl+Shift+K`는 `-Palette` 설치 시): 탭·스페이스·에이전트로 이동. 입력 필요가 있는 스페이스가 먼저, 조용한 스페이스는 접힘. 스페이스 문장, 상태 보석, 커서, 금테·석판(Herdr `picker` 개조) |
+| 이름 바꾸기·단축키 | 탭 더블클릭, 탭·스페이스 메뉴, 팔레트, `F2`·`Shift+F2`(`-Palette` 설치 시)로 여는 테마 이름 바꾸기 창(비우면 탭 번호·폴더 이름으로). 메뉴·팔레트·`Ctrl+?`의 단축키 목록은 한글 이름과 키캡으로, 무리별로 나눔 |
+| 워크트리·머신 추가 | 스페이스 메뉴·+ 메뉴의 새 워크트리·워크트리 열기·지우기, 사이드바 "머신 추가"가 테마 창으로(git·ssh 동작은 Herdr 그대로, `worktree`·`machine-add` 개조) |
 | 명령 팔레트 | Herdr 팔레트와 같은 명령·단축키를 한글 이름(영어로도 찾음), 무리별 아이템 아이콘, 커서, 금테·석판으로. 던전 설정·모험 일지·Herdr 기본 팔레트도 목록에 있음. `Ctrl+Shift+P` 연결은 아래 설치 참고 |
 | 퀘스트·레벨 | **퀘스트 = 에이전트가 일을 끝낸 횟수**(작업 중·입력 필요 → 완료). 완료 배너가 4.5초 동안 뜸. 레벨은 갈수록 느려짐: Lv.n에서 다음 레벨까지 `5 + ⌊(n−1)²/4⌋`퀘스트(Lv.10 누적 95, Lv.20 누적 620). Lv.2~20마다 꾸미기를 얻음(새 초상, 액자, 배너 장식 깃발·횃불·보석 비·왕관·전설, 칭호 견습·모험가·기사·영웅·전설, Lv.19 금장 배지). 기능은 잠그지 않음. 레벨이 오르면 레벨 업 배너. 퀘스트 수를 초기화해도 이미 얻은 것은 남음 |
 | 모험 일지 | 브랜드의 `Lv` 배지나 상태바 퀘스트를 누르면 열림: 레벨·칭호·다음 레벨까지, 해금표, 꾸미기(액자·배너 고르기), 최근 퀘스트 30개 |
@@ -83,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 | 옵션 | 하는 일 |
 |---|---|
 | `-Sounds` | 알림음을 8비트 효과음으로(`settings.json`, 처음 한 번 `settings.json.bak` 백업) |
-| `-Palette` | `Ctrl+Shift+P`는 테마 명령 팔레트, `Ctrl+Shift+K`는 테마 찾기 창으로(`keys.json`, `keys.json.bak` 백업. 두 키가 Herdr 기본값일 때만 바꿈) |
+| `-Palette` | `Ctrl+Shift+P`는 테마 명령 팔레트, `Ctrl+Shift+K`는 테마 찾기, `F2`·`Shift+F2`는 테마 이름 바꾸기, `Ctrl+?`는 테마 단축키 창으로(`keys.json`, `keys.json.bak` 백업. 각 키가 Herdr 기본값일 때만 바꿈) |
 | `-Light` | 라이트 버전으로 전환 |
 
 예: `powershell -ExecutionPolicy Bypass -File install.ps1 -Sounds -Palette`
@@ -127,7 +129,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 
 ### 선택 기능
 
-**테마 팔레트·찾기 연결:** `keys.json`에서 `"ctrl-shift-p": "app.palette"`를 `"pixel-quest.palette"`로, `"ctrl-shift-k": "mod.open:picker"`를 `"pixel-quest.goto"`로 바꿉니다(`-Palette`가 백업 후 이 두 줄만 바꿈). 되돌리려면 원래 값으로 돌립니다. 사이드바 돋보기 버튼은 키와 상관없이 테마 찾기 창을 엽니다. 테마 팔레트 안의 "Herdr 기본 팔레트 열기"로 원래 팔레트도 쓸 수 있습니다.
+**테마 팔레트·찾기·이름 바꾸기·단축키 연결:** `keys.json`에서 `"ctrl-shift-p": "app.palette"`→`"pixel-quest.palette"`, `"ctrl-shift-k": "mod.open:picker"`→`"pixel-quest.goto"`, `"f2": "tab.rename"`→`"pixel-quest.rename_tab"`, `"shift-f2": "space.rename"`→`"pixel-quest.rename_space"`, `"ctrl-?"`·`"ctrl-shift-/"`·`"ctrl-shift-?"`의 `"app.help"`→`"pixel-quest.help"`로 바꿉니다(`-Palette`가 백업 후 이 줄들만 바꿈). 되돌리려면 원래 값으로 돌립니다. 사이드바 돋보기 버튼은 키와 상관없이 테마 찾기 창을 엽니다. 테마 팔레트 안의 "Herdr 기본 팔레트 열기"로 원래 팔레트도 쓸 수 있습니다.
 
 **효과음:** 에이전트 알림음을 8비트로 바꾸려면 `settings.json`에 아래 내용을 넣습니다.
 이 설정은 모든 레이아웃에 적용됩니다.
@@ -147,7 +149,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 
 상태줄이 없으면 `node /path/to/pq-usage.js`만 넣습니다. Node로 만든 상태줄이면 그 안에서 `require("/path/to/pq-usage.js").save(input)`를 불러도 됩니다. Claude Code는 WSL에, Herdr는 Windows에 있으면 `PQ_USAGE_FILE=/mnt/c/Users/<나>/.config/herdr-app/pixel-quest-usage.json`을 지정하세요. 파일이 없으면 게이지는 나오지 않습니다. 모델별(예: Fable) 주간 한도는 상태줄 값에 없어서 표시하지 않습니다.
 
-**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal`은 팔레트·찾기·설정·모험 일지를 엽니다. keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
+**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal` · `pixel-quest.help` · `pixel-quest.rename_tab` · `pixel-quest.rename_space`는 팔레트·찾기·설정·모험 일지·단축키·탭/스페이스 이름 바꾸기를 엽니다. keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
 
 ## 폴더
 
@@ -158,8 +160,8 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
-| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를 담당 |
-| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
+| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
+| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 사용량 병합, 단축키·이름 바꾸기 글), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
 | `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
@@ -184,7 +186,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 ## 한계 (Herdr 0.1.14 기준)
 
 - 도트 PNG는 `zoom`과 상관없이 화면 1:1로 그립니다(`kit.js`의 `unit()`). 125%·150% Windows 화면 배율에서는 이미지가 보간되어 조금 흐려질 수 있습니다. 이 구성은 100% 배율에서 확인했습니다.
-- 알림 토스트, 입력 대화상자, 환영 화면, 그리고 **단축키로 닫을 때의** 확인 대화상자는 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다(설정·명령 팔레트·테마 메뉴에서 닫을 때의 확인창은 테마가 그림). 퀘스트 배너는 별도 창으로 띄웁니다.
+- 알림 토스트, 엿보기 막대, 환영 화면, Herdr 기본 설정 창, 그리고 **단축키로 닫을 때의** 확인 대화상자는 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다(이름 바꾸기·단축키·워크트리·머신 추가 창과 테마에서 닫을 때의 확인창은 테마가 그림. 이름 바꾸기·단축키는 `-Palette`로 키를 연결해야 키로 열 때도 테마 창). 퀘스트 배너는 별도 창으로 띄웁니다.
 - Herdr 애니메이션은 위치·투명도를 오가는 것만 되므로, 보석 비는 배너가 떠 있는 동안 타이머로 움직입니다.
 - 파티 서랍과 기본 우클릭 메뉴의 바깥 틀(둥근 모서리, 그림자)은 Herdr가 그립니다.
 - 소지품(Files)·변경(Changes) 패널은 Herdr 기본 모드를 고쳐 테마가 그립니다(소지품에는 검색을 붙임). 미리보기는 특정 줄로 이동하는 기능이 Herdr 편집기에 없어서 줄 번호만 머리에 표시합니다.
@@ -194,5 +196,5 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 ## 라이선스
 
 - 이 저장소의 레이아웃, 테마, 도트 에셋, 효과음, 생성기, 모드 코드: MIT — `LICENSE` 참고. Copyright (c) 2026 cubha
-- `mods/pixel-quest/roles/` 중 `spaces` `agents` `tabs` `pane` `chrome` `status` `menu` `newmenu` `files` `changes`, 그리고 `goto`(기본 `picker` 모드)는 Herdr 0.1.14 기본 모드, `palette`는 Herdr의 명령 팔레트(Apache License 2.0)를 고친 파일입니다. 각 파일 머리에 변경 사실을 적었습니다. 원문: `mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt`, `NOTICE`
+- `mods/pixel-quest/roles/` 중 `spaces` `agents` `tabs` `pane` `chrome` `status` `menu` `newmenu` `files` `changes`, `prompt` `help` `worktree`, 그리고 `goto`(기본 `picker` 모드)·`machine`(기본 `machine-add` 모드)은 Herdr 0.1.14 기본 모드, `palette`는 Herdr의 명령 팔레트(Apache License 2.0)를 고친 파일입니다. 각 파일 머리에 변경 사실을 적었습니다. 원문: `mods/pixel-quest/LICENSE-Herdr-Apache-2.0.txt`, `NOTICE`
 - Galmuri 폰트: © Lee Minseo, SIL Open Font License 1.1 — `mods/pixel-quest/fonts/`

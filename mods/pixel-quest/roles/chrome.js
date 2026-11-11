@@ -3,7 +3,7 @@
 // pixel buttons, "설정" / "머신 추가" as bronze buttons.
 
 import { View, div, image, svg } from "gpui-kit";
-import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto } from "../kit.js";
+import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto, openMachine } from "../kit.js";
 import { titleOf, goldBadge } from "../progress.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, run, props, window, shared, setShared, updates, layout, spaces, agents } from "herdr";
@@ -53,7 +53,7 @@ export default class WorkspaceChrome {
       return root(u, (collapsed ? v_flex() : h_flex()).size_full().px(u(8)).py(u(3)).gap(u(6)).items_center()
         .child(item("settings", "settings", "설정", () => openSettings()).when(!collapsed, (el) => el.flex_1())
           .when(Boolean(updates().app.ready), (el) => el.relative().child(ready.absolute().top(u(2)).right(u(2)))))
-        .child(item("machine", "plus", "머신 추가", () => run("mod.open", { name: "machine-add" })).when(!collapsed, (el) => el.flex_1())));
+        .child(item("machine", "plus", "머신 추가", () => openMachine()).when(!collapsed, (el) => el.flex_1())));
     }
     return root(u, h_flex().size_full().pl(u(collapsed ? 6 : 14)).pr(u(10)).gap(u(6)).items_center()
       .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed, (el) => el.pl(u(76)))

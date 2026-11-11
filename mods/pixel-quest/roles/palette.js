@@ -9,7 +9,8 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
-import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto } from "../kit.js";
+import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp } from "../kit.js";
+import { keyParts as capsOf } from "../dialogs.js";
 
 const SHOWN = 8, ROW_H = 28, HEAD_H = 22;
 const GROUPS = ["최근", "탭", "칸", "스페이스", "레이아웃", "터미널", "에이전트", "창", "앱"];
@@ -20,7 +21,7 @@ const DIR = { left: "왼쪽", right: "오른쪽", up: "위쪽", down: "아래쪽
 const NAMED = [
   ["tab.new", {}, "탭", "새 탭", "new tab agent task"],
   ["pq:goto", {}, "탭", "찾기: 스페이스나 탭으로 이동…", "go to switch jump find picker search"],
-  ["tab.rename", {}, "탭", "탭 이름 바꾸기", "rename tab"],
+  ["pq:rename_tab", {}, "탭", "탭 이름 바꾸기", "rename tab"],
   ["tab.close", {}, "탭", "탭 닫기", "close tab kill"],
   ["tab.next", {}, "탭", "다음 탭", "next tab"],
   ["tab.prev", {}, "탭", "이전 탭", "previous tab"],
@@ -31,7 +32,7 @@ const NAMED = [
   ...["left", "right", "up", "down"].map((d) => ["pane.go", { direction: d }, "칸", `${DIR[d]} 칸으로`, `focus pane ${d} move go`]),
   ...["left", "right", "up", "down"].map((d) => ["pane.swap", { direction: d }, "칸", `${DIR[d]} 칸과 바꾸기`, `swap pane ${d}`]),
   ["space.new", {}, "스페이스", "새 스페이스", "new space workspace"],
-  ["space.rename", {}, "스페이스", "스페이스 이름 바꾸기", "rename space workspace"],
+  ["pq:rename_space", {}, "스페이스", "스페이스 이름 바꾸기", "rename space workspace"],
   ["space.close", {}, "스페이스", "스페이스 닫기", "close space workspace kill"],
   ["space.next", {}, "스페이스", "다음 스페이스", "next space workspace"],
   ["space.prev", {}, "스페이스", "이전 스페이스", "previous space workspace"],
@@ -53,7 +54,7 @@ const NAMED = [
   ["pixel-quest.quest", {}, "앱", "퀘스트 배너 시험", "quest test banner"],
   ["app.settings", {}, "앱", "Herdr 기본 설정", "herdr settings machine update keys"],
   ["app.palette", {}, "앱", "Herdr 기본 팔레트 열기", "herdr palette command"],
-  ["app.help", {}, "앱", "단축키 보기", "keys keybindings shortcuts help"],
+  ["pq:help", {}, "앱", "단축키 보기", "keys keybindings shortcuts help"],
   ["app.welcome", {}, "앱", "환영 화면", "welcome intro"],
   ["app.whats_new", {}, "앱", "새 소식", "what's new release changes"],
   ["app.zoom_in", {}, "앱", "확대", "zoom in bigger"],
@@ -71,6 +72,7 @@ const LOOK_KO = { "pixel-quest": "심연(다크)", "pixel-quest-light": "슬레�
 // Commands that act on something you point at, or open what this replaces.
 const HIDDEN = new Set([
   "space.move", "tab.move", "space.select", "tab.select", "pane.focus", "terminal.keep",
+  "tab.rename", "space.rename", "app.help", // the theme's own windows (pq:rename_*, pq:help)
   "terminal.park", "terminal.kill", "terminal.show", "agent.focus", "layout.set", "layout.toggle",
   "layout.show", "layout.hide", "layout.resize", "layout.select", "mod.open", "overlay.close",
   "tab.settle", "tab.unsettle", "terminal.scroll", "mod.clone", "app.palette", "app.hide", "app.hide_others", "app.show_all", "app.theme", "app.settings",
@@ -95,21 +97,21 @@ function entries() {
   return list.map((e) => ({ ...e, id: `${e.name}:${JSON.stringify(e.args)}` }));
 }
 
+// Theme entries still on Herdr's key until install.ps1 -Palette rebinds it.
+const HERDR_KEY = { "pq:goto": "mod.open:picker", "pq:rename_tab": "tab.rename", "pq:rename_space": "space.rename", "pq:help": "app.help" };
+
 // The key bound to an entry: `name` or `name:value` (theme entries: `pixel-quest.<what>`).
 function keyOf(e, bound) {
   const v = Object.values(e.args)[0];
   const want = e.name.startsWith("pq:") ? `pixel-quest.${e.name.slice(3)}` : e.name.startsWith("pixel-quest.") ? e.name : v === undefined ? e.name : `${e.name}:${v}`;
   // 찾기 is Herdr's picker key until it is rebound to the theme's.
   const k = bound.find((b) => b.section === "global" && b.action === want)
-    ?? (e.name === "pq:goto" ? bound.find((b) => b.section === "global" && b.action === "mod.open:picker") : null);
+    ?? (HERDR_KEY[e.name] ? bound.find((b) => b.section === "global" && b.action === HERDR_KEY[e.name]) : null);
   return k ? k.keys : null;
 }
 
 function keyParts(k) {
-  const mac = win()?.platform === "macos";
-  const names = { ctrl: mac ? "⌃" : "Ctrl", cmd: "⌘", shift: mac ? "⇧" : "Shift", alt: mac ? "⌥" : "Alt", option: "⌥", pageup: "PgUp", pagedown: "PgDn", tab: "Tab", up: "↑", down: "↓", left: "←", right: "→", escape: "Esc", enter: "Enter" };
-  const parts = k.endsWith("--") ? [...k.slice(0, -2).split("-"), "-"] : k.split("-");
-  return parts.map((p) => names[p.toLowerCase()] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1)));
+  return capsOf(k, win()?.platform === "macos");
 }
 
 // Fuzzy score of q in text with the matched positions; null: no match.
@@ -153,6 +155,9 @@ export default class Palette {
     if (e.name === "pq:settings") openSettings();
     else if (e.name === "pq:journal") openJournal();
     else if (e.name === "pq:goto") openGoto();
+    else if (e.name === "pq:rename_tab") openRename("tab");
+    else if (e.name === "pq:rename_space") openRename("space");
+    else if (e.name === "pq:help") openHelp();
     else run(e.name, e.name === "layout.clone" ? { name: shared("layout") ?? "main" } : e.args);
   }
 

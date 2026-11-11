@@ -14,7 +14,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto } from "../kit.js";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto, openRename, openHelp } from "../kit.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick } from "../progress.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
@@ -51,6 +51,9 @@ export default class Status {
         else if (c === "goto") openGoto();
         else if (c === "settings") openSettings();
         else if (c === "journal") openJournal();
+        else if (c === "rename_tab") openRename("tab");
+        else if (c === "rename_space") openRename("space");
+        else if (c === "help") openHelp();
         cx.notify();
       }
     });

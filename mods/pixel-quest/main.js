@@ -42,9 +42,13 @@ import Changes from "./roles/changes.js";
 import Settings from "./roles/settings.js";
 import Palette from "./roles/palette.js";
 import Goto from "./roles/goto.js";
+import Prompt from "./roles/prompt.js";
+import Help from "./roles/help.js";
+import Worktree from "./roles/worktree.js";
+import Machine from "./roles/machine.js";
 import Confirm from "./roles/confirm.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine };
 
 export default class PixelQuest extends View {
   init(p, cx) {

@@ -3,7 +3,7 @@
 // "소지품" (Files) and "변경" (Changes) as bronze buttons, pixel window buttons.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture, closeTab } from "../kit.js";
+import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture, closeTab, openRename } from "../kit.js";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
@@ -73,7 +73,7 @@ export default class Tabs {
             .when(c.status && c.status !== "idle", el => el.child(gem(u, c.status, `tab-gem-${c.id}`)))
             .when(on, el => el.child(div().id(`close-${c.id}`).flex_none().text_color(P.g2).hover(s => s.text_color(P.g4)).on_mouse_down("left", stop)
               .on_click((_e, cx) => { cx.stop_propagation(); closeTab(space, c.id); }).child(ico("mods/pixel-quest/icons/close.svg", 10, P.g2))))))
-        .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
+        .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) openRename("tab", c.id); })
         .on_mouse_up("left", () => {
           const from = this.pressed; this.pressed = null;
           if (from !== null && from !== i) run("tab.move", { id: shown[from].id, index: space.tabs.findIndex(x => x.id === c.id) + 1 });

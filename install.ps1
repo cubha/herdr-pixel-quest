@@ -3,8 +3,9 @@
 #   powershell -ExecutionPolicy Bypass -File install.ps1 [-Sounds] [-Light] [-Palette]
 # Copies the dark and light layouts and themes, and replaces mods\pixel-quest whole.
 # -Sounds: 8-bit alert sounds in settings.json (backup kept). -Light: switch to the light look.
-# -Palette: Ctrl+Shift+P opens the theme's palette and Ctrl+Shift+K its go-to window
-#   (keys.json, backup kept; undo: set them back to app.palette / mod.open:picker).
+# -Palette: Ctrl+Shift+P, Ctrl+Shift+K, F2, Shift+F2 and Ctrl+? open the theme's palette,
+#   go-to, rename and key-list windows (keys.json, backup kept; undo: set them back to
+#   app.palette / mod.open:picker / tab.rename / space.rename / app.help).
 # Copyright (c) 2026 cubha. MIT License.
 param([switch]$Sounds, [switch]$Light, [switch]$Palette)
 $ErrorActionPreference = 'Stop'
@@ -37,10 +38,15 @@ if ($Palette) {
     # Each key only when it still has Herdr's own action.
     $swaps = @(
       @('ctrl-shift-p', 'app\.palette', 'pixel-quest.palette', 'Ctrl+Shift+P: theme command palette'),
-      @('ctrl-shift-k', 'mod\.open:picker', 'pixel-quest.goto', 'Ctrl+Shift+K: theme go-to window')
+      @('ctrl-shift-k', 'mod\.open:picker', 'pixel-quest.goto', 'Ctrl+Shift+K: theme go-to window'),
+      @('f2', 'tab\.rename', 'pixel-quest.rename_tab', 'F2: theme rename-tab window'),
+      @('shift-f2', 'space\.rename', 'pixel-quest.rename_space', 'Shift+F2: theme rename-space window'),
+      @('ctrl-?', 'app\.help', 'pixel-quest.help', 'Ctrl+?: theme key list'),
+      @('ctrl-shift-/', 'app\.help', 'pixel-quest.help', 'Ctrl+Shift+/: theme key list'),
+      @('ctrl-shift-?', 'app\.help', 'pixel-quest.help', 'Ctrl+Shift+?: theme key list')
     )
     foreach ($w in $swaps) {
-      $pat = '"' + $w[0] + '"(\s*):(\s*)"' + $w[1] + '"'
+      $pat = '"' + [regex]::Escape($w[0]) + '"(\s*):(\s*)"' + $w[1] + '"'
       if ($text -match $pat) { $text = $text -replace $pat, ('"' + $w[0] + '"$1:$2"' + $w[2] + '"'); Write-Host $w[3] }
       else { Write-Host ("keys.json: {0} is not Herdr's default; left as is" -f $w[0]) }
     }

@@ -82,6 +82,17 @@ are Korean; every picture is original pixel art.
   dressed like the theme menus (thin gold, stone, band "파티 정렬", cursor on the sort in use).
 - **Confirm** (role `confirm`, 340×150): closing a space, or a space's last tab, from the theme's
   menus or tab ×: a brick band "확인", the question, the detail, 취소 and a red 닫기 (Enter/Esc).
+- **Rename** (role `prompt`, 380×170, Herdr's `prompt`): tab double-click, the tab and space menus'
+  이름 바꾸기, the palette, `pixel-quest.rename_tab` / `rename_space` (F2 / Shift+F2 after `-Palette`).
+  Band "탭/스페이스 이름 바꾸기", a well with the scroll icon, a hint (empty = the tab's number / the
+  folder's name), 취소 and a gold 저장. Saving always passes `name` ("" too): without it Herdr opens
+  its own prompt.
+- **Keys** (role `help`, 520×480, Herdr's `help`): the menu's 단축키, the palette, `pixel-quest.help`
+  (Ctrl+? after `-Palette`). Band "단축키", a filter well, Korean groups (스페이스 · 탭 · 칸 · 에이전트 ·
+  터미널 · 창·앱) under a gold rule, each key as small keycaps, the action in Korean (`dialogs.js`).
+- **Worktree** (role `worktree`, 460×250 / open 560×480, Herdr's `worktree`) and **add machine**
+  (role `machine`, 540×400, Herdr's `machine-add`): the git and ssh work unchanged, drawn in the gold
+  frame on stone with a brick band, cursor rows, keycap-less key line, bronze/gold/red buttons.
 
 ## How it behaves
 
@@ -161,8 +172,9 @@ are Korean; every picture is original pixel art.
 - `import "../other-mod/x.js"` is refused ("resolves outside the application directory").
 - On the right edge, a peeking float shows the **right** side of its content: put the gems and
   portraits last in each row there.
-- Herdr's welcome, palette, settings, toasts, confirm/prompt dialogs and the frame of floats and
-  app-opened menus are Herdr's: they take the theme and fonts only.
+- Herdr's welcome, palette, settings, toasts and peek bar, the frame of floats and app-opened menus,
+  and its dialogs when Herdr itself opens them (a close by key, its settings' Machines) are Herdr's:
+  they take the theme and fonts only. A layout can only swap the terminal menu (`terminal_menu`).
 - `herdr-app check` renders the mod without props; to check each role, copy the folder and
   force `props.role` in `main.js`.
 - Herdr's JS `Date` ignores `toLocaleString` options: format dates by hand.

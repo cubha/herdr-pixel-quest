@@ -2,7 +2,7 @@
 // (Apache-2.0, Herdr 0.1.14): a thin gold frame, Korean labels, pixel text.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root, thin, texture, FLOOR, web, bandHead } from "../kit.js";
+import { P, unit, root, thin, texture, FLOOR, web, bandHead, openWorktree } from "../kit.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
 
@@ -77,7 +77,7 @@ export default class NewMenu {
         .when(this.agents.length === 0, el => el.child(div().px(9).py(6).text_color(t.dim).child(this.failed ? "에이전트 목록을 불러오지 못했습니다" : "설치된 에이전트 확인 중…"))))
       .child(div().h(1).mx(4).my(5).bg(t.border))
       .child(this.row("space", div().w(14).child("+"), "새 스페이스", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", svg("mods/pixel-quest/icons/branch.svg").size(14), "새 워크트리…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
-      .child(this.row("worktree-open", svg("mods/pixel-quest/icons/branch.svg").size(14), "워크트리 열기…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space))))));
+      .child(this.row("worktree", svg("mods/pixel-quest/icons/branch.svg").size(14), "새 워크트리…", () => openWorktree({ space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" }), "", Boolean(space)))
+      .child(this.row("worktree-open", svg("mods/pixel-quest/icons/branch.svg").size(14), "워크트리 열기…", () => openWorktree({ space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" }), "", Boolean(space))))));
   }
 }

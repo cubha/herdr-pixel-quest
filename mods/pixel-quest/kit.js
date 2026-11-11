@@ -9,8 +9,9 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome } from "herdr";
+import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
+import { renameSpec } from "./dialogs.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -253,6 +254,32 @@ export function openGoto() {
 
 export function openPalette() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
+}
+
+/** Renames a tab or a space (id; none: the one shown) in the theme's window (role prompt),
+ *  in place of Herdr's own. */
+export function openRename(kind, id) {
+  const all = spaces();
+  const f = focused();
+  const space = kind === "space" ? all.find((s) => s.id === (id ?? f?.space)) : null;
+  const tab = kind === "tab" ? all.flatMap((s) => s.tabs ?? []).find((t) => t.id === (id ?? f?.tab)) : null;
+  const spec = renameSpec(kind, space ?? tab);
+  // Nothing to aim at (no focus): Herdr's own command decides.
+  if (!spec) return run(kind === "tab" ? "tab.rename" : "space.rename", id ? { id } : {});
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 170, props: { role: "prompt", ...spec } });
+}
+/** The key list (role help), in place of Herdr's app.help. */
+export function openHelp() {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 480, props: { role: "help" } });
+}
+/** The worktree window (role worktree): props { space, folder?, action: new | open | remove }. */
+export function openWorktree(p) {
+  const open = p?.action === "open";
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: open ? 560 : 460, height: open ? 480 : 250, props: { role: "worktree", ...p } });
+}
+/** Add a machine (role machine), in place of Herdr's machine-add. */
+export function openMachine() {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 540, height: 400, props: { role: "machine" } });
 }
 
 /** Closes a space, asking first in the theme's dialog (role confirm). */
