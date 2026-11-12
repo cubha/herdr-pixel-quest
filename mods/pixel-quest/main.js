@@ -8,6 +8,8 @@
 //   quest    the "quest complete" banner overlay
 //   party    the floating party drawer (agents at a glance)
 //   sill     the stone ledge under the work area
+//   ledge    the season's row over the work area (snow caps, petals, leaves)
+//   toast    notifications (no role: the layout's "toast" hands them over as is)
 //   usage    the Claude usage card (opens from the status bar gauges)
 //   files    the file panel with name / content search
 //   picker   the portrait picker (opens from an agent's portrait)
@@ -34,6 +36,8 @@ import NewMenu from "./roles/newmenu.js";
 import Quest from "./roles/quest.js";
 import Party from "./roles/party.js";
 import Sill from "./roles/sill.js";
+import Ledge from "./roles/ledge.js";
+import Toast from "./roles/toast.js";
 import Usage from "./roles/usage.js";
 import Files from "./roles/files.js";
 import Picker from "./roles/picker.js";
@@ -48,12 +52,13 @@ import Worktree from "./roles/worktree.js";
 import Machine from "./roles/machine.js";
 import Confirm from "./roles/confirm.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, ledge: Ledge, toast: Toast, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine };
 
 export default class PixelQuest extends View {
   init(p, cx) {
     const pr = props() ?? p ?? {};
-    const R = ROLES[pr.role ?? (pr.tab ? "menu" : "")];
+    // No role: a terminal menu (tab) or a notification (level / title from Herdr).
+    const R = ROLES[pr.role ?? (pr.tab ? "menu" : pr.level !== undefined || pr.title !== undefined ? "toast" : "")];
     this.role = R ? new R() : null;
     this.role?.init?.(pr, cx);
   }

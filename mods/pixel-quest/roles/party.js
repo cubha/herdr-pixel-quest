@@ -12,7 +12,7 @@ const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 
 export default class Party {
   render() {
-    const u = unit();
+    const u = unit({ dim: false });
     const all = agents();
     const faces = faceMap(all);
     const list = [...all].sort((a, b) => (RANK[b.status] ?? 0) - (RANK[a.status] ?? 0)).slice(0, 8);

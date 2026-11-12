@@ -3,13 +3,13 @@
 // gems | crown | legend, unlocked by level). With props.levelUp it is the
 // level-up banner instead, listing what the new level gives. It leaves by
 // itself after a few seconds. Click: go to that agent's pane (level up: open
-// the adventure log). Copyright (c) 2026 cubha. MIT License.
+// the adventure log). A new frame or banner can be put on right there (바로 착용). Copyright (c) 2026 cubha. MIT License.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay, run, shared, setShared } from "herdr";
-import { P, unit, root, pic, frame, small, rewardIcon, openJournal } from "../kit.js";
-import { rewardsAt, titleOf } from "../progress.js";
+import { P, unit, root, pic, frame, small, button, rewardIcon, openJournal } from "../kit.js";
+import { rewardsAt, titleOf, equipables } from "../progress.js";
 
 // Gems falling in the gem-rain banners: [left, start offset, speed px/s, art, size].
 const GEMS = [[60, 0, 70, "gem-done", 18], [110, 60, 55, "gem-working", 18], [170, 20, 80, "ico-crystal", 16],
@@ -21,7 +21,9 @@ export default class Quest {
     this.t0 = Date.now();
     // Loops go there and back; a fall goes one way, so the gems move by timer.
     if (p.style === "gems" || p.style === "legend") cx.timer.every(50, (cx) => cx.notify());
-    cx.timer.after(p.levelUp ? 6000 : 4500, () => {
+    // A level that opens something to put on stays longer, so there is time to click.
+    const wear = p.levelUp ? equipables(p.levelUp).length : 0;
+    cx.timer.after(wear ? 10000 : p.levelUp ? 6000 : 4500, () => {
       closeOverlay(props()?.overlay);
       // A newer banner may have replaced this one: leave its handle alone.
       if (shared("pq.banner.open") === props()?.overlay) setShared("pq.banner.open", null);
@@ -73,6 +75,13 @@ export default class Quest {
             .children(got.map((r) => h_flex().gap(u(3)).items_center().child(rewardIcon(u, r)).child(small(u, r.text, P.done))))
           : small(u, "모험은 계속됩니다", P.done),
       ];
+      // Frames and banners the level opens: put on at once (the same choice as the
+      // adventure log's 꾸미기 tab).
+      const wear = equipables(p.levelUp, { frame: shared("pq.frame"), banner: shared("pq.bannerStyle") });
+      if (wear.length) lines.push(h_flex().gap(u(6)).items_center().justify_center()
+        .children(wear.map((w) => button(u, `wear-${w.kind}`,
+          small(u, w.on ? `${w.text} 착용 중` : `${w.text} 바로 착용`, w.on ? P.gt : P.text),
+          () => setShared(w.shared, w.key), { on: w.on, pad: [1, 6] }))));
     } else {
       lines = [
         div().max_w(u(300)).truncate().text_color(P.text).child(p.title ?? ""),

@@ -3,7 +3,7 @@
 // "소지품" (Files) and "변경" (Changes) as bronze buttons, pixel window buttons.
 
 import { View, div, svg, image } from "gpui-kit";
-import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture, closeTab, openRename } from "../kit.js";
+import { P, unit, root as pxRoot, pic, gem, button as pxButton, texture, closeTab, openRename, look, applyLook, veil } from "../kit.js";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
@@ -92,32 +92,62 @@ export default class Tabs {
     const panelButton = (id, label, art) => {
       const on = panel && !panel.hidden && body?.active === id;
       return button(`panel-${id}`, h_flex().gap(u(5)).items_center().child(pic(u, art, 16)).child(div().text_color(on ? P.gt : P.text).child(label)),
-        () => {
+        (_e, cx) => {
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
+          // The work area changes shape: the season's decoration follows (look.js buckets).
+          cx?.timer?.after(500, () => applyLook());
         }, { on, pad: [2, 6] });
     };
     const winIcon = (n) => ico(`mods/pixel-quest/icons/${n}.svg`, 12, P.text);
+    // Time of day and season (look.js): windows show the sky, the sconces are out by day
+    // and pool their light at dusk and night (candlelight on the dimmed light bricks),
+    // the flames go green for Halloween, wreaths hang at Christmas.
+    const lk = look(), ph = lk.phase, timed = ph !== "none", lit = ph === "dawn" || ph === "dusk" || ph === "night";
+    const g = lk.season === "halloween" ? "-green" : "";
+    const art = (n) => (g ? `look/${n}${g}` : n);
+    const skin = P.light ? "light" : "dark";
+    const pool = P.light ? { dawn: 0.55, dusk: 0.7, night: 1 }[ph] : { dawn: 0.35, dusk: 0.45, night: 0.9 }[ph];
     // A wall sconce with its light pool; the second flame frame flickers in.
-    const sconce = (side, left, period) => [
-      pic(u, "sconce-halo", 36, 28).absolute().top(u(14)).left(u(left - 10)).loop("opacity", { from: 0.6, to: 1, period: period * 2 }),
-      div().id(`sconce-${side}`).absolute().top(u(20)).left(u(left)).w(u(16)).h(u(16))
-        .child(pic(u, "sconce", 16).absolute().top(0).left(0))
-        .child(pic(u, "sconce-b", 16).absolute().top(0).left(0).loop("opacity", { from: 0, to: 1, period })),
-    ];
+    const sconce = (side, left, period) => ph === "day"
+      ? [pic(u, "look/sconce-off", 16).absolute().top(u(20)).left(u(left))]
+      : [
+        ...(lit ? [P.light
+          ? pic(u, "look/glow-candle", 156, 48).absolute().top(u(4)).left(u(left - 70)).opacity(pool)
+          : pic(u, "look/glow-warm", 88, 48).absolute().top(u(4)).left(u(left - 36)).opacity(pool)] : []),
+        pic(u, art("sconce-halo"), 36, 28).absolute().top(u(14)).left(u(left - 10)).loop("opacity", { from: 0.6, to: 1, period: period * 2 }),
+        div().id(`sconce-${side}`).absolute().top(u(20)).left(u(left)).w(u(16)).h(u(16))
+          .child(pic(u, art("sconce"), 16).absolute().top(0).left(0))
+          .child(pic(u, art("sconce-b"), 16).absolute().top(0).left(0).loop("opacity", { from: 0, to: 1, period })),
+      ];
+    const windows = timed ? [
+      pic(u, `look/win-${skin}-${ph}`, 28, 34).absolute().top(u(20)).left(u(55)),
+      pic(u, `look/win-${skin}-${ph}-r`, 28, 34).absolute().top(u(20)).left(u(301)),
+    ] : [];
+    const wreaths = lk.season === "xmas" ? [
+      pic(u, "look/wreath", 24).absolute().top(u(24)).left(u(13)),
+      pic(u, "look/wreath", 24).absolute().top(u(24)).left(u(349)),
+    ] : [];
+    const torchPool = lit ? [P.light
+      ? pic(u, "look/glow-candle-torch", 260, 48).absolute().top(u(4)).left(u(60)).opacity(pool)
+      : pic(u, "look/glow-torch", 180, 48).absolute().top(u(4)).left(u(100)).opacity(pool * 0.9)] : [];
     return pxRoot(u, h_flex().size_full().min_w(0).relative().overflow_hidden().px(u(10)).pl(lightsPadding).gap(u(4)).items_center().bg(P.chrome).border_b(u(2)).border_color(P.ink)
       // Brick band behind everything, cut to the bar.
       .child(texture(u, "strip", 2560, 48))
+      .when(Boolean(veil()), (el) => el.child(veil()))
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       // The torch hangs in the middle of the bar, its glow dithered behind it.
       .child(div().absolute().top(u(-14)).left(u(0)).right(u(0)).flex().justify_center()
         // ... flanked by two wall sconces.
-        .child(div().relative().w(u(232)).h(u(60))
-          .children(sconce("l", 42, 520))
-          .children(sconce("r", 174, 650))
-          .child(pic(u, "torch-glow", 96, 60).absolute().top(0).left(u(68)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
-          .child(pic(u, "torch", 18, 38).absolute().top(u(12)).left(u(107)))))
+        .child(div().relative().w(u(380)).h(u(60))
+          .children(torchPool)
+          .children(windows)
+          .children(wreaths)
+          .children(sconce("l", 116, 520))
+          .children(sconce("r", 248, 650))
+          .child(pic(u, art("torch-glow"), 96, 60).absolute().top(0).left(u(142)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
+          .child(pic(u, art("torch"), 18, 38).absolute().top(u(12)).left(u(181)))))
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(u(4)).overflow_x_scrollbar().children(shown.map(item)))
       .child(button("tab-new", div().text_color(P.gt).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 534, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "소지품", "ico-chest")))

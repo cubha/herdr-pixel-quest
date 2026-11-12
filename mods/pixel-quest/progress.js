@@ -149,3 +149,9 @@ export const pick = (kind, key, lv) => (unlocked(kind, key, lv) ? key : LOOKS[ki
 
 /** Adds a finished quest ({ name, at }) on top of the log, keeping 30. */
 export const pushLog = (log, entry, max = 30) => [entry, ...(Array.isArray(log) ? log : [])].slice(0, max);
+
+const WEAR = { frame: "pq.frame", banner: "pq.bannerStyle" };
+/** What a new level opens that can be put on at once (frames and banners), and whether
+ *  it is already on (cur: { frame, banner }). */
+export const equipables = (lv, cur = {}) => rewardsAt(lv).filter((r) => WEAR[r.kind])
+  .map((r) => ({ kind: r.kind, key: r.key, text: r.text, shared: WEAR[r.kind], on: cur[r.kind] === r.key }));

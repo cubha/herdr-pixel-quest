@@ -22,8 +22,9 @@ LIGHT = dict(base=(192, 198, 212), crack=(54, 60, 78), hair=0.75, warm=(255, 236
              wk=0.28, sk=0.35, gone=(66, 72, 90))
 
 
-def tablet(path, P):
-    W,H=994,732
+def slab(P, W=994, H=732, moss_on=True):
+    """The slab as an RGB float array, and its moss mask. moss_on=False leaves the moss
+    out (the look's decoration layer draws it, recolored by season)."""
     rng=np.random.default_rng(4)
     def vnoise(h,w,cell):
         gh,gw=h//cell+3,w//cell+3; g=rng.uniform(-1,1,(gh,gw))
@@ -86,7 +87,7 @@ def tablet(path, P):
     fine=vnoise(H,W,3)
     shade=np.clip(0.5+0.35*mn+0.35*fine,0,1)
     mcol=np.stack([34+30*shade,78+80*shade,40+26*shade],-1)
-    face[moss]=mcol[moss]*0.85+face[moss]*0.15
+    if moss_on: face[moss]=mcol[moss]*0.85+face[moss]*0.15
     # visible cracks across the face (own RNG so the rest of the slab stays the same)
     r2=np.random.default_rng(31)
     big=np.zeros((H,W),np.uint8)       # 2 = deep crack core, 1 = hairline
@@ -121,8 +122,12 @@ def tablet(path, P):
     warm=np.array(P['warm'],float); dark=np.array(P['shade'],float)
     face=face*(1-P['wk']*t[...,None])+warm*P['wk']*t[...,None]
     face=face*(1-P['sk']*(1-t)[...,None])+dark*P['sk']*(1-t)[...,None]
-    face[gone&~moss]=np.array(P['gone'],float)
-    Image.fromarray(np.clip(face,0,255).astype(np.uint8)).save(path)
+    face[gone&~(moss if moss_on else False)]=np.array(P['gone'],float)
+    return np.clip(face,0,255), moss
+
+
+def tablet(path, P):
+    Image.fromarray(slab(P)[0].astype(np.uint8)).save(path)
 
 
 

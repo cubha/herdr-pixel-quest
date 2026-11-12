@@ -457,7 +457,7 @@ export default class Agents {
     // Stone floor, a cobweb in the top-right corner, and the lower half of
     // the chains hanging from the spaces panel above.
     return root(u, v_flex().size_full().min_h(0).p(u(4)).relative()
-      .child(panel(u, `파티 · ${list.length}`, sortBtn, body, { floor: true, web: "tr" }))
+      .child(panel(u, `파티 · ${list.length}`, sortBtn, body, { floor: true, web: "tr", edge: true }))
       .child(chain(u).absolute().top(0).left(u(34)))
       .child(chain(u).absolute().top(0).right(u(34))));
   }

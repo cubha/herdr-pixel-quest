@@ -42,7 +42,8 @@ export default class Pane {
   }
 
   render() {
-    const u = unit();
+    // The header keeps its daylight colors when the light look dims (the mockup's call).
+    const u = unit({ dim: false });
     const p = this.me();
     if (!p) return div();
     const name = ((p.program?.agent || p.program?.shell) && p.program.name) || p.title || p.program?.name || "shell";

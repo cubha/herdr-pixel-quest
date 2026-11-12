@@ -482,7 +482,7 @@ export default class Spaces {
     // Stone floor, a cobweb low on the left, and the top half of the chains
     // the party panel hangs from (roles/agents.js draws the lower half).
     return root(u, v_flex().size_full().min_h(0).p(u(4)).relative()
-      .child(panel(u, "스페이스", add, list, { floor: true, web: "bl" }))
+      .child(panel(u, "스페이스", add, list, { floor: true, web: "bl", edge: true }))
       .child(chain(u).absolute().bottom(0).left(u(34)))
       .child(chain(u).absolute().bottom(0).right(u(34))));
   }

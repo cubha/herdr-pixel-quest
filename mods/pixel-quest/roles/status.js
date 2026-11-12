@@ -9,19 +9,50 @@
 // level, the level-up banner opens instead. Levels and unlocks: progress.js.
 // Herdr itself plays the done sound (settings.json `sounds.done`), so the
 // banner stays silent. Key commands (keys.json "<key>": "pixel-quest.<cmd>"):
-// quest (try the banner), quest_reset, palette, settings, journal.
+// quest (try the banner), levelup (try this level's level-up banner), quest_reset, palette, settings, journal, look_phase /
+// look_season (step through the times of day / seasons to try them), toast (a sample
+// notification, one level per press: error, warning, success, info).
 
 import { div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, keepTermFont } from "../kit.js";
-import { oldLevel, levelOf, progressAt, pushLog, pick } from "../progress.js";
+import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify } from "herdr";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil } from "../kit.js";
+import { oldLevel, levelOf, progressAt, pushLog, pick, equipables } from "../progress.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 
+// `pixel-quest.toast`: notifications to try the look with, one level per press.
+const SAMPLES = [
+  { title: "space.new failed", body: "cannot reach build-box: ssh: Could not resolve hostname build-box", level: "error" },
+  { title: "에이전트가 입력을 기다립니다", body: "my-api · 계속하려면 확인이 필요해요", level: "warning" },
+  { title: "퀘스트 완료", body: "notes-app · 에이전트가 일을 마쳤습니다", level: "success" },
+  { title: "Herdr 업데이트", body: "0.1.15 · 새 기능을 확인하세요", level: "info" },
+];
+
 export default class Status {
   init(_p, cx) {
-    keepTermFont();
+    // The look (time of day, season, the work area's shape, the font size): now, every
+    // minute, when the window or the side panel changes (render / .state clicks).
+    this.dirty = false;
+    applyLook();
+    // The window size can only be read while rendering: redraw, then apply.
+    // Clicks (the side panel shown or resized) land in layouts/.state; before the first
+    // click that folder may not exist, so the layouts folder is watched instead. Three
+    // failures in a row rest the watch until the next minute, so it neither spins nor
+    // stops for good.
+    let dir = `${appHome()}/layouts/.state`, resting = false;
+    const watch = (cx) => cx.spawn(async () => {
+      for (let fails = 0; fails < 3;) {
+        try { await watchFolder(dir); fails = 0; this.dirty = true; } catch { fails++; dir = `${appHome()}/layouts`; }
+      }
+      resting = true;
+    });
+    watch(cx);
+    cx.timer.every(60000, (cx) => {
+      cx.notify(); this.dirty = true;
+      if (resting) { resting = false; dir = `${appHome()}/layouts/.state`; watch(cx); }
+    });
+    cx.timer.every(700, () => { if (this.dirty) { this.dirty = false; applyLook(); } });
     // Claude usage: pixel-quest-usage.json in the app folder (tools/pq-usage.js writes it).
     this.usage = null;
     const load = (cx) => cx.spawn(async (cx) => {
@@ -55,6 +86,13 @@ export default class Status {
         else if (c === "rename_tab") openRename("tab");
         else if (c === "rename_space") openRename("space");
         else if (c === "help") openHelp();
+        else if (c === "levelup") this.fanfare({ space_name: "시험 퀘스트", address: "demo" }, false, lvInfo().lv);
+        else if (c === "look_phase") tryLook("phase");
+        else if (c === "look_season") tryLook("season");
+        else if (c === "toast") {
+          const k = (this.toasts = ((this.toasts ?? -1) + 1) % SAMPLES.length);
+          notify(SAMPLES[k]);
+        }
         cx.notify();
       }
     });
@@ -78,7 +116,8 @@ export default class Status {
     }
   }
 
-  fanfare(a, count = true) {
+  // try: a level to show the level-up banner for (pixel-quest.levelup, nothing counted).
+  fanfare(a, count = true, tryLv = null) {
     const before = lvInfo().lv;
     const n = (Number(shared("pq.quests")) || 0) + (count ? 1 : 0);
     const title = a.space_name || a.program?.name || "agent";
@@ -87,14 +126,15 @@ export default class Status {
       setShared("pq.log", pushLog(shared("pq.log"), { name: title, at: Date.now() }));
       setShared("pq.best", Math.max(Number(shared("pq.best")) || 1, progressAt(n, shared("pq.floor")).lv));
     }
-    const after = progressAt(n, shared("pq.floor")).lv;
-    const up = count && after > before;
+    const after = tryLv ?? progressAt(n, shared("pq.floor")).lv;
+    const up = Boolean(tryLv) || (count && after > before);
+    const wear = up ? equipables(after, { frame: shared("pq.frame"), banner: shared("pq.bannerStyle") }) : [];
     if (shared("pq.banner") === false && !up) return;
     const prev = shared("pq.banner.open");
     if (prev) closeOverlay(prev);
     const style = pick("banner", shared("pq.bannerStyle"), best());
     const id = openOverlay({
-      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: 112,
+      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: wear.length ? 142 : 112,
       props: { role: "quest", title, agent: a.address, pane: a.pane, quests: n, style, levelUp: up ? after : null },
     });
     setShared("pq.banner.open", id);
@@ -113,6 +153,8 @@ export default class Status {
 
   render() {
     const u = unit();
+    // The window's size (legal only while rendering) for the look's box shape.
+    try { const v = globalThis.window?.viewport_size?.(); if (v && lookBox({ vw: v.width, vh: v.height })) this.dirty = true; } catch { /* no window yet */ }
     const list = agents();
     this.watch(list);
     const space = spaces().find((s) => s.active);
@@ -147,8 +189,9 @@ export default class Status {
       .child(h_flex().id("palette").gap(u(6)).items_center().cursor_pointer().on_click(() => openPalette())
         .when(Boolean(key), (el) => el.child(div().border(u(2)).border_color(P.b1).bg(P.raised).px(u(4)).child(small(u, key, P.text))))
         .child(small(u, "명령", P.dim)));
-    return root(u, h_flex().size_full().relative().overflow_hidden().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
+    return root(u, h_flex().on_size_change((sz, cx) => { if (lookBox({ workW: sz.width })) { this.dirty = true; cx.notify(); } }).size_full().relative().overflow_hidden().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
       .child(texture(u, "strip", 2560, 48))
+      .when(Boolean(veil()), (el) => el.child(veil()))
       .child(left)
       .child(div().flex_1())
       .when(Boolean(mana), (el) => el.child(mana))

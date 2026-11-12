@@ -99,42 +99,79 @@
           "window_drag": true
         },
         {
+          "id": "ledge",
+          "type": "block",
+          "content": {
+            "mod": "pixel-quest",
+            "props": {
+              "role": "ledge"
+            }
+          },
+          "size": {
+            "px": 8
+          }
+        },
+        {
           "id": "work-body",
           "type": "row",
           "children": [
             {
-              "id": "main",
-              "type": "block",
-              "content": {
-                "tab": "active",
-                "pane": {
-                  "header": {
-                    "content": {
-                      "mod": "pixel-quest",
-                      "props": {
-                        "role": "pane"
-                      }
-                    },
-                    "reveal": "always",
-                    "height": 32,
-                    "position": "top"
+              "id": "main-wrap",
+              "type": "column",
+              "children": [
+                {
+                  "id": "main",
+                  "type": "block",
+                  "content": {
+                    "tab": "active",
+                    "pane": {
+                      "header": {
+                        "content": {
+                          "mod": "pixel-quest",
+                          "props": {
+                            "role": "pane"
+                          }
+                        },
+                        "reveal": "always",
+                        "height": 32,
+                        "position": "top"
+                      },
+                      "background": "#00000000",
+                      "border": {
+                        "width": 2,
+                        "color": "#05060c"
+                      },
+                      "focus": {
+                        "width": 2,
+                        "color": "#d49a3a"
+                      },
+                      "radius": 0,
+                      "gap": 8,
+                      "lone": true
+                    }
                   },
-                  "background": "#00000000",
-                  "border": {
-                    "width": 2,
-                    "color": "#05060c"
-                  },
-                  "focus": {
-                    "width": 2,
-                    "color": "#d49a3a"
-                  },
-                  "radius": 0,
-                  "gap": 8,
-                  "lone": true
+                  "background": {
+                    "image": "mods/pixel-quest/art/look/deco-dark-none-136.png",
+                    "fit": "cover"
+                  }
                 }
-              },
+              ],
+              "floating": [
+                {
+                  "id": "party",
+                  "content": {
+                    "mod": "pixel-quest",
+                    "props": {
+                      "role": "party"
+                    }
+                  },
+                  "edge": "right",
+                  "align": "center",
+                  "peek": 58
+                }
+              ],
               "background": {
-                "image": "mods/pixel-quest/art/tablet.png",
+                "image": "mods/pixel-quest/art/look/tablet-dark-none.png",
                 "fit": "cover"
               }
             },
@@ -184,22 +221,19 @@
               "background": "#121731"
             }
           ],
-          "padding": 8,
-          "gap": 8,
-          "floating": [
-            {
-              "id": "party",
-              "content": {
-                "mod": "pixel-quest",
-                "props": {
-                  "role": "party"
-                }
-              },
-              "edge": "right",
-              "align": "center",
-              "peek": 58
-            }
-          ]
+          "padding": [
+            0,
+            8
+          ],
+          "gap": 8
+        },
+        {
+          "id": "ledge-under",
+          "type": "column",
+          "size": {
+            "px": 8
+          },
+          "children": []
         },
         {
           "id": "sill",
@@ -239,7 +273,8 @@
     12,
     10
   ],
-  "terminal_opacity": 0.3,
+  "terminal_opacity": 0,
+  "toast": "pixel-quest",
   "divider": {
     "width": 2,
     "color": "#05060c"

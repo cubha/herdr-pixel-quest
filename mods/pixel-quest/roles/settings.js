@@ -12,7 +12,7 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook } from "../kit.js";
 import { titleOf } from "../progress.js";
 
 const SOUNDS = { done: "mods/pixel-quest/sounds/quest-done.mp3", blocked: "mods/pixel-quest/sounds/quest-blocked.mp3" };
@@ -105,7 +105,8 @@ export default class Settings {
         .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : P.text).child(label)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
     };
     const zoom = Number(settings()?.zoom) || 1;
-    const font = Number(settings()?.font_size) || 12;
+    const font = Number(shared("pq.font_size")) || Number(settings()?.font_size) || 12;
+    const flag = (key) => shared(key) !== false;
     const setFont = (cx, n) => { this.note = `터미널 글꼴 크기 ${setTermFont(n)}`; cx.notify(); };
     return v_flex().gap(u(6))
       .child(small(u, "레이아웃", P.gt2))
@@ -114,7 +115,12 @@ export default class Settings {
       .child(this.row(u, "화면 크기", "Ctrl + / Ctrl - 와 같음",
         this.stepper(u, "zoom", `${Math.round(zoom * 100)}%`, () => run("app.zoom_out"), () => run("app.zoom_in"))))
       .child(this.row(u, "터미널 글꼴 크기", "Galmuri는 12에서 가장 또렷함",
-        this.stepper(u, "font", String(font), (_e, cx) => setFont(cx, font - 1), (_e, cx) => setFont(cx, font + 1))));
+        this.stepper(u, "font", String(font), (_e, cx) => setFont(cx, font - 1), (_e, cx) => setFont(cx, font + 1))))
+      .child(small(u, "던전 연출", P.gt2))
+      .child(this.row(u, "시간대 연출", "창문 하늘 · 석판 빛줄기 · 낮엔 촛대 꺼짐 · 라이트는 밤에 침침",
+        this.toggle(u, "look-time", flag("pq.time"), () => { setShared("pq.time", !flag("pq.time")); applyLook(); })))
+      .child(this.row(u, "계절 장식", "겨울 눈 · 봄 벚꽃 · 여름 덩굴 · 가을 낙엽 · 할로윈 · 크리스마스",
+        this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })));
   }
 
   sound(u) {

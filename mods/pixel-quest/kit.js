@@ -9,9 +9,10 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, layout } from "herdr";
+import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, window as hwin } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
+import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim } from "./look.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -72,10 +73,20 @@ const RAMPS = {
   red: { tl: "#e0564f", br: "#8a1a1a", mid: "#c0392b" },
 };
 
-/** u(n): n screen px at zoom 1, in layout px (so art stays 1:1 on screen). */
-export function unit() {
+// Light surfaces that dim out of daylight (look.js dim), and the time of day / season
+// the shown look is in (shared pq.look, written by applyLook).
+const DIMMED = ["wall", "chrome", "fill", "raised", "hover", "stone", "well"];
+export const look = () => shared("pq.look") ?? { theme: "dark", phase: "none", season: "none" };
+
+/** u(n): n screen px at zoom 1, in layout px (so art stays 1:1 on screen).
+ *  o.dim false: keep the daylight surfaces (the pane header, the party drawer). */
+export function unit(o = {}) {
   // Every render starts here, so this is where the palette follows the theme.
-  Object.assign(P, isLight() ? LIGHT : DARK);
+  const light = isLight();
+  Object.assign(P, light ? LIGHT : DARK);
+  const lk = look();
+  P.phase = light && o.dim !== false ? lk.phase : "none";
+  if (light && o.dim !== false) for (const k of DIMMED) P[k] = dim(LIGHT[k], "light", lk.phase);
   const z = Number(settings()?.zoom) || 1;
   const u = (n) => n / z;
   u.z = z;
@@ -102,6 +113,16 @@ export function texture(u, name, w, h) {
   return pic(u, name, w, h).absolute().top(0).left(0);
 }
 
+// The light look out of daylight: a see-through veil over the stone textures (one
+// color per time of day, look.js DIM as out = in x (1 - a) + c x a), so no second set
+// of big textures has to be loaded (Herdr keeps every image it has drawn).
+const VEIL = { dawn: "#20004c30", dusk: "#5511003d", night: "#0017725c" };
+/** The veil for the shown time of day, or nothing (dark look, daylight). */
+export function veil() {
+  const c = P.light ? VEIL[P.phase] : null;
+  return c ? div().absolute().top(0).left(0).right(0).bottom(0).bg(c) : null;
+}
+
 /** The big stone floor behind a panel (480x1600 flagstones). */
 export const FLOOR = ["floor", 480, 1600];
 
@@ -109,6 +130,7 @@ export const FLOOR = ["floor", 480, 1600];
 export function bandHead(u, title) {
   return h_flex().flex_none().relative().overflow_hidden().h(u(20)).px(u(8)).items_center().border_b(u(2)).border_color(P.ink)
     .child(texture(u, "strip", 2560, 48))
+    .when(Boolean(veil()), (el) => el.child(veil()))
     .child(div().relative().bg(P.chrome).border(u(2)).border_color(P.ink).px(u(6))
       .child(div().font_family(SMALL).text_size(u(10)).line_height(`${u(12)}px`).text_color(P.gt).child(title)));
 }
@@ -160,10 +182,15 @@ export function frame(u, kind, content, o = {}) {
   let inner = div().flex().flex_col().flex_1().min_w(0).min_h(0).bg(o.bg ?? P.fill)
     .pt(u(pad[0])).pb(u(pad[0])).pl(u(pad[1])).pr(u(pad[1]));
   // A stone floor (and a cobweb) under the content, cut to the window.
-  if (o.floor || o.web) inner = inner.relative().overflow_hidden();
+  if (o.floor || o.web || o.edge) inner = inner.relative().overflow_hidden();
   // The floor is 480px wide: a second copy covers windows wider than that.
-  if (o.floor) inner = inner.child(texture(u, ...FLOOR)).child(pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1])));
+  if (o.floor) inner = inner.child(texture(u, ...FLOOR)).child(pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1])))
+    .when(Boolean(veil()), (el) => el.child(veil()));
   if (o.web) inner = inner.child(web(u, o.web));
+  // The season on a sidebar panel's floor (snow, petals, leaves) and on its top edge.
+  const se = o.edge ? look().season : "none";
+  const th = P.light ? "light" : "dark";
+  if (PILES.has(se)) inner = inner.child(pic(u, `look/pile-${th}-${se}`, 242, 28).absolute().bottom(0).left(u(3)));
   inner = inner.child(content);
   const body = div().flex().flex_col().flex_1().min_w(0).min_h(0).border(u(2)).border_color(P.ink)
     .child(layer(u, r.tl, r.br,
@@ -174,7 +201,17 @@ export function frame(u, kind, content, o = {}) {
     const k = (v, h) => pic(u, "knob-gold", 16).absolute()[v](0)[h](0);
     el = el.child(k("top", "left")).child(k("top", "right")).child(k("bottom", "left")).child(k("bottom", "right"));
   }
+  if (CAPS.has(se)) el = el.child(seasonCap(u, se));
   return el;
+}
+
+const PILES = new Set(["winter", "xmas", "spring", "autumn"]);
+const CAPS = new Set(["winter", "xmas", "spring", "summer", "autumn", "halloween"]);
+/** What the season lays on a top edge (8px: snow caps, petals, leaves), cut to the box. */
+export function seasonCap(u, se = look().season) {
+  if (!CAPS.has(se)) return div();
+  return div().absolute().top(0).left(0).right(0).h(u(8)).overflow_hidden()
+    .child(pic(u, `look/cap-${P.light ? "light" : "dark"}-${se}`, 2560, 8).absolute().top(0).left(0));
 }
 
 /** A thin 2-layer frame for rows and chips: ink, then light/dark bevel. */
@@ -256,22 +293,78 @@ export function openPalette() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
 }
 
-/** The terminal font size. The layout sets its own (12), which beats settings.json, and
- *  Herdr keeps the layout's tree in layouts/.state, so it changes through layout.set on the
- *  shown layout. The choice is kept (shared pq.font_size) and given to the other look when
- *  it shows (keepTermFont). */
+// ---- the look: time of day and seasons on the work area (look.js) ----
+// The layout file is written directly (never layout.set: layout() leaves out the
+// panel's hidden flag and layout.set clears the clicks in layouts/.state). Only the
+// shown Pixel Quest layout, only when something changed.
+const box = { vw: 0, vh: 0, workW: 0 };
+let busy = false, again = false;
+
+/** The status bar reports the window and the work column (render / on_size_change). */
+export function lookBox(next) {
+  const changed = Object.keys(next).some((k) => next[k] && Math.round(next[k]) !== Math.round(box[k] ?? 0));
+  Object.assign(box, next);
+  return changed;
+}
+
+/** Writes the look (time, season, box shape, font size) into the shown layout file. */
+export async function applyLook() {
+  if (busy) { again = true; return; }
+  busy = true;
+  try {
+    const name = String(shared("layout") ?? "");
+    if (!name.startsWith("pixel-quest")) return;
+    const theme = name.includes("light") ? "light" : "dark";
+    const now = lookNow(new Date(), { time: shared("pq.time") !== false, seasons: shared("pq.seasons") !== false });
+    // pixel-quest.look_phase / look_season: try another time or season (shared pq.lookTest).
+    const test = shared("pq.lookTest") ?? {};
+    if (test.phase) now.phase = test.phase;
+    if (test.season) now.season = test.season;
+    const path = `${appHome()}/layouts/${name}.json`;
+    const text = await readTextFile(path);
+    if (!text) return;
+    let state = null;
+    try { state = JSON.parse((await readTextFile(`${appHome()}/layouts/.state/${name}.json`)) ?? "null"); } catch { state = null; }
+    let file = null;
+    try { file = JSON.parse(text); } catch { return; }
+    const area = box.workW ? mainArea({ vw: box.vw, vh: box.vh, workW: box.workW, panel: panelState(file, state) }) : { w: 0, h: 0 };
+    // Two windows share the file: only the active one says which shape to draw for,
+    // the other keeps the file's (no flip-flop between differently sized windows).
+    const kept = Number(/deco-[a-z]+-[a-z]+-(\d+)\.png/.exec(text)?.[1]);
+    const bucket = hwin()?.active === false && kept ? kept : bucketOf(area.w, area.h);
+    const art = lookArt({ theme, ...now, bucket });
+    const prev = shared("pq.look");
+    if (!prev || prev.theme !== theme || prev.phase !== now.phase || prev.season !== now.season) setShared("pq.look", { theme, ...now });
+    const panelColor = theme === "light" ? dim(LIGHT.fill, "light", now.phase) : undefined;
+    const next = layoutWith(text, { art, fontSize: Number(shared("pq.font_size")) || undefined, panelColor });
+    if (next && next !== text) await writeTextFile(path, next, text);
+  } catch { /* a stale read (someone else wrote the file): the next tick tries again */ } finally {
+    busy = false;
+    if (again) { again = false; applyLook(); }
+  }
+}
+
+const CYCLE = { phase: ["dawn", "day", "dusk", "night"], season: ["winter", "xmas", "spring", "summer", "autumn", "halloween"] };
+/** Shows the next time of day or season to try it (after the last one: the real one again). */
+export function tryLook(kind) {
+  const test = { ...(shared("pq.lookTest") ?? {}) };
+  const list = CYCLE[kind];
+  const i = list.indexOf(test[kind]);
+  test[kind] = i < list.length - 1 ? list[i + 1] : undefined;
+  setShared("pq.lookTest", test.phase || test.season ? test : null);
+  applyLook();
+  return test[kind] ?? "지금";
+}
+
+/** The terminal font size. The layout sets its own (12), which beats settings.json, so it
+ *  goes into the shown layout file (applyLook); the choice (shared pq.font_size) follows to
+ *  the other look when that one shows. */
 export function setTermFont(n) {
   if (!Number.isFinite(Number(n))) return null;
   const size = Math.max(9, Math.min(20, Math.round(n)));
   setShared("pq.font_size", size);
-  const l = layout();
-  if (l && typeof l === "object") run("layout.set", { layout: { ...l, font_size: size } });
+  applyLook();
   return size;
-}
-/** Gives the shown layout the kept font size, if it has another one. */
-export function keepTermFont() {
-  const want = Number(shared("pq.font_size"));
-  if (want && Number(settings()?.font_size) !== want) setTermFont(want);
 }
 
 /** Renames a tab or a space (id; none: the one shown) in the theme's window (role prompt),
@@ -452,7 +545,7 @@ export function panel(u, title, right, content, o = {}) {
   const body = div().flex().flex_col().flex_1().min_h(0).gap(u(6))
     .when(Boolean(title), (el) => el.child(plaque(u, title, right)))
     .child(content);
-  return frame(u, o.kind ?? "gold", body, { pad: o.pad ?? [6, 6], margin: 4, floor: o.floor, web: o.web }).flex_1().min_h(0);
+  return frame(u, o.kind ?? "gold", body, { pad: o.pad ?? [6, 6], margin: 4, floor: o.floor, web: o.web, edge: o.edge }).flex_1().min_h(0);
 }
 
 /** A thin bronze outline that marks the selected row (no fill change). */

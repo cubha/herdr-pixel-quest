@@ -35,7 +35,10 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 파티 서랍 | 오른쪽 가장자리의 플로팅 서랍. 보석과 초상만 보이다가 마우스를 올리면 이름이 나옴 |
 | 접힌 사이드바 | 문장과 보석만 남은 레일 |
 | 던전 디테일 | 사이드바 패널 안쪽 석판 바닥, 두 패널 사이 쇠사슬과 거미줄, 탭바·상태바 벽돌 띠, 횃불 양옆 벽 촛대(깜빡임), 상태바 이끼, 작업 영역 아래 돌 문턱. 그림은 늘리지 않고 원래 크기로 잘라 씀 |
-| 터미널 석판·횃불빛 | 터미널 영역 전체에 금 간 통짜 석판 한 장(`tablet.png`, 라이트는 `tablet-slate.png`)을 깔고, 탭바 횃불 바로 아래에서 따뜻한 빛이 번짐. 칸 바탕은 투명이라 칸을 나눠도 석판이 한 장으로 이어짐. `terminal_opacity` 0.3. ANSI 8번(회색)은 가장 밝은 곳에서도 대비 3 이상이 되도록 `#807aa4`로 밝힘 |
+| 터미널 석판·횃불빛 | 터미널 영역 전체에 금 간 통짜 석판 한 장을 깔고, 탭바 횃불 바로 아래에서 따뜻한 빛이 번짐. 칸 바탕은 투명이라 칸을 나눠도 석판이 한 장으로 이어짐. 예전 `terminal_opacity` 0.3이 덮던 테마 바탕색을 석판 그림에 미리 구워 넣고 `terminal_opacity`는 0(보이는 모습은 같고, 장식이 제 색으로 보임). ANSI 8번(회색)은 가장 밝은 곳에서도 대비 3 이상이 되도록 `#807aa4`로 밝힘 |
+| 시간대 연출 | 컴퓨터 시계를 따라 바뀜(새벽 5–7 · 낮 7–17 · 저녁 17–21 · 밤 21–5). 탭바 벽 양쪽 창문의 하늘과 해·달, 창문에서 석판으로 드는 빛줄기(새벽 분홍 · 낮 곧게 · 저녁 주황 · 밤 달빛), 낮에는 촛대가 꺼지고 연기만 남음. 다크의 밤은 석판 가장자리가 어두워지고 횃불 아래만 따뜻함. 라이트는 낮이 기본이고 새벽·저녁·밤에는 벽돌·바닥·석판·사이드바가 침침해지며 촛불 둘레만 밝음. 설정 창에서 끌 수 있음 |
+| 계절 장식 | 1–2월 겨울(바닥 눈 더미·고드름·작업 영역 테두리 위와 액자 위 눈) · 3–5월 봄(벚꽃 가지·들꽃·꽃잎 더미) · 6–8월 여름(늘어진 덩굴·빛버섯) · 9·11월 가을(낙엽 더미·단풍 덩굴) · 10월 할로윈(초록 불꽃·거미줄·호박등·박쥐) · 12월 크리스마스(꼬마전구·트리·화환). 석판 이끼 색도 계절 따라 바뀜. 장식은 석판 위·글자 아래 층이라 터미널 글자를 가리지 않고, 패널을 열거나 사이드바를 접어도 모서리 장식이 잘리지 않게 작업 영역 모양(5가지)에 맞는 그림을 고름. 움직이지 않음(전구·빛버섯도 켜진 채). 설정 창에서 끌 수 있음 |
+| 레벨업 바로 착용 | 레벨업 배너에 새로 열린 액자·배너의 "바로 착용" 버튼 |
 | 소리 | 8비트 효과음 `quest-done.mp3`(상승 아르페지오)와 `quest-blocked.mp3`(두 번 부르는 경고음) |
 
 ### 화면
@@ -149,7 +152,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 
 상태줄이 없으면 `node /path/to/pq-usage.js`만 넣습니다. Node로 만든 상태줄이면 그 안에서 `require("/path/to/pq-usage.js").save(input)`를 불러도 됩니다. Claude Code는 WSL에, Herdr는 Windows에 있으면 `PQ_USAGE_FILE=/mnt/c/Users/<나>/.config/herdr-app/pixel-quest-usage.json`을 지정하세요. 파일이 없으면 게이지는 나오지 않습니다. 모델별(예: Fable) 주간 한도는 상태줄 값에 없어서 표시하지 않습니다.
 
-**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal` · `pixel-quest.help` · `pixel-quest.rename_tab` · `pixel-quest.rename_space`는 팔레트·찾기·설정·모험 일지·단축키·탭/스페이스 이름 바꾸기를 엽니다. keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
+**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal` · `pixel-quest.help` · `pixel-quest.rename_tab` · `pixel-quest.rename_space`는 팔레트·찾기·설정·모험 일지·단축키·탭/스페이스 이름 바꾸기를 엽니다. `pixel-quest.levelup`은 지금 레벨의 레벨업 배너를 띄워 봅니다. `pixel-quest.look_phase` · `pixel-quest.look_season`은 시간대(새벽→낮→저녁→밤→지금)·계절(겨울→크리스마스→봄→여름→가을→할로윈→지금)을 하나씩 넘겨 미리 봅니다. `pixel-quest.toast`는 알림 토스트 견본을 오류→경고→성공→안내 순으로 하나씩 띄웁니다. keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
 
 ## 폴더
 
@@ -165,7 +168,9 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
 | `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
-| `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy) |
+| `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy). `slab()`은 이끼를 뺀 석판도 만듦 |
+| `art-src/gen_look.py` | 시간대·계절 그림 생성기: 시간대별 석판, 계절·작업 영역 모양별 장식 층, 창문, 액자 위 띠, 사이드바 바닥 더미, 라이트 침침 텍스처 → `mods/pixel-quest/art/look/` |
+| `mods/pixel-quest/look.js` | 시간대·계절 판정, 작업 영역 모양 구간, 레이아웃 파일에 쓸 배경(단위 테스트 `tests/look.test.mjs`) |
 | `art-src/gen_faces.py` | 파티 초상 48종(+잠긴 초상 실루엣) 생성기. `python3 art-src/gen_faces.py mods/pixel-quest/art` |
 | `art-src/gen_rewards.py` · `gen_battle.py` · `gen_rest.py` · `gen_thumbs.py` | 액자 6종·깃발·왕관, 칼·불꽃, 모닥불·보상상자·말풍선, 설정 창 레이아웃 미리보기 생성기(같은 방식으로 실행) |
 | `art-src/gen_party_gif.py` | README의 파티 연출 GIF. `python3 art-src/gen_party_gif.py mods/pixel-quest docs/screens/party-effects.gif` |
@@ -185,8 +190,9 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 
 ## 한계 (Herdr 0.1.14 기준)
 
-- 도트 PNG는 `zoom`과 상관없이 화면 1:1로 그립니다(`kit.js`의 `unit()`). 125%·150% Windows 화면 배율에서는 이미지가 보간되어 조금 흐려질 수 있습니다. 이 구성은 100% 배율에서 확인했습니다.
-- 알림 토스트, 엿보기 막대, 환영 화면, Herdr 기본 설정 창, 그리고 **단축키로 닫을 때의** 확인 대화상자는 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다(이름 바꾸기·단축키·워크트리·머신 추가 창과 테마에서 닫을 때의 확인창은 테마가 그림. 이름 바꾸기·단축키는 `-Palette`로 키를 연결해야 키로 열 때도 테마 창). 퀘스트 배너는 별도 창으로 띄웁니다.
+- 도트 PNG는 `zoom`과 상관없이 화면 1:1로 그립니다(`kit.js`의 `unit()`). Windows 화면 배율 125%·150%에서도 배치는 그대로 맞고(2026-11-11 실기 확인), 그림만 보간되어 조금 흐려집니다.
+- 배경 그림은 움직일 수 없어서(GIF·APNG도 첫 장면만) 계절 장식은 정지 그림입니다. 시간대·계절·작업 영역 모양이 바뀌면 테마가 레이아웃 파일의 배경을 직접 고쳐 씁니다(`layout.set`은 패널 숨김 값과 열림 기록을 지우므로 쓰지 않음).
+- 알림 토스트는 레이아웃의 `"toast": "pixel-quest"`로 테마가 그립니다(돌판 창, 오류는 빨간 테두리, 왼쪽 상태 보석). 엿보기 막대, 환영 화면, Herdr 기본 설정 창, 그리고 **단축키로 닫을 때의** 확인 대화상자는 Herdr가 직접 그리므로 테마 색과 글꼴만 반영됩니다(이름 바꾸기·단축키·워크트리·머신 추가 창과 테마에서 닫을 때의 확인창은 테마가 그림. 이름 바꾸기·단축키는 `-Palette`로 키를 연결해야 키로 열 때도 테마 창). 퀘스트 배너는 별도 창으로 띄웁니다.
 - Herdr 애니메이션은 위치·투명도를 오가는 것만 되므로, 보석 비는 배너가 떠 있는 동안 타이머로 움직입니다.
 - 파티 서랍과 기본 우클릭 메뉴의 바깥 틀(둥근 모서리, 그림자)은 Herdr가 그립니다.
 - 소지품(Files)·변경(Changes) 패널은 Herdr 기본 모드를 고쳐 테마가 그립니다(소지품에는 검색을 붙임). 미리보기는 특정 줄로 이동하는 기능이 Herdr 편집기에 없어서 줄 번호만 머리에 표시합니다.

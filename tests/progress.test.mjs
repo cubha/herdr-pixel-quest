@@ -104,3 +104,13 @@ test("update day: the old level (1 per 5 quests) is a floor until the curve catc
   assert.equal(G.progressAt(17, undefined).lv, 4);
   assert.deepEqual(G.progressAt(17, 1), G.progress(17));
 });
+
+test("level-up: frames and banners the new level opens can be put on at once", () => {
+  assert.deepEqual(G.equipables(2, { frame: "wood", banner: "basic" }),
+    [{ kind: "frame", key: "bronze", text: "청동 액자", shared: "pq.frame", on: false }]);
+  assert.deepEqual(G.equipables(20, { frame: "crown", banner: "legend" }),
+    [{ kind: "banner", key: "legend", text: "전설 배너", shared: "pq.bannerStyle", on: true }]);
+  // Portraits, titles and the badge need no putting on.
+  assert.deepEqual(G.equipables(3, {}), []);
+  assert.deepEqual(G.equipables(19, {}), []);
+});
