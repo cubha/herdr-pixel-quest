@@ -178,6 +178,13 @@ are Korean; every picture is original pixel art.
 - `herdr-app check` renders the mod without props; to check each role, copy the folder and
   force `props.role` in `main.js`.
 - Herdr's JS `Date` ignores `toLocaleString` options: format dates by hand.
+- `.transition("left", …)` did not move an element in Herdr 0.1.15 (measured: the target changed,
+  the element stayed); `.spring("left", { response, damping: 1 })` does. The pet walks on a spring.
+- There is no image flip: mirrored art is its own file (`pet-*-r.png`).
+- `notify()` called while a view renders never shows (measured): the status bar sees quests and
+  the full party in `render`, so their medals queue and go out from a 0.5 s timer.
+- The status block is 44 px: the 8 px gap and the 8 px stone sill above the 28 px bar are drawn by
+  the status role, so the pet's marks can stand above its head (look.js moves older layouts).
 - A light theme needs its own well color for inputs: text on `P.ink` vanishes there (`P.well`).
 - Galmuri is crisp at 12px (11) and 10px (9); other sizes blur. At Windows display scaling of
   125% or 150% the 2x art is resampled.

@@ -3,12 +3,14 @@
 // gems | crown | legend, unlocked by level). With props.levelUp it is the
 // level-up banner instead, listing what the new level gives. It leaves by
 // itself after a few seconds. Click: go to that agent's pane (level up: open
-// the adventure log). A new frame or banner can be put on right there (바로 착용). Copyright (c) 2026 cubha. MIT License.
+// the adventure log). A new frame or banner can be put on right there (바로 착용). props.gold:
+// the gold the quest made (one more line, "+10 G"). Copyright (c) 2026 cubha. MIT License.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay, run, shared, setShared } from "herdr";
-import { P, unit, root, pic, frame, small, button, rewardIcon, openJournal } from "../kit.js";
+import { P, unit, root, pic, frame, small, button, rewardIcon, openJournal, coin } from "../kit.js";
+import { fmt } from "../economy.js";
 import { rewardsAt, titleOf, equipables } from "../progress.js";
 
 // Gems falling in the gem-rain banners: [left, start offset, speed px/s, art, size].
@@ -88,6 +90,7 @@ export default class Quest {
         small(u, `보상: 경험치 +1 · 누적 퀘스트 ${p.quests ?? 1}`, P.done),
       ];
     }
+    if (p.gold) lines.push(h_flex().gap(u(4)).items_center().justify_center().child(coin(u)).child(small(u, `+${fmt(p.gold)} G`, P.gt2)));
     const body = v_flex().relative().size_full().overflow_hidden().items_center().justify_center().gap(u(4))
       .children(deco)
       .child(h_flex().gap(u(8)).items_center()

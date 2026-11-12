@@ -9,7 +9,7 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
-import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp } from "../kit.js";
+import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop } from "../kit.js";
 import { keyParts as capsOf } from "../dialogs.js";
 
 const SHOWN = 8, ROW_H = 28, HEAD_H = 22;
@@ -51,7 +51,11 @@ const NAMED = [
   ["window.close", {}, "창", "창 닫기", "close window quit"],
   ["pq:settings", {}, "앱", "던전 설정", "settings preferences theme sound pixel quest"],
   ["pq:journal", {}, "앱", "모험 일지", "journal level quest unlock frame banner"],
+  ["pq:shop", {}, "앱", "펫 상점", "pet shop gold buy dex collection"],
+  ["pq:dex", {}, "앱", "펫 도감", "pet dex collection choose"],
+  ["pq:medals", {}, "앱", "훈장 보기", "medals achievements badges"],
   ["pixel-quest.quest", {}, "앱", "퀘스트 배너 시험", "quest test banner"],
+  ["pixel-quest.pet_try", {}, "앱", "펫 상황 시험", "pet test mood"],
   ["app.settings", {}, "앱", "Herdr 기본 설정", "herdr settings machine update keys"],
   ["app.palette", {}, "앱", "Herdr 기본 팔레트 열기", "herdr palette command"],
   ["pq:help", {}, "앱", "단축키 보기", "keys keybindings shortcuts help"],
@@ -154,6 +158,9 @@ export default class Palette {
     this.close();
     if (e.name === "pq:settings") openSettings();
     else if (e.name === "pq:journal") openJournal();
+    else if (e.name === "pq:shop") openShop();
+    else if (e.name === "pq:dex") openShop("dex");
+    else if (e.name === "pq:medals") openJournal("medals");
     else if (e.name === "pq:goto") openGoto();
     else if (e.name === "pq:rename_tab") openRename("tab");
     else if (e.name === "pq:rename_space") openRename("space");

@@ -1,13 +1,15 @@
 // "모험 일지": the adventure log, opened from the status bar's quest count or
 // the brand's level badge. Level, title and the way to the next level, then
-// three tabs: 해금표 (what each level gives), 꾸미기 (the party's portrait frame
-// and the quest banner's decoration, locked ones say their level) and 최근
-// 퀘스트 (pq.log). Copyright (c) 2026 cubha. MIT License.
+// four tabs: 해금표 (what each level gives), 꾸미기 (the party's portrait frame
+// and the quest banner's decoration, locked ones say their level), 훈장 (the 17
+// medals: earned in color, the rest as dark silhouettes; hover or click shows the
+// condition, how far along and the reward) and 최근 퀘스트 (pq.log). Copyright (c) 2026 cubha. MIT License.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, shared, setShared, closeOverlay } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, cells, lvInfo, best, rewardIcon, bannerIcon, frameKey } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, cells, lvInfo, best, rewardIcon, bannerIcon, frameKey, eco, medalIcon } from "../kit.js";
+import { MEDALS, progressOf, medalGold, medalPet, fmt } from "../economy.js";
 import { REWARDS, FRAMES, BANNERS, MAX_LV, total, titleOf, pick } from "../progress.js";
 
 const two = (n) => String(n).padStart(2, "0");
@@ -54,8 +56,8 @@ export default class Journal {
       .child(cells(u, { pct: info.frac * 100, tone: P.g2 }, 20, 0, 12))
       .child(small(u, info.lv < MAX_LV ? `다음 보상: Lv.${info.lv + 1} ${next}` : "모든 보상을 얻었습니다. 레벨은 계속 오릅니다", P.dim));
     const tabs = h_flex().gap(u(4))
-      .children([["map", "해금표"], ["deco", "꾸미기"], ["log", "최근 퀘스트"]].map(([k, label]) =>
-        button(u, `jn-tab-${k}`, small(u, label, this.tab === k ? P.g3 : P.text), (_e, cx) => { this.tab = k; this.hint = null; cx.notify(); }, { on: this.tab === k, pad: [1, 8] })));
+      .children([["map", "해금표"], ["deco", "꾸미기"], ["medals", "훈장"], ["log", "최근 퀘스트"]].map(([k, label]) =>
+        button(u, `jn-tab-${k}`, small(u, label, this.tab === k ? P.g3 : P.text), (_e, cx) => { this.tab = k; this.hint = null; cx.notify(); }, { on: this.tab === k, pad: [1, 6] })));
 
     let content;
     if (this.tab === "map") {
@@ -80,6 +82,26 @@ export default class Journal {
         .child(h_flex().flex_wrap().gap(u(4)).children(FRAMES.map((it) => this.slot(u, "frame", it, lv, f))))
         .child(small(u, "퀘스트 완료 배너", P.gt2))
         .child(h_flex().flex_wrap().gap(u(4)).children(BANNERS.map((it) => this.slot(u, "banner", it, lv, b))));
+    } else if (this.tab === "medals") {
+      const e = eco(), ctx = { now: new Date(), best: lv };
+      const n = MEDALS.filter((m) => e.medals[m.id]).length;
+      const line = (m) => {
+        const pr = progressOf(m, e, ctx), pet = medalPet(m);
+        return [m.name, m.cond, pr.text, `+${fmt(medalGold(m))} G`, pet ? `펫 ${pet.name}` : ""].filter(Boolean).join(" · ");
+      };
+      const cell = (m) => {
+        const got = Boolean(e.medals[m.id]), sel = this.medal === m.id;
+        return v_flex().id(`jn-m-${m.id}`).w(u(40)).h(u(42)).items_center().justify_center().cursor_pointer()
+          .border(u(2)).border_color(sel ? P.g3 : P.ink).bg(got ? P.b1 : P.raised).hover((x) => x.border_color(P.g2))
+          .on_hover((h, cx) => { this.hint = h ? line(m) : null; cx.notify(); })
+          .on_click((_e, cx) => { this.medal = m.id; cx.notify(); })
+          .child(medalIcon(u, m, got));
+      };
+      const pickd = MEDALS.find((m) => m.id === this.medal);
+      this.picked = pickd ? line(pickd) : null;
+      content = v_flex().flex_1().min_h(0).gap(u(6))
+        .child(small(u, `훈장 ${n} / ${MEDALS.length}`, P.gt2))
+        .child(h_flex().id("jn-medals").flex_wrap().gap(u(4)).children(MEDALS.map(cell)));
     } else {
       const log = Array.isArray(shared("pq.log")) ? shared("pq.log") : [];
       content = v_flex().id("jn-log").flex_1().min_h(0).gap(u(2)).overflow_y_scrollbar()
@@ -88,7 +110,8 @@ export default class Journal {
           .child(div().w(u(70)).flex_none().child(small(u, when(e.at), P.dim)))
           .child(div().flex_1().min_w(0).truncate().child(small(u, e.name, P.text)))));
     }
-    const hint = this.hint ?? (this.tab === "deco" ? "잠긴 것에 마우스를 올리면 해금 레벨이 보입니다" : "퀘스트 = 에이전트가 일을 끝낸 횟수");
+    const hint = this.hint ?? (this.tab === "deco" ? "잠긴 것에 마우스를 올리면 해금 레벨이 보입니다"
+      : this.tab === "medals" ? (this.picked ?? "훈장에 마우스를 올리면 조건과 보상이 보입니다") : "퀘스트 = 에이전트가 일을 끝낸 횟수");
     const body = v_flex().size_full().gap(u(8))
       .child(plaque(u, "모험 일지"))
       .child(head)

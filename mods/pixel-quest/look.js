@@ -40,9 +40,10 @@ export function bucketOf(w, h) {
   return BUCKETS.reduce((best, b) => (Math.abs(Math.log(b / 100) - r) < Math.abs(Math.log(best / 100) - r) ? b : best), USUAL);
 }
 
-// The work column holds the tab bar (42), the season's ledge (8), the spacer under the
-// work body (8), the sill (8) and the status bar (28); the work body pads 8 at the sides
-// and between its children.
+// The work column holds the tab bar (42), the season's ledge (8) and the status block (44:
+// the spacer under the work body 8, the sill 8 and the bar 28, drawn by the status role so
+// the pet's marks can stand above its head); the work body pads 8 at the sides and between
+// its children.
 const BARS = 42 + 8 + 8 + 8 + 28, PAD = 8;
 
 /** The work area's size from the window (vw, vh), the work column's width and the side panel. */
@@ -110,6 +111,12 @@ export function layoutWith(text, { art, fontSize, panelColor } = {}) {
       work.children.splice(at, 1, { ...LEDGE }, body, { ...UNDER, children: [] });
       if (typeof body.padding === "number") body.padding = [0, body.padding];
     }
+  }
+  // The spacer and the sill go into the status block, which draws them itself (same height).
+  const bar = find(root, "status");
+  if (work && Array.isArray(work.children) && bar && bar.size?.px === 28) {
+    work.children = work.children.filter((c) => c.id !== "ledge-under" && c.id !== "sill");
+    bar.size = { px: 44 };
   }
   const main = find(wrap, "main");
   if (!main) return null;

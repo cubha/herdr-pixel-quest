@@ -125,3 +125,17 @@ test("light dimming: day and dark stay, dusk and night darken the surfaces", () 
   assert.equal(L.dim("#e4e8f0", "light", "night"), "#929eca");
   assert.equal(L.dim("#e4e8f0", "light", "none"), "#e4e8f0");
 });
+
+test("the status bar takes in the spacer and the sill (8 + 8 + 28 = 44) so the pet's marks fit above its head", () => {
+  const withBar = JSON.parse(JSON.stringify(LAYOUT));
+  find(withBar, "work").children.push(
+    { id: "sill", type: "block", content: { mod: "pixel-quest", props: { role: "sill" } }, size: { px: 8 } },
+    { id: "status", type: "block", content: { mod: "pixel-quest", props: { role: "status" } }, size: { px: 28 } });
+  const art = L.lookArt({ theme: "dark", phase: "day", season: "none", bucket: 136 });
+  const once = L.layoutWith(JSON.stringify(withBar), { art });
+  const out = JSON.parse(once);
+  assert.deepEqual(find(out, "work").children.map((c) => c.id), ["tabs", "ledge", "work-body", "status"]);
+  assert.deepEqual(find(out, "status").size, { px: 44 });
+  assert.deepEqual(find(out, "status").content, { mod: "pixel-quest", props: { role: "status" } });
+  assert.equal(L.layoutWith(once, { art }), once);
+});

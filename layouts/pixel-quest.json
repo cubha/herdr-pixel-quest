@@ -228,27 +228,6 @@
           "gap": 8
         },
         {
-          "id": "ledge-under",
-          "type": "column",
-          "size": {
-            "px": 8
-          },
-          "children": []
-        },
-        {
-          "id": "sill",
-          "type": "block",
-          "content": {
-            "mod": "pixel-quest",
-            "props": {
-              "role": "sill"
-            }
-          },
-          "size": {
-            "px": 8
-          }
-        },
-        {
           "id": "status",
           "type": "block",
           "content": {
@@ -258,7 +237,7 @@
             }
           },
           "size": {
-            "px": 28
+            "px": 44
           }
         }
       ],

@@ -9,9 +9,10 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, window as hwin } from "herdr";
+import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, notify, window as hwin } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
+import { read as readEco, fmt, medalGold, medalPet } from "./economy.js";
 import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim } from "./look.js";
 
 export const ART = "mods/pixel-quest/art";
@@ -38,6 +39,8 @@ export const P = {
   b0: "#2e1a1e", b1: "#5a3418", b2: "#8a5a2a", b3: "#b8864a",
   // meanings (gold is decoration and selection only)
   done: "#3f9a4a", warn: "#ff9a2a", blocked: "#c0392b", working: "#3f74e0", idle: "#6a6488",
+  // not enough gold (the shop's cells, on bronze)
+  poor: "#ff9a8a",
   // gold text on panel surfaces (bright gold on dark, deep gold on parchment)
   gt: "#f6d870", gt2: "#d49a3a",
   // wells (inputs, tab tracks) sunk into a panel, and text on bronze plates
@@ -278,6 +281,29 @@ export const best = () => Math.max(bestAfter(shared("pq.best"), quests()), lvInf
 /** Opens the adventure log (levels, unlocks, looks, recent quests). */
 export function openJournal(tab = "map") {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 520, props: { role: "journal", tab } });
+}
+
+// ---- gold, medals and pets (economy.js; all in shared pq.eco) ----
+/** The economy state, filled in. */
+export const eco = () => readEco(shared("pq.eco"));
+export const setEco = (e) => setShared("pq.eco", e);
+/** The pet shop (role shop): tab shop | dex. */
+export function openShop(tab = "shop") {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 460, height: 400, props: { role: "shop", tab } });
+}
+/** The gold coin (8x8 art px). */
+export const coin = (u) => pic(u, "coin", 16);
+/** A medal (12x14 art px); a missing one as a black silhouette at 40%. */
+export function medalIcon(u, m, got = true) {
+  return got ? pic(u, `medal-${m.art}`, 24, 28) : div().flex_none().opacity(0.4).child(pic(u, "medal-lock", 24, 28));
+}
+/** A notification for each medal just earned (the themed toast shows the medal). */
+export function announce(got, sample = false) {
+  for (const m of got ?? []) {
+    const pet = medalPet(m);
+    notify({ title: `훈장: ${m.name}`, body: `${m.cond} · +${fmt(medalGold(m))} G${pet ? ` · 펫 ${pet.name}` : ""}${sample ? " (시험)" : ""}`,
+      level: "success", icon: `${ART}/medal-${m.art}.png` });
+  }
 }
 
 /** The theme's settings window and command palette (roles settings / palette). */

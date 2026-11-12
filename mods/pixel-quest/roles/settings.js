@@ -4,7 +4,7 @@
 //               (app.zoom_in/out) and the terminal font size (the layout's, kit setTermFont)
 //   알림        alert sounds on/off, 8-bit or Herdr's own, try each
 //   퀘스트·파티  the quest banner, the quest count reset, the party effects,
-//               the usage gauges, portraits back to automatic
+//               the usage gauges, the pet (shown, walking), portraits back to automatic
 // Herdr's own settings (machines, updates, keys) open from the bottom button.
 // Resets ask twice: the first press only arms the button.
 // Copyright (c) 2026 cubha. MIT License.
@@ -154,11 +154,14 @@ export default class Settings {
     return v_flex().gap(u(6))
       .child(small(u, "퀘스트", P.gt2))
       .child(this.row(u, "퀘스트 완료 배너", "작업이 끝나면 4.5초 동안", this.toggle(u, "q-banner", flag("pq.banner"), () => setShared("pq.banner", !flag("pq.banner")))))
-      .child(this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너는 남습니다",
+      .child(this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너와 골드·훈장·펫은 남습니다",
         this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; })))
       .child(small(u, "파티", P.gt2))
       .child(this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))))
       .child(this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges")))))
+      .child(small(u, "펫", P.gt2))
+      .child(this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 펫 상점에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))))
+      .child(this.row(u, "펫 걷기", "끄면 집 자리(파티 옆)에 가만히 있음", this.toggle(u, "q-petwalk", flag("pq.petWalk"), () => setShared("pq.petWalk", !flag("pq.petWalk")))))
       .child(this.row(u, "초상 자동 배정으로 되돌리기", `직접 고른 초상 ${picks}개`,
         this.twice(u, "f-reset", "되돌리기", () => { setShared(PICKS, {}); this.note = "초상을 모두 자동 배정으로 되돌렸습니다"; })));
   }

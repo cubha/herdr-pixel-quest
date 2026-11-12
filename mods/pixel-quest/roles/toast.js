@@ -4,6 +4,7 @@
 // window: a red frame for errors, bronze for the rest, the level's gem on the left.
 // Click: run its action (e.g. go to the agent) and dismiss it. Herdr closes it after
 // its timeout. A "needs login" error gets a copy button for the login command.
+// A medal's notification (status.js) shows the medal at its own size (24x28).
 // Modified from Herdr's shipped `toast` mod (Apache-2.0, Herdr 0.1.15).
 // Copyright (c) 2026 cubha. MIT License (see the repository's LICENSE).
 
@@ -23,7 +24,8 @@ export default class Toast {
     const command = login ? `hc machine login ${login[1]}` : null;
     const title = login ? `${login[1]} 로그인 필요` : p.title ?? "";
     const text = login ? command : p.body ?? "";
-    const mark = p.icon ? image(p.icon).w(u(18)).h(u(18)).flex_none() : gem(u, GEM[p.level] ?? "idle", "toast-gem");
+    const medal = /\/medal-[a-z]+-[a-z]+\.png$/.test(p.icon ?? "");
+    const mark = p.icon ? image(p.icon).w(u(medal ? 24 : 18)).h(u(medal ? 28 : 18)).flex_none() : gem(u, GEM[p.level] ?? "idle", "toast-gem");
     const lines = v_flex().flex_1().min_w(0).gap(u(2)).overflow_hidden()
       .child(div().truncate().text_color(p.level === "error" ? P.text : P.gt).child(title))
       .when(Boolean(text), (el) => el.child(small(u, text, P.muted).id("toast-body").truncate().tooltip(text)));

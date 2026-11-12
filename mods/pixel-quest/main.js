@@ -19,6 +19,7 @@
 //   palette  the command palette (keys.json "pixel-quest.palette")
 //   goto     "찾기": go to a tab, space or agent (the search button, "pixel-quest.goto")
 //   confirm  "close it?" for closes started from the theme's own menus
+//   shop     "펫 상점": buy pets for gold, pick the one along (상점 / 도감)
 //
 // Roles adapted from Herdr's shipped mods are marked in their files
 // (Apache-2.0, Herdr 0.1.14). Copyright (c) 2026 cubha. MIT License.
@@ -51,8 +52,9 @@ import Help from "./roles/help.js";
 import Worktree from "./roles/worktree.js";
 import Machine from "./roles/machine.js";
 import Confirm from "./roles/confirm.js";
+import Shop from "./roles/shop.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, ledge: Ledge, toast: Toast, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, ledge: Ledge, toast: Toast, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine, shop: Shop };
 
 export default class PixelQuest extends View {
   init(p, cx) {
