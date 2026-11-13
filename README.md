@@ -34,6 +34,7 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 모험 일지 | 브랜드의 `Lv` 배지나 상태바 퀘스트를 누르면 열림: 레벨·칭호·다음 레벨까지, 해금표, 꾸미기(액자·배너 고르기), 훈장, 최근 퀘스트 30개 |
 | 골드·훈장 | 퀘스트 +10 G, 최고 레벨이 오를 때 +50 G, 훈장 동 100 · 은 300 · 금 1,000 G. 훈장 17개(첫 걸음, 100·1,000번째, 하루 10·30개, 3·7·30일 연속, 한밤·새벽 퀘스트, 4명 동시 작업, Lv.10·20, 사계절, 펫 5·12마리, 모든 훈장) — 받으면 알림. 업데이트한 날 지금까지의 퀘스트·레벨만큼 한 번 소급 지급. 퀘스트를 초기화해도 골드·훈장·펫은 남음 |
 | 펫 | 상태바 오른쪽 판의 골드를 누르면 **펫 상점**(상점 8종 300~5,000 G, 도감 12종 — 4종은 훈장 전용). 데려간 펫은 파티 표시 오른쪽에 살며 상황을 몸으로 알림: 모두 쉬면 잠, 작업 중엔 걸어 다님, 입력 대기면 느낌표(누르면 그 에이전트로), 사용량 80% 넘으면 쭈그려 기며 배터리 깜빡(누르면 사용량 카드), 퀘스트 끝나면 뜀. 마우스를 올리면 오늘 퀘스트·연속 출석·가까운 훈장. 함께 끝낸 퀘스트(친밀도) 50·200에서 자람. 설정에서 펫 표시·걷기 끄기 |
+| 구역 | 설정 · 모양에서 고르는 일곱 구역: 던전·햇빛 석실(처음부터), 얼음 동굴(최고 Lv.4), 이끼 유적(훈장 "일주일 출석"), 용암 굴(Lv.12), 수정 광산(펫 상점 3,000 G), 왕좌의 방(훈장 "전설"). 구역마다 벽·바닥·석판·금속색·터미널 색과 구석 장면이 함께 바뀌고, 계절 장식은 그 장면 위에 쌓임. 잠긴 구역은 여는 조건만 보이고, 기능은 잠기지 않음 |
 | 파티 서랍 | 오른쪽 가장자리의 플로팅 서랍. 보석과 초상만 보이다가 마우스를 올리면 이름이 나옴 |
 | 접힌 사이드바 | 문장과 보석만 남은 레일 |
 | 던전 디테일 | 사이드바 패널 안쪽 석판 바닥, 두 패널 사이 쇠사슬과 거미줄, 탭바·상태바 벽돌 띠, 횃불 양옆 벽 촛대(깜빡임), 상태바 이끼, 작업 영역 아래 돌 문턱. 그림은 늘리지 않고 원래 크기로 잘라 씀 |
@@ -165,8 +166,9 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
+| `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
 | `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `shop`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)을, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
-| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 사용량 병합, 단축키·이름 바꾸기 글), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
+| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 구역, 사용량 병합, 단축키·이름 바꾸기 글), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_pets.py` | 펫 12종(3단계 × 깬·쭈그린 × 좌우), 동전, 훈장 17개, 느낌표·Z·배터리 생성기. `python3 art-src/gen_pets.py mods/pixel-quest/art` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
@@ -174,6 +176,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy). `slab()`은 이끼를 뺀 석판도 만듦 |
 | `art-src/gen_look.py` | 시간대·계절 그림 생성기: 시간대별 석판, 계절·작업 영역 모양별 장식 층, 창문, 액자 위 띠, 사이드바 바닥 더미, 라이트 침침 텍스처 → `mods/pixel-quest/art/look/` |
 | `mods/pixel-quest/look.js` | 시간대·계절 판정, 작업 영역 모양 구간, 레이아웃 파일에 쓸 배경(단위 테스트 `tests/look.test.mjs`) |
+| `art-src/gen_zones.py` · `art-src/zones/` | 구역 그림 생성기: 확정 시안 생성기 사본으로 구역마다 석판·장면·계절 장식·벽·바닥·패널 장식·금속 스프라이트·설정 카드 → `mods/pixel-quest/art/look/`, `art/zone/<구역>/`. `python3 art-src/gen_zones.py [구역]` |
 | `art-src/gen_faces.py` | 파티 초상 48종(+잠긴 초상 실루엣) 생성기. `python3 art-src/gen_faces.py mods/pixel-quest/art` |
 | `art-src/gen_rewards.py` · `gen_battle.py` · `gen_rest.py` · `gen_thumbs.py` | 액자 6종·깃발·왕관, 칼·불꽃, 모닥불·보상상자·말풍선, 설정 창 레이아웃 미리보기 생성기(같은 방식으로 실행) |
 | `art-src/gen_party_gif.py` | README의 파티 연출 GIF. `python3 art-src/gen_party_gif.py mods/pixel-quest docs/screens/party-effects.gif` |

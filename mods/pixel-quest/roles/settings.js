@@ -1,6 +1,7 @@
 // "설정": the theme's settings window, opened by the sidebar footer's 설정
 // button (and `pixel-quest.settings`). Three tabs:
-//   모양        the dark / light layout (layout.switch), screen zoom
+//   모양        the zone (구역: the dungeon, the sunlit chamber and five more, zones.js;
+//               a locked one says how it opens), screen zoom
 //               (app.zoom_in/out) and the terminal font size (the layout's, kit setTermFont)
 //   알림        alert sounds on/off, 8-bit or Herdr's own, try each
 //   퀘스트·파티  the quest banner, the quest count reset, the party effects,
@@ -12,11 +13,13 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco } from "../kit.js";
+import { ZONES, layoutOf, isOpen, howOpen } from "../zones.js";
 import { titleOf } from "../progress.js";
 
 const SOUNDS = { done: "mods/pixel-quest/sounds/quest-done.mp3", blocked: "mods/pixel-quest/sounds/quest-blocked.mp3" };
-const LOOKS = [["pixel-quest", "심연(다크)", "look-dark"], ["pixel-quest-light", "슬레이트(라이트)", "look-light"]];
+// The settings card's picture: the dark and light looks' own, else the zone's.
+const CARD = { dungeon: "look-dark", sunlit: "look-light" };
 const TABS = [["look", "모양", "ico-crystal"], ["sound", "알림", "ico-potion"], ["quest", "퀘스트·파티", "ico-key"]];
 
 export default class Settings {
@@ -94,23 +97,54 @@ export default class Settings {
       .child(button(u, `${id}-p`, small(u, "+", P.text), plus, { pad: [1, 6] }));
   }
 
+  // A zone's layout comes with the mod (zones/<layout>.json) and goes into layouts/ the first
+  // time it is picked, open: until then Herdr's own layout switching never shows it.
+  pickZone(cx, z) {
+    const name = layoutOf(z.key);
+    if (CARD[z.key]) { run("layout.switch", { name }); return; }
+    if (this.writing) return;
+    this.writing = true;
+    cx.spawn(async (cx) => {
+      try {
+        const text = await readTextFile(`${appHome()}/mods/pixel-quest/zones/${name}.json`);
+        if (!text) throw new Error("no layout");
+        // Installed already: kept (its look, font and panels) unless the mod's copy is newer.
+        const path = `${appHome()}/layouts/${name}.json`;
+        let have = null;
+        try { have = layouts().includes(name) ? JSON.parse((await readTextFile(path)) ?? "null") : null; } catch { have = null; }
+        if (!have || have.pq_zone !== JSON.parse(text).pq_zone) await writeTextFile(path, text);
+        this.note = `${z.name}에 들어섭니다`;
+        cx.timer?.after?.(300, () => run("layout.switch", { name }));
+      } catch { this.note = `${z.name}: 구역 파일을 찾지 못했습니다 (모드를 다시 설치해 주세요)`; }
+      finally { this.writing = false; cx.notify(); }
+    });
+  }
+
   look(u) {
     const shown = shared("layout");
     const names = layouts();
-    const card = ([name, label, art]) => {
-      const on = shown === name, have = names.includes(name);
-      return v_flex().id(`set-${name}`).flex_none().gap(u(2)).p(u(4)).border(u(2)).border_color(on ? P.g3 : P.ink).bg(on ? P.hover : P.raised)
-        .when(have, (el) => el.cursor_pointer().hover((s) => s.border_color(P.g2)).on_click(() => run("layout.switch", { name })))
-        .child(pic(u, art, 128, 80))
-        .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : P.text).child(label)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
+    const e = eco();
+    const at = { best: best(), medals: e.medals, zones: e.zones };
+    const card = (z) => {
+      const name = layoutOf(z.key), on = shown === name;
+      const open = isOpen(z.key, at), drawn = !CARD[z.key];
+      const can = open && (drawn || names.includes(name));
+      return v_flex().id(`set-${z.key}`).flex_none().gap(u(2)).p(u(4)).border(u(2)).border_color(on ? P.g3 : P.ink).bg(on ? P.hover : P.raised)
+        .when(can, (el) => el.cursor_pointer().hover((s) => s.border_color(P.g2)).on_click((_e, cx) => this.pickZone(cx, z)))
+        .when(!open, (el) => el.on_click((_e, cx) => { this.note = `${z.name}: ${howOpen(z.key)}에 열립니다`; cx.notify(); }))
+        .child(div().relative().w(u(128)).h(u(80))
+          .child(pic(u, CARD[z.key] ?? `zone/${z.key}/card`, 128, 80).when(!open, (el) => el.opacity(0.3)))
+          .when(!open, (el) => el.child(div().absolute().bottom(u(4)).left(u(4)).right(u(4)).flex().justify_center()
+            .child(div().bg(P.ink).border(u(2)).border_color(P.stone).px(u(4)).child(small(u, `잠김 · ${howOpen(z.key)}`, P.muted))))))
+        .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : open ? P.text : P.dim).child(z.name)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
     };
     const zoom = Number(settings()?.zoom) || 1;
     const font = Number(shared("pq.font_size")) || Number(settings()?.font_size) || 12;
     const flag = (key) => shared(key) !== false;
     const setFont = (cx, n) => { this.note = `터미널 글꼴 크기 ${setTermFont(n)}`; cx.notify(); };
     return v_flex().gap(u(6))
-      .child(small(u, "레이아웃", P.gt2))
-      .child(h_flex().gap(u(8)).children(LOOKS.map(card)))
+      .child(small(u, "구역", P.gt2))
+      .child(h_flex().flex_wrap().gap(u(8)).children(ZONES.map(card)))
       .child(small(u, "크기", P.gt2))
       .child(this.row(u, "화면 크기", "Ctrl + / Ctrl - 와 같음",
         this.stepper(u, "zoom", `${Math.round(zoom * 100)}%`, () => run("app.zoom_out"), () => run("app.zoom_in"))))

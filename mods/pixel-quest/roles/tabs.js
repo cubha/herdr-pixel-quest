@@ -135,6 +135,8 @@ export default class Tabs {
       // Brick band behind everything, cut to the bar.
       .child(texture(u, "strip", 2560, 48))
       .when(Boolean(veil()), (el) => el.child(veil()))
+      // The throne room hangs red pennants from the top of the wall (the mockup's).
+      .when(P.zone === "throne", (el) => el.children([160, 196, 232, 612, 644, 676].map((x) => pic(u, "pennant-red", 16, 32).absolute().top(u(2)).left(u(x)))))
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
       // The torch hangs in the middle of the bar, its glow dithered behind it.

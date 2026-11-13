@@ -40,7 +40,7 @@ export default class Toast {
         if (p.action?.name) run(p.action.name, p.action.args ?? {});
         closeOverlay(p.overlay);
       })
-      .child(frame(u, p.level === "error" ? "red" : "bronze", row, { pad: [4, 10], floor: true, margin: 0 }).size_full());
+      .child(frame(u, p.level === "error" ? "red" : "bronze", row, { pad: [4, 10], floor: true, margin: 0, thin: true }).size_full());
     return root(u, el);
   }
 }

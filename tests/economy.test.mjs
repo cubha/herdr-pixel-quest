@@ -247,3 +247,30 @@ test("a medal's pet comes along when none is (like the first pet bought)", () =>
   assert.ok(r.eco.pets.goldslime);
   assert.equal(r.eco.pet, "cat");
 });
+
+// ---- zones bought in the shop (stage 3: 수정 광산, 3,000 G) ----
+test("a zone for gold: crystal costs 3,000 G, once", () => {
+  const e = { ...E.read({}), gold: 3200 };
+  const r = E.buyZone(e, "crystal");
+  assert.equal(r.ok, true);
+  assert.equal(r.eco.gold, 200);
+  assert.deepEqual(r.eco.zones, ["crystal"]);
+  const again = E.buyZone(r.eco, "crystal");
+  assert.equal(again.ok, false);
+  assert.equal(again.eco.gold, 200);
+});
+
+test("a zone for gold: short of gold says by how much, other zones are not for sale", () => {
+  const poor = E.buyZone({ ...E.read({}), gold: 2500 }, "crystal");
+  assert.equal(poor.ok, false);
+  assert.equal(poor.eco.gold, 2500);
+  assert.match(poor.msg, /500 G가 모자랍니다/);
+  assert.equal(E.buyZone({ ...E.read({}), gold: 9999 }, "ice").ok, false);
+  assert.equal(E.ZONE_PRICE.crystal, 3000);
+});
+
+test("zones bought: read fills a missing or broken list", () => {
+  assert.deepEqual(E.read({}).zones, []);
+  assert.deepEqual(E.read({ zones: "x" }).zones, []);
+  assert.deepEqual(E.read({ zones: ["crystal"] }).zones, ["crystal"]);
+});

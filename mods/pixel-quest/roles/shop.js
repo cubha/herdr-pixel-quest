@@ -1,5 +1,6 @@
 // "펫 상점": one window, two tabs. 상점 sells the eight shop pets for gold (a click
-// buys at once, no selling back; short of gold the cell says by how much). 도감
+// buys at once, no selling back; short of gold the cell says by how much), and one zone
+// (수정 광산, zones.js; it then shows in 설정 · 모양). 도감
 // shows all twelve: owned ones at their growth stage with three pips, to pick the one
 // that walks the status bar (or none: 혼자 다니기); the rest as silhouettes with the way
 // to get them (four come only with a medal). Opened from the pet, the gold on the status
@@ -10,7 +11,7 @@ import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay } from "herdr";
 import { P, unit, root, pic, frame, plaque, small, button, eco, setEco, coin, announce, best } from "../kit.js";
-import { PETS, GROW, buy, choose, howTo, fmt, petArt, stageOf } from "../economy.js";
+import { PETS, GROW, buy, choose, howTo, fmt, petArt, stageOf, buyZone, ZONE_PRICE } from "../economy.js";
 
 export default class Shop {
   init() {
@@ -47,6 +48,19 @@ export default class Shop {
           this.hint = r.msg; cx.notify();
         });
       });
+      // Zones for gold: the cell says 열림 once bought.
+      grid = grid.concat(Object.entries(ZONE_PRICE).map(([key, price]) => {
+        const own = e.zones.includes(key), poor = !own && e.gold < price;
+        const name = "수정 광산";
+        const tagline = own ? small(u, "열림", P.onb)
+          : poor ? small(u, `${fmt(price - e.gold)} 모자람`, P.poor)
+          : h_flex().gap(u(3)).items_center().child(coin(u)).child(small(u, fmt(price), P.onb));
+        return this.cell(u, `shop-zone-${key}`, null, { name: "ico-crystal", w: 16, h: 16 }, [small(u, name, poor ? P.poor : P.onb), tagline], { own, tag: "구역" }, (_ev, cx) => {
+          const r = buyZone(eco(), key);
+          if (r.ok) setEco(r.eco);
+          this.hint = r.msg; cx.notify();
+        });
+      }));
     } else {
       grid = PETS.map((p) => {
         const own = e.pets[p.key], on = e.pet === p.key;

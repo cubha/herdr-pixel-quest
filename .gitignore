@@ -5,3 +5,4 @@ Thumbs.db
 mockups/canvas/
 mockups/render-v3/map.py
 .playwright-mcp/
+__pycache__/

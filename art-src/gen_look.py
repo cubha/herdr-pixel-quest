@@ -239,6 +239,14 @@ def tablet(theme, phase):
 
 
 # ───────────── the decoration layer, by season and box shape ─────────────
+# A zone's scene under the season's things (gen_zones.py sets these while it draws a zone's
+# decorations, None otherwise): SCENE = the scene's cover (H x W bool), GROUND = per column,
+# the top of the scene's lower part (or the floor). The season's things then settle on the
+# zone's things instead of burying them, and the props stand on flat ground.
+SCENE = None
+GROUND = None
+
+
 def deco(theme, season, bucket):
     light = theme == 'light'
     c = C[theme]
@@ -254,13 +262,53 @@ def deco(theme, season, bucket):
     n1, n2, n3 = vnoise(1, H, W, 90), vnoise(2, H, W, 26), vnoise(3, H, W, 7)
     L, R, T, B = 4, W - 4, HEAD + 2, H - 8
     mid = W / 2
+    SC = SCENE if SCENE is not None else np.zeros((H, W), bool)
+    G = np.minimum(GROUND, B) if GROUND is not None else np.full(W, B)
+
+    def spot(x0, x1):
+        """A sprite's place: the nearest x to x0 where the ground under it is flat, and how
+        far the ground rose there (0 on the bare floor)."""
+        if SCENE is None:
+            return int(x0), 0
+        w = int(x1 - x0)
+        for d in range(0, W, 2):
+            for x in (int(x0) + d, int(x0) - d):
+                if 0 <= x and x + w <= W:
+                    g = G[x + w // 4:x + w - w // 4]
+                    if g.max() - g.min() <= 4:
+                        return x, int(g.min()) - B
+        return int(x0), 0
+
+    def settle(h_floor, hc, k):
+        """Where the season's stuff lies over a zone's scene: as deep as on the bare floor
+        where nothing stands, a cap on the zone's things, its top line smoothed so it fills
+        the gaps between them but never banks far above its own ground."""
+        depth = np.minimum(hc + np.maximum(0, h_floor - (B - G)) * k, 90)
+        top = G - depth
+        top = np.convolve(np.pad(top, 15, mode='edge'), np.ones(31) / 31, mode='valid')
+        top = np.minimum(np.maximum(top, G - depth - 12), G - 2)[None, :]
+        return (yy >= top) & (yy < G[None, :]) & (xx >= L) & (xx < R) & ~SC, top
+
+    def caps(cols, k=2, seed=5, dens=1.0):
+        """The season's stuff on every upward face of a zone's things, k px deep."""
+        if SCENE is None:
+            return
+        up = SC & ~np.roll(SC, 2, 0)
+        lay = np.zeros((H, W), bool)
+        for d in range(2, k + 2, 2):
+            lay |= np.roll(up, -d, 0)
+        lay &= ~SC
+        rr = np.random.default_rng(seed)
+        idx = rr.integers(0, len(cols), (H // 2 + 1, W // 2 + 1)).repeat(2, 0).repeat(2, 1)[:H, :W]
+        keep = (rr.random((H // 2 + 1, W // 2 + 1)) < dens).repeat(2, 0).repeat(2, 1)[:H, :W]
+        ly.over((lay & keep).astype(np.float32), np.array(cols, np.float32)[idx])
 
     def moss_layer(col=None, k=0.85, grow=0.0):
         m = moss.astype(np.float32)
         ly.over(m, face)                                  # the tablet's own moss
         if col is None:
             return m
-        if grow:
+        if grow and SCENE is None:
             s1, s2 = screen_noise(1, H, W, 90), screen_noise(2, H, W, 26)   # the mockup's own blobs
             g = np.clip((s1 * 0.7 + s2 * 0.3 - (1 - grow)) * 6, 0, 1) * (yy > 513) * 0.8
             m = np.clip(m + g, 0, 1)
@@ -272,10 +320,14 @@ def deco(theme, season, bucket):
         xr = xx - L
         wd = R - L
         h = base_h + corner_h * (np.exp(-(xr / (wd * 0.22)) ** 2) + np.exp(-((wd - xr) / (wd * 0.18)) ** 2)) + (n2 - 0.5) * base_h * 1.6
-        top = B - h
-        inside = (yy >= top) & (yy < B) & (xx >= L) & (xx < R)
-        ly.over(inside * 0.9, c['snow'])
-        ly.over((inside & (yy < top + 3)) * 0.9, c['snow_hi'])
+        if SCENE is None:
+            top = B - h
+            inside = (yy >= top) & (yy < B) & (xx >= L) & (xx < R)
+        else:
+            inside, top = settle(h[0], 6, 0.6)
+        k = 0.9 if light else 1.0                         # dark snow is solid: no wall showing through
+        ly.over(inside * k, c['snow'])
+        ly.over((inside & (yy < top + 3)) * k, c['snow_hi'])
         ly.over((inside & (n3 > 0.72)) * 0.25, c['snow_hi'])
 
     def icicles(seed=4, n=46, maxlen=20):
@@ -331,7 +383,10 @@ def deco(theme, season, bucket):
         wd = R - L
         xr = xx - L
         h = base_h + corner_h * (np.exp(-(xr / (wd * 0.16)) ** 2) + np.exp(-((wd - xr) / (wd * 0.14)) ** 2)) + (n2 - 0.5) * 14
-        inside = (yy >= B - h) & (yy < B) & (xx >= L) & (xx < R)
+        if SCENE is None:
+            inside = (yy >= B - h) & (yy < B) & (xx >= L) & (xx < R)
+        else:
+            inside, _ = settle(h[0], 4, 0.5)
         idx = r.integers(0, len(cols), (H // 4 + 1, W // 4 + 1))
         idx = np.repeat(np.repeat(idx, 4, 0), 4, 1)[:H, :W]
         idx = np.where((yy // 4) % 2 == 0, np.roll(idx, 2, 1), idx)
@@ -398,30 +453,34 @@ def deco(theme, season, bucket):
     elif season in ('winter', 'xmas'):
         moss_layer(c['frozen'], 0.9)
         drift()
+        caps([c['snow'], c['snow'], c['snow_hi']], k=4, seed=7)
         icicles()
         if season == 'xmas':
             lights(HEAD + 14)
-            ly.paste(TREE, R - 72, B - 78, dim=c['prop'])
+            tx, rise = spot(R - 72, R - 30)
+            ly.paste(TREE, tx, B - 78 + rise, dim=c['prop'])
     elif season == 'spring':
         m = moss_layer(c['spring'], 0.6, grow=0.30)
         scatter(420 * W // 994, 21, (L, 493, R, B), c['flowers'], mask=m > 0.35, heap=False,
                 shapes=[[(0, 0), (2, 0), (0, 2), (-2, 0), (0, -2)], [(0, 0), (2, 0), (0, 2), (2, 2)], [(0, 0)]])
         branch()
         pile([(190, 120, 146), (214, 160, 180), (170, 100, 130)], base_h=3, corner_h=10)
+        caps([(190, 120, 146), (214, 160, 180), (170, 100, 130)], k=2, seed=8, dens=0.55)
     elif season == 'summer':
         moss_layer(c['summer'], 0.7, grow=0.30)
         ivy([(L, L + 66, 20, 70, 4), (L + 66, R - 296, 8, 34, max(1, int(16 * (R - L - 362) / 624))),
              (R - 296, R - 66, 50, 172, 14), (R - 66, R - 2, 20, 150, 4)], 41)
         for sx in (22, W - 152, W - 82):              # glowing mushrooms in the moss (lit, still)
             for dx in (0, 14, 30):
-                cx, cy = sx + dx, 695 - (dx % 9)
+                cx, cy = sx + dx, 695 - (dx % 9) + spot(sx + dx - 2, sx + dx + 2)[1]
                 ly.glow(cx, cy, 16, (110, 220, 160) if light else (120, 255, 170), 0.32, light)
                 ly.px(cx - 2, cy - 2, (170, 255, 200)); ly.px(cx, cy - 2, (170, 255, 200)); ly.px(cx - 1, cy, (90, 150, 120))
     elif season == 'autumn':
         moss_layer(c['autumn'], 0.8, grow=0.10)
         dark = [tuple(int(v * c['leafk']) for v in col) for col in AUT]
         pile(dark)
-        scatter(70 * W // 994, 61, (L, 643, R, B), AUT)
+        caps(dark + AUT, k=2, seed=9, dens=0.7)
+        scatter(70 * W // 994, 61, (L, 643, R, B), AUT, mask=None if SCENE is None else ~SC)
         ivy([(R - 296, R - 66, 50, 172, 12), (L, L + 56, 16, 60, 3)], 62,
             cols=[(160, 58, 30), (190, 104, 28), (200, 150, 50)], stem=(70, 44, 30))
     elif season == 'halloween':
@@ -430,6 +489,8 @@ def deco(theme, season, bucket):
             ly.over(np.clip(1 - np.hypot(xx - mid, (yy - 3) * 1.1) / 330, 0, 1) ** 1.7 * 0.08, (60, 255, 120))
         cobweb(R - 4, T + 2, 170)
         for (x, y, fl) in [(22, 681, False), (74, 691, True), (W - 142, 687, False)]:
+            x, rise = spot(x, x + 44)
+            y += rise
             ly.glow(x + 22, y + 18, 70, (255, 196, 120) if light else (255, 150, 40), 0.20, light, power=1.6)
             ly.paste(PUMPKIN, x, y, flip=fl, dim=c['prop'])
         for x in (mid - 215, mid - 175, mid + 125):

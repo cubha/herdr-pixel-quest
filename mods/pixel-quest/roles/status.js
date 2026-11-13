@@ -327,7 +327,8 @@ export default class Status {
       .child(this.petLane(u, list))
       .when(Boolean(mana), (el) => el.child(mana))
       .child(right)
-      .child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260));
+      // Moss tufts belong to the dungeon (and the moss ruins); other zones keep their stone bare.
+      .when(!P.zone || P.zone === "moss", (el) => el.child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260)));
     // The tall block (44, layouts from stage 2 on) draws the spacer under the work body and
     // the stone sill itself; an older 28px block shows the bar alone.
     return root(u, v_flex().size_full().relative().justify_end()

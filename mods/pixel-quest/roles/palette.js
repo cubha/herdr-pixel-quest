@@ -11,6 +11,7 @@ import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
 import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop } from "../kit.js";
 import { keyParts as capsOf } from "../dialogs.js";
+import { ZONES, layoutOf } from "../zones.js";
 
 const SHOWN = 8, ROW_H = 28, HEAD_H = 22;
 const GROUPS = ["최근", "탭", "칸", "스페이스", "레이아웃", "터미널", "에이전트", "창", "앱"];
@@ -71,7 +72,7 @@ const NAMED = [
   ["app.reset", {}, "앱", "기본 화면으로 되돌리기", "reset escape hatch broken restore"],
   ["app.quit", {}, "앱", "Herdr 끝내기", "quit exit"],
 ];
-const LOOK_KO = { "pixel-quest": "심연(다크)", "pixel-quest-light": "슬레이트(라이트)", main: "Herdr", terminals: "Terminals", win98: "Herdr 98" };
+const LOOK_KO = { ...Object.fromEntries(ZONES.map((z) => [layoutOf(z.key), `구역: ${z.name}`])), main: "Herdr", terminals: "Terminals", win98: "Herdr 98" };
 
 // Commands that act on something you point at, or open what this replaces.
 const HIDDEN = new Set([

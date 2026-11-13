@@ -1,13 +1,15 @@
 // Pixel Quest economy: gold, medals, the pet shop and the pet's moods.
 // Plain data and arithmetic (no Herdr imports) so tests/economy.test.mjs can run it
 // under node. Everything lives in one shared value, `pq.eco`:
-//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax }
+//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones }
 // total: quests ever (a quest reset leaves it), lvPaid: the best level already paid
 // for (level-up gold follows pq.best, so a reset never pays twice), days: quests per
 // day (YYYY-MM-DD, the last 60), medals: id -> when, pets: key -> { bond }, pet: the
 // one along, qseasons: seasons with a quest in them, partyMax: most agents working
-// at once. Gold, medals and pets are looks only: nothing here locks a feature.
+// at once, zones: the zones bought in the shop (zones.js). Gold, medals, pets and zones are looks only: nothing here locks a feature.
 // Copyright (c) 2026 cubha. MIT License.
+
+import { ZONES } from "./zones.js";
 
 export const GOLD = { quest: 10, level: 50, bronze: 100, silver: 300, gold: 1000 };
 
@@ -83,12 +85,13 @@ export function streak(days, now) {
 }
 
 // ---- the state ----
-export const empty = () => ({ gold: 0, earned: 0, total: 0, lvPaid: 1, days: {}, medals: {}, pets: {}, pet: null, qseasons: [], partyMax: 0 });
+export const empty = () => ({ gold: 0, earned: 0, total: 0, lvPaid: 1, days: {}, medals: {}, pets: {}, pet: null, qseasons: [], partyMax: 0, zones: [] });
 /** pq.eco as stored, filled in (an old or broken value never throws). */
 export function read(v) {
   const e = { ...empty(), ...(v && typeof v === "object" ? v : {}) };
   for (const k of ["days", "medals", "pets"]) if (!e[k] || typeof e[k] !== "object" || Array.isArray(e[k])) e[k] = {};
   if (!Array.isArray(e.qseasons)) e.qseasons = [];
+  if (!Array.isArray(e.zones)) e.zones = [];
   return e;
 }
 const owned = (eco) => Object.keys(eco.pets).length;
@@ -199,6 +202,20 @@ export function buy(eco, key, ctx = { now: new Date() }) {
   const e = { ...eco, gold: eco.gold - p.price, pets: { ...eco.pets, [key]: { bond: 0 } }, pet: eco.pet ?? key };
   const r = award(e, { best: 1, ...ctx });
   return { eco: r.eco, ok: true, got: r.got, msg: `${p.name}을(를) 샀습니다. 도감에서 데려갈 수 있습니다` };
+}
+
+// Zones for sale (the rest open by level or medal): price and name from zones.js, one place.
+export const ZONE_PRICE = Object.fromEntries(ZONES.filter((z) => z.open.gold).map((z) => [z.key, z.open.gold]));
+const ZONE_KO = Object.fromEntries(ZONES.map((z) => [z.key, z.name]));
+
+/** Buys a zone at once (no selling back). It shows from the settings' 모양 tab. */
+export function buyZone(eco, key) {
+  const price = ZONE_PRICE[key], name = ZONE_KO[key];
+  if (!price) return { eco, ok: false, msg: "상점에서 팔지 않는 구역입니다" };
+  const have = Array.isArray(eco.zones) ? eco.zones : [];
+  if (have.includes(key)) return { eco, ok: false, msg: `${name}: 이미 열린 구역입니다` };
+  if (eco.gold < price) return { eco, ok: false, msg: `${name}: ${fmt(price - eco.gold)} G가 모자랍니다` };
+  return { eco: { ...eco, gold: eco.gold - price, zones: [...have, key] }, ok: true, msg: `${name}이(가) 열렸습니다. 설정 · 모양에서 고를 수 있습니다` };
 }
 
 /** How to get a pet, as the dex says it. */

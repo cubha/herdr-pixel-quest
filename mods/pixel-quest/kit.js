@@ -14,6 +14,7 @@ import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } f
 import { renameSpec } from "./dialogs.js";
 import { read as readEco, fmt, medalGold, medalPet } from "./economy.js";
 import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim } from "./look.js";
+import { zoneOf, lookTheme, paletteOf, DRAWN, DRESS } from "./zones.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -46,6 +47,8 @@ export const P = {
   // wells (inputs, tab tracks) sunk into a panel, and text on bronze plates
   well: "#05060c", onb: "#e8dcc0",
   light: false,
+  // the zone with art of its own (zones.js DRAWN), or null (the dungeon, the sunlit chamber)
+  zone: null,
 };
 
 // The daylight palette for the pixel-quest-light layout: blue-grey slate
@@ -61,6 +64,8 @@ const LIGHT = {
 
 /** Art with a daylight version (`<name>-slate.png`) used in the light look. */
 const LIGHT_ART = new Set(["floor", "strip", "sill"]);
+/** Art each zone draws its own way (`zone/<zone>/<name>.png`, art-src/gen_zones.py). */
+const ZONE_ART = new Set(["floor", "strip", "sill", "knob-gold", "emblem", "wordmark", "orn-l", "orn-r", "chain", "torch", "torch-glow", "sconce", "sconce-b", "sconce-halo"]);
 
 /** Light when the shown theme's terminal background is light. */
 function isLight() {
@@ -70,11 +75,17 @@ function isLight() {
   return 0.299 * r + 0.587 * g + 0.114 * b > 140;
 }
 
+// Frame bevels: gold and bronze follow the zone's metal (read at draw time).
 const RAMPS = {
-  gold: { tl: P.g3, br: P.g1, mid: P.g2 },
-  bronze: { tl: P.b3, br: P.b1, mid: P.b2 },
-  red: { tl: "#e0564f", br: "#8a1a1a", mid: "#c0392b" },
+  gold: () => ({ tl: P.g3, br: P.g1, mid: P.g2 }),
+  bronze: () => ({ tl: P.b3, br: P.b1, mid: P.b2 }),
+  red: () => ({ tl: "#e0564f", br: "#8a1a1a", mid: "#c0392b" }),
 };
+
+/** The zone shown: the layout's (zones.js), else the dark or light look the theme has. */
+export function zoneNow() {
+  return zoneOf(shared("layout")) ?? (isLight() ? "sunlit" : "dungeon");
+}
 
 // Light surfaces that dim out of daylight (look.js dim), and the time of day / season
 // the shown look is in (shared pq.look, written by applyLook).
@@ -87,6 +98,10 @@ export function unit(o = {}) {
   // Every render starts here, so this is where the palette follows the theme.
   const light = isLight();
   Object.assign(P, light ? LIGHT : DARK);
+  // A zone repaints the stone and the gold (zones.js), never in the light look.
+  const zk = light ? null : zoneNow();
+  P.zone = DRAWN.includes(zk) ? zk : null;
+  if (P.zone) Object.assign(P, paletteOf(P.zone));
   const lk = look();
   P.phase = light && o.dim !== false ? lk.phase : "none";
   if (light && o.dim !== false) for (const k of DIMMED) P[k] = dim(LIGHT[k], "light", lk.phase);
@@ -98,7 +113,7 @@ export function unit(o = {}) {
 
 /** A PNG from the art folder at its own size (w, h: file px). */
 export function pic(u, name, w, h = w) {
-  const file = P.light && LIGHT_ART.has(name) ? `${name}-slate` : name;
+  const file = P.zone && ZONE_ART.has(name) ? `zone/${P.zone}/${name}` : P.light && LIGHT_ART.has(name) ? `${name}-slate` : name;
   return image(`${ART}/${file}.png`).flex_none().w(u(w)).h(u(h));
 }
 
@@ -180,16 +195,19 @@ function layer(u, tl, br, child) {
  * o: { bg, pad, knobs, floor (stone floor behind the content), web (tl|tr|bl|br) }.
  */
 export function frame(u, kind, content, o = {}) {
-  const r = RAMPS[kind] ?? RAMPS.gold;
+  const r = (RAMPS[kind] ?? RAMPS.gold)();
   const pad = Array.isArray(o.pad) ? o.pad : [o.pad ?? 0, o.pad ?? 0];
   let inner = div().flex().flex_col().flex_1().min_w(0).min_h(0).bg(o.bg ?? P.fill)
     .pt(u(pad[0])).pb(u(pad[0])).pl(u(pad[1])).pr(u(pad[1]));
   // A stone floor (and a cobweb) under the content, cut to the window.
+  const dressed = o.floor && DRESS[P.zone];
   if (o.floor || o.web || o.edge) inner = inner.relative().overflow_hidden();
   // The floor is 480px wide: a second copy covers windows wider than that.
   if (o.floor) inner = inner.child(texture(u, ...FLOOR)).child(pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1])))
     .when(Boolean(veil()), (el) => el.child(veil()));
-  if (o.web) inner = inner.child(web(u, o.web));
+  // A zone's panel edges and corner thing (ice, crystal, throne) in place of the cobweb.
+  if (dressed) inner = inner.child(dressing(u, o.web ? (o.web === "bl" ? "bl" : "br") : null, o.thin));
+  else if (o.web) inner = inner.child(web(u, o.web));
   // The season on a sidebar panel's floor (snow, petals, leaves) and on its top edge.
   const se = o.edge ? look().season : "none";
   const th = P.light ? "light" : "dark";
@@ -205,6 +223,47 @@ export function frame(u, kind, content, o = {}) {
     el = el.child(k("top", "left")).child(k("top", "right")).child(k("bottom", "left")).child(k("bottom", "right"));
   }
   if (CAPS.has(se)) el = el.child(seasonCap(u, se));
+  return zoneTop(u, el, kind);
+}
+
+// A zone's panel dressing (zones.js DRESS): the top and bottom bands as two halves pinned
+// to their sides (cut in the middle), the side strips the same, the corner thing on the
+// floor. All under the content.
+// thin (notifications, short and full of text): only the bands' outer rows, no corner thing.
+function dressing(u, corner, thin = false) {
+  const z = P.zone, f = (n) => `zone/${z}/dress-${n}`;
+  const D = thin ? { ...DRESS[z], top: Math.min(DRESS[z].top, 8), bottom: Math.min(DRESS[z].bottom, 6) } : DRESS[z];
+  if (thin) corner = null;
+  const half = (name, w, h, side, v = "top") => div().flex_1().min_w(0).relative().overflow_hidden()
+    .child(image(`${ART}/${f(name)}.png`).absolute()[v](0)[side](0).w(u(w)).h(u(h)));
+  const halfV = (name, w, h, side) => div().flex_1().min_h(0).relative().overflow_hidden()
+    .child(image(`${ART}/${f(name)}.png`).absolute()[side](0).left(0).w(u(w)).h(u(h)));
+  // A band's box may be cut shorter (thin) than its picture: the picture keeps to its own edge.
+  const band = (v, h, l, r, full) => div().absolute()[v](0).left(0).right(0).h(u(h)).flex().flex_row()
+    .child(half(l, 800, full, "left", v)).child(half(r, 800, full, "right", v));
+  const sides = (h) => div().absolute().top(u(D.top)).bottom(u(D.bottom)).w(u(D.side)).flex().flex_col()
+    .child(halfV(`side-${h}t`, D.side, 600 - DRESS[z].top, "top")).child(halfV(`side-${h}b`, D.side, 600 - DRESS[z].bottom, "bottom"));
+  let el = div().absolute().top(0).left(0).right(0).bottom(0)
+    .child(band("top", D.top, "top-l", "top-r", DRESS[z].top))
+    .child(band("bottom", D.bottom, corner === "bl" ? "bottom-l-c" : "bottom-l", corner === "br" ? "bottom-r-c" : "bottom-r", DRESS[z].bottom));
+  if (D.side) el = el.child(sides("l").left(0)).child(sides("r").right(0));
+  if (corner) {
+    const [off, w, h] = D[corner];
+    el = el.child(image(`${ART}/${f(`corner-${corner}`)}.png`).absolute().bottom(u(D.bottom))[corner === "bl" ? "left" : "right"](u(off)).w(u(w)).h(u(h)));
+  }
+  return el;
+}
+
+// On a gold frame's top edge (the mockup's wall over the frames): snow (ice), moss (moss),
+// crystal shards on the corners (crystal), a crown in the middle (throne).
+function zoneTop(u, el, kind) {
+  const z = P.zone;
+  if (!z || kind !== "gold") return el;
+  if (z === "ice" || z === "moss") return el.child(div().absolute().top(0).left(0).right(0).h(u(8)).overflow_hidden()
+    .child(pic(u, `zone/${z}/cap`, 2560, 8).absolute().top(u(-4)).left(0)));
+  if (z === "crystal") return el.child(pic(u, `zone/${z}/shard-l`, 12, 10).absolute().top(u(-6)).left(u(8)))
+    .child(pic(u, `zone/${z}/shard-r`, 12, 10).absolute().top(u(-6)).right(u(8)));
+  if (z === "throne") return el.child(div().absolute().top(u(-8)).left(0).right(0).flex().justify_center().child(pic(u, "crown-s", 22, 12)));
   return el;
 }
 
@@ -219,7 +278,7 @@ export function seasonCap(u, se = look().season) {
 
 /** A thin 2-layer frame for rows and chips: ink, then light/dark bevel. */
 export function thin(u, kind, content, o = {}) {
-  const r = RAMPS[kind] ?? RAMPS.bronze;
+  const r = (RAMPS[kind] ?? RAMPS.bronze)();
   return div().flex().flex_col().border(u(2)).border_color(P.ink)
     .child(layer(u, r.tl, r.br, div().flex().flex_col().flex_1().bg(o.bg ?? P.fill).child(content)));
 }
@@ -229,7 +288,7 @@ export function thin(u, kind, content, o = {}) {
  * moves down-right by 2px and the bevel flips). o: { on, tooltip, w, h, pad }.
  */
 export function button(u, id, content, onClick, o = {}) {
-  const r = o.red ? RAMPS.red : o.on ? RAMPS.gold : RAMPS.bronze;
+  const r = (o.red ? RAMPS.red : o.on ? RAMPS.gold : RAMPS.bronze)();
   const bg = o.red ? "#8a1a1a" : o.on ? P.g0 : P.raised;
   const hv = o.red ? "#c0392b" : o.on ? P.g1 : P.hover;
   const pad = o.pad ?? [2, 6];
@@ -340,7 +399,7 @@ export async function applyLook() {
   try {
     const name = String(shared("layout") ?? "");
     if (!name.startsWith("pixel-quest")) return;
-    const theme = name.includes("light") ? "light" : "dark";
+    const theme = lookTheme(name);
     const now = lookNow(new Date(), { time: shared("pq.time") !== false, seasons: shared("pq.seasons") !== false });
     // pixel-quest.look_phase / look_season: try another time or season (shared pq.lookTest).
     const test = shared("pq.lookTest") ?? {};
