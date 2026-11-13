@@ -9,7 +9,7 @@ import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, shared, setShared, closeOverlay } from "herdr";
 import { P, unit, root, pic, frame, plaque, small, button, cells, lvInfo, best, rewardIcon, bannerIcon, frameKey, eco, medalIcon } from "../kit.js";
-import { MEDALS, progressOf, medalGold, medalPet, fmt } from "../economy.js";
+import { MEDALS, progressOf, medalGold, medalPet, medalZone, fmt } from "../economy.js";
 import { REWARDS, FRAMES, BANNERS, MAX_LV, total, titleOf, pick } from "../progress.js";
 
 const two = (n) => String(n).padStart(2, "0");
@@ -69,7 +69,7 @@ export default class Journal {
         rows.push(h_flex().id(`jn-lv-${l}`).flex_none().min_h(u(30)).gap(u(6)).px(u(4)).items_center()
           .border(u(2)).border_color(cur ? P.g2 : "#00000000").when(cur, (x) => x.bg(P.hover))
           .child(div().w(u(36)).flex_none().child(small(u, `Lv.${l}`, locked ? P.dim : P.gt2)))
-          .child(h_flex().w(u(52)).flex_none().gap(u(2)).items_center().when(locked, (x) => x.opacity(0.35))
+          .child(h_flex().w(u(72)).flex_none().gap(u(2)).items_center().when(locked, (x) => x.opacity(0.35))
             .children(l === 1 ? [pic(u, "face-helm-gold", 24), pic(u, "pft-wood", 18)] : got.map((r) => rewardIcon(u, r))))
           .child(div().flex_1().min_w(0).child(small(u, text, locked ? P.dim : P.text)))
           .when(locked, (x) => x.child(small(u, `${Math.max(0, total(l) - info.q)} 남음`, P.dim))));
@@ -86,8 +86,8 @@ export default class Journal {
       const e = eco(), ctx = { now: new Date(), best: lv };
       const n = MEDALS.filter((m) => e.medals[m.id]).length;
       const line = (m) => {
-        const pr = progressOf(m, e, ctx), pet = medalPet(m);
-        return [m.name, m.cond, pr.text, `+${fmt(medalGold(m))} G`, pet ? `펫 ${pet.name}` : ""].filter(Boolean).join(" · ");
+        const pr = progressOf(m, e, ctx), pet = medalPet(m), zone = medalZone(m);
+        return [m.name, m.cond, pr.text, `+${fmt(medalGold(m))} G`, pet ? `펫 ${pet.name}` : "", zone ? `구역 ${zone.name}` : ""].filter(Boolean).join(" · ");
       };
       const cell = (m) => {
         const got = Boolean(e.medals[m.id]), sel = this.medal === m.id;

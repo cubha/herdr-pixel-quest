@@ -2,7 +2,8 @@
 // button (and `pixel-quest.settings`). Three tabs:
 //   모양        the zone (구역: the dungeon, the sunlit chamber and five more, zones.js;
 //               a locked one says how it opens), screen zoom
-//               (app.zoom_in/out) and the terminal font size (the layout's, kit setTermFont)
+//               (app.zoom_in/out), the terminal font size (the layout's, kit setTermFont), the time
+//               and season effects, and the season: 자동 (the calendar) or one pinned (pq.season)
 //   알림        alert sounds on/off, 8-bit or Herdr's own, try each
 //   퀘스트·파티  the quest banner, the quest count reset, the party effects,
 //               the usage gauges, the pet (shown, walking), portraits back to automatic
@@ -16,10 +17,11 @@ import { props, run, shared, setShared, closeOverlay, settings, layouts, readTex
 import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco } from "../kit.js";
 import { ZONES, layoutOf, isOpen, howOpen } from "../zones.js";
 import { titleOf } from "../progress.js";
+import { PINNED } from "../look.js";
 
 const SOUNDS = { done: "mods/pixel-quest/sounds/quest-done.mp3", blocked: "mods/pixel-quest/sounds/quest-blocked.mp3" };
 // The settings card's picture: the dark and light looks' own, else the zone's.
-const CARD = { dungeon: "look-dark", sunlit: "look-light" };
+const CARD = { dungeon: "look-dark-l", sunlit: "look-light-l" };
 const TABS = [["look", "모양", "ico-crystal"], ["sound", "알림", "ico-potion"], ["quest", "퀘스트·파티", "ico-key"]];
 
 export default class Settings {
@@ -90,6 +92,18 @@ export default class Settings {
       .child(control);
   }
 
+  // 자동 (the calendar, the default) or one season pinned (shared pq.season, look.js PINNED).
+  seasons(u, on) {
+    const cur = PINNED.includes(shared("pq.season")) ? shared("pq.season") : "auto";
+    const KO = { auto: "자동", spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" };
+    return h_flex().gap(u(4)).when(!on, (el) => el.opacity(0.5))
+      .children(["auto", ...PINNED].map((k) => button(u, `look-s-${k}`, small(u, KO[k], cur === k ? P.g3 : P.text), (_e, cx) => {
+        setShared("pq.season", k === "auto" ? null : k);
+        this.note = on ? `계절: ${KO[k]}` : `계절: ${KO[k]} (계절 장식을 켜면 보입니다)`;
+        applyLook(); cx.notify();
+      }, { on: cur === k, pad: [1, 6] })));
+  }
+
   stepper(u, id, value, minus, plus) {
     return h_flex().gap(u(6)).items_center()
       .child(button(u, `${id}-m`, small(u, "−", P.text), minus, { pad: [1, 6] }))
@@ -132,8 +146,8 @@ export default class Settings {
       return v_flex().id(`set-${z.key}`).flex_none().gap(u(2)).p(u(4)).border(u(2)).border_color(on ? P.g3 : P.ink).bg(on ? P.hover : P.raised)
         .when(can, (el) => el.cursor_pointer().hover((s) => s.border_color(P.g2)).on_click((_e, cx) => this.pickZone(cx, z)))
         .when(!open, (el) => el.on_click((_e, cx) => { this.note = `${z.name}: ${howOpen(z.key)}에 열립니다`; cx.notify(); }))
-        .child(div().relative().w(u(128)).h(u(80))
-          .child(pic(u, CARD[z.key] ?? `zone/${z.key}/card`, 128, 80).when(!open, (el) => el.opacity(0.3)))
+        .child(div().relative().w(u(192)).h(u(120))
+          .child(pic(u, CARD[z.key] ?? `zone/${z.key}/card-l`, 192, 120).when(!open, (el) => el.opacity(0.3)))
           .when(!open, (el) => el.child(div().absolute().bottom(u(4)).left(u(4)).right(u(4)).flex().justify_center()
             .child(div().bg(P.ink).border(u(2)).border_color(P.stone).px(u(4)).child(small(u, `잠김 · ${howOpen(z.key)}`, P.muted))))))
         .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : open ? P.text : P.dim).child(z.name)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
@@ -154,7 +168,8 @@ export default class Settings {
       .child(this.row(u, "시간대 연출", "창문 하늘 · 석판 빛줄기 · 낮엔 촛대 꺼짐 · 라이트는 밤에 침침",
         this.toggle(u, "look-time", flag("pq.time"), () => { setShared("pq.time", !flag("pq.time")); applyLook(); })))
       .child(this.row(u, "계절 장식", "겨울 눈 · 봄 벚꽃 · 여름 덩굴 · 가을 낙엽 · 할로윈 · 크리스마스",
-        this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })));
+        this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })))
+      .child(this.row(u, "계절 고르기", "자동 = 달력대로 (10월 할로윈 · 12월 크리스마스 포함)", this.seasons(u, flag("pq.seasons"))));
   }
 
   sound(u) {

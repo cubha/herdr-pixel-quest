@@ -96,11 +96,13 @@ export const titleOf = (lv) => TITLES.filter(([l]) => lv >= l).pop()[1];
 export const BADGE_LV = 19;
 export const goldBadge = (lv) => lv >= BADGE_LV;
 
-// What each level gives. faces: four colorways of a shape (from: first index).
+// What each level gives. faces: four colorways of a shape (from: first index). zone: the
+// zones that open by level (zones.js; 왕좌의 방 by the 전설 medal, which Lv.20 gives).
 export const REWARDS = [
   { lv: 2, kind: "frame", key: "bronze", text: "청동 액자" },
   { lv: 3, kind: "faces", shape: "wizard", from: 0, text: "마법사 4색" },
   { lv: 4, kind: "banner", key: "flag", text: "깃발 배너" },
+  { lv: 4, kind: "zone", key: "ice", text: "구역 \"얼음 동굴\"" },
   { lv: 5, kind: "faces", shape: "slime", from: 0, text: "슬라임 4색" },
   { lv: 5, kind: "title", key: "모험가", text: "칭호 \"모험가\"" },
   { lv: 6, kind: "frame", key: "silver", text: "은 액자" },
@@ -111,6 +113,7 @@ export const REWARDS = [
   { lv: 10, kind: "title", key: "기사", text: "칭호 \"기사\"" },
   { lv: 11, kind: "faces", shape: "slime", from: 4, text: "슬라임 나머지 4색" },
   { lv: 12, kind: "banner", key: "gems", text: "보석 비 배너" },
+  { lv: 12, kind: "zone", key: "lava", text: "구역 \"용암 굴\"" },
   { lv: 13, kind: "faces", shape: "skull", from: 4, text: "해골 나머지 4색" },
   { lv: 14, kind: "frame", key: "rune", text: "룬 액자" },
   { lv: 15, kind: "faces", shape: "king", from: 0, text: "왕 4색" },
@@ -121,6 +124,7 @@ export const REWARDS = [
   { lv: 19, kind: "badge", key: "gold", text: "금장 Lv 배지" },
   { lv: 20, kind: "banner", key: "legend", text: "전설 배너" },
   { lv: 20, kind: "title", key: "전설", text: "칭호 \"전설\"" },
+  { lv: 20, kind: "zone", key: "throne", text: "구역 \"왕좌의 방\"" },
 ];
 export const MAX_LV = 20;
 export const rewardsAt = (lv) => REWARDS.filter((r) => r.lv === lv);

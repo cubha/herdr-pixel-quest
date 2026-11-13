@@ -78,9 +78,14 @@ export function lookArt({ theme, phase, season, bucket }) {
   };
 }
 
-/** What shows now: { phase, season } (each "none" while switched off). */
-export function lookNow(d, { time = true, seasons = true } = {}) {
-  return { phase: time ? phaseOf(d.getHours()) : "none", season: seasons ? seasonOf(d.getMonth() + 1) : "none" };
+/** The seasons the settings window can pin (pq.season); anything else = by the calendar. */
+export const PINNED = ["spring", "summer", "autumn", "winter"];
+
+/** What shows now: { phase, season } (each "none" while switched off). season: a pinned
+ *  one of PINNED, else the calendar's (with Halloween and Christmas). */
+export function lookNow(d, { time = true, seasons = true, season = null } = {}) {
+  const s = PINNED.includes(season) ? season : seasonOf(d.getMonth() + 1);
+  return { phase: time ? phaseOf(d.getHours()) : "none", season: seasons ? s : "none" };
 }
 
 /**

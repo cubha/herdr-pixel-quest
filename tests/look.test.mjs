@@ -139,3 +139,12 @@ test("the status bar takes in the spacer and the sill (8 + 8 + 28 = 44) so the p
   assert.deepEqual(find(out, "status").content, { mod: "pixel-quest", props: { role: "status" } });
   assert.equal(L.layoutWith(once, { art }), once);
 });
+
+test("a season pinned in the settings beats the calendar; 자동 (null) follows it", () => {
+  const oct = new Date(2026, 9, 31, 23, 0);
+  assert.equal(L.lookNow(oct, { season: "spring" }).season, "spring");
+  assert.equal(L.lookNow(oct, { season: "winter" }).season, "winter");
+  assert.equal(L.lookNow(oct, { season: null }).season, "halloween");
+  assert.equal(L.lookNow(oct, { season: "xmas" }).season, "halloween");   // only the four can be pinned
+  assert.equal(L.lookNow(oct, { seasons: false, season: "summer" }).season, "none");
+});

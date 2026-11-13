@@ -12,7 +12,7 @@ import { h_flex } from "gpui-base";
 import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, notify, window as hwin } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
-import { read as readEco, fmt, medalGold, medalPet } from "./economy.js";
+import { read as readEco, fmt, medalGold, medalPet, medalZone } from "./economy.js";
 import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim } from "./look.js";
 import { zoneOf, lookTheme, paletteOf, DRAWN, DRESS } from "./zones.js";
 
@@ -359,15 +359,15 @@ export function medalIcon(u, m, got = true) {
 /** A notification for each medal just earned (the themed toast shows the medal). */
 export function announce(got, sample = false) {
   for (const m of got ?? []) {
-    const pet = medalPet(m);
-    notify({ title: `훈장: ${m.name}`, body: `${m.cond} · +${fmt(medalGold(m))} G${pet ? ` · 펫 ${pet.name}` : ""}${sample ? " (시험)" : ""}`,
+    const pet = medalPet(m), zone = medalZone(m);
+    notify({ title: `훈장: ${m.name}`, body: `${m.cond} · +${fmt(medalGold(m))} G${pet ? ` · 펫 ${pet.name}` : ""}${zone ? ` · 구역 ${zone.name}` : ""}${sample ? " (시험)" : ""}`,
       level: "success", icon: `${ART}/medal-${m.art}.png` });
   }
 }
 
 /** The theme's settings window and command palette (roles settings / palette). */
 export function openSettings() {
-  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 560, height: 470, props: { role: "settings" } });
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 820, height: 640, props: { role: "settings" } });
 }
 /** The theme's "찾기" (go to a tab, space or agent), in place of Herdr's picker. */
 export function openGoto() {
@@ -400,7 +400,7 @@ export async function applyLook() {
     const name = String(shared("layout") ?? "");
     if (!name.startsWith("pixel-quest")) return;
     const theme = lookTheme(name);
-    const now = lookNow(new Date(), { time: shared("pq.time") !== false, seasons: shared("pq.seasons") !== false });
+    const now = lookNow(new Date(), { time: shared("pq.time") !== false, seasons: shared("pq.seasons") !== false, season: shared("pq.season") });
     // pixel-quest.look_phase / look_season: try another time or season (shared pq.lookTest).
     const test = shared("pq.lookTest") ?? {};
     if (test.phase) now.phase = test.phase;
@@ -500,6 +500,7 @@ export function rewardIcon(u, r) {
   if (r.kind === "frame") return r.key === "crown" ? pic(u, "pft-crown", 18, 22) : pic(u, `pft-${r.key}`, 18);
   if (r.kind === "banner") return bannerIcon(u, r.key);
   if (r.kind === "title") return pic(u, "ico-scroll", 16);
+  if (r.kind === "zone") return pic(u, `zone/${r.key}/emblem`, 24, 28);
   return pic(u, "knob-gold", 16);
 }
 export function bannerIcon(u, key) {

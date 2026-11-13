@@ -72,7 +72,7 @@ export default class Quest {
       lines = [
         div().text_color(P.text).child(`Lv.${p.levelUp} · ${titleOf(p.levelUp)}`),
         got.length
-          ? h_flex().gap(u(4)).items_center().justify_center().max_w(u(320))
+          ? h_flex().flex_wrap().gap(u(4)).items_center().justify_center().max_w(u(320))
             .child(small(u, "새로 얻음:", P.done))
             .children(got.map((r) => h_flex().gap(u(3)).items_center().child(rewardIcon(u, r)).child(small(u, r.text, P.done))))
           : small(u, "모험은 계속됩니다", P.done),

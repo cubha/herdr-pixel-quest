@@ -274,3 +274,18 @@ test("zones bought: read fills a missing or broken list", () => {
   assert.deepEqual(E.read({ zones: "x" }).zones, []);
   assert.deepEqual(E.read({ zones: ["crystal"] }).zones, ["crystal"]);
 });
+
+test("the pet speaks up by itself: at once for news, then again on its own beat", async () => {
+  const { talkNext, TALK } = await import("../mods/pixel-quest/economy.js");
+  let t = { mood: null, at: 0 };
+  t = talkNext(t, "sleep", 1000); assert.equal(t.show, false);           // starting up: quiet
+  assert.equal(talkNext(t, "sleep", TALK.idle - 1).show, false);
+  assert.equal(talkNext(t, "sleep", TALK.idle).show, true);              // the day's summary every 10 min
+  assert.equal(talkNext(t, "walk", 5000).show, false);                   // starting work: no news
+  const a = talkNext(t, "alert", 5000); assert.deepEqual(a, { mood: "alert", at: 5000, show: true });
+  assert.equal(talkNext(a, "alert", 5000 + TALK.urgent - 1).show, false);
+  assert.equal(talkNext(a, "alert", 5000 + TALK.urgent).show, true);     // waiting: again every 45 s
+  assert.equal(talkNext(t, "tired", 7000).show, true);
+  const h = talkNext(t, "hop", 9000); assert.equal(h.show, true);        // a quest just done
+  assert.equal(talkNext(h, "hop", 9000 + TALK.urgent).show, false);      // once per hop
+});

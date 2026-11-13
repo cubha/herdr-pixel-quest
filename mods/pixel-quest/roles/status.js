@@ -20,7 +20,8 @@
 // the party bar and shows how things are: asleep at home (all resting), walking out and
 // back (working), "!" and fidgeting (waiting, click: go there), crouched and crawling
 // with a blinking low battery (usage 80%+, click: the usage card), hopping (a quest
-// just done). Hover: its speech bubble.
+// just done). It speaks up in a bubble over its head by itself (economy.js talkNext: news at
+// once, then on its own beat); hover shows the same words as a tooltip.
 
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
@@ -96,11 +97,16 @@ export default class Status {
     this.laneW = 0;
     this.hopUntil = 0;
     this.tryMood = null;
+    // The speech bubble (E.talkNext): open since sayAt, in the mood it spoke for.
+    this.talk = { mood: null, at: Date.now() };
+    this.sayAt = 0;
+    this.sayMood = null;
     cx.timer.every(3200, (cx) => {
       const mood = this.mood;
       const walk = shared("pq.petWalk") !== false;
       const next = E.nextSpot(walk || !["walk", "tired"].includes(mood) ? mood : "sleep", this.pet.x);
-      if (!next || !this.shown) return;
+      // It stands still while it speaks, so the bubble stays beside it.
+      if (!next || !this.shown || this.sayAt) return;
       this.pet = { x: next.x, ms: next.ms, easing: next.easing, right: next.x > this.pet.x };
       cx.notify();
     });
@@ -110,6 +116,13 @@ export default class Status {
     cx.timer.every(500, (cx) => {
       if (this.medalQueue.length) { const got = this.medalQueue; this.medalQueue = []; announce(got); }
       if (this.hopUntil && Date.now() > this.hopUntil) { this.hopUntil = 0; cx.notify(); }
+      const now = Date.now();
+      if (this.shown && this.mood) {
+        const t = E.talkNext(this.talk, this.mood, now);
+        this.talk = { mood: t.mood, at: t.at };
+        if (t.show) { this.sayAt = now; this.sayMood = this.mood; cx.notify(); }
+      }
+      if (this.sayAt && now - this.sayAt > E.TALK.show) { this.sayAt = 0; cx.notify(); }
     });
     // Only status changes seen while this runs count: no fanfare for the past.
     this.last = new Map(agents().map((a) => [a.address, a.status]));
@@ -215,6 +228,23 @@ export default class Status {
       .when(r.left != null, (el) => el.child(small(u, span(r.left), P.dim)));
   }
 
+  // The pet's speech bubble (the confirmed mockup's: fill, dark rim, a thin gold line inside),
+  // in the bar beside the pet, on the side with more room, two lines at most.
+  // The block clips what goes above it (measured), so it can't sit over the pet's head.
+  bubble(u) {
+    const s = this.speech;
+    const lane = u(10) + this.leftW + u(12);           // the bar's padding, the left plate, the gap
+    // Its lane is narrow beside the gauges, so for its few seconds the bubble may reach over
+    // the plates next to it (up to 280px, never past the bar's ends).
+    const leftRoom = lane + s.at - u(14), rightRoom = this.barW - (lane + s.at + s.w) - u(14);
+    const toLeft = leftRoom > rightRoom;
+    const maxW = Math.max(u(80), Math.min(u(280), toLeft ? leftRoom : rightRoom));
+    const el = div().id("pet-say").absolute().bottom(u(3)).max_w(maxW)
+      .bg(P.fill).border(u(2)).border_color(P.ink).p(u(1))
+      .child(div().border(u(1)).border_color(P.g2).px(u(6)).py(u(1)).child(small(u, s.words, P.text)));
+    return toLeft ? el.right(this.barW - (lane + s.at) + u(4)) : el.left(lane + s.at + s.w + u(4));
+  }
+
   // The pet's lane: the free stretch right of the party bar. Home is its left end.
   petLane(u, list) {
     const e = eco();
@@ -261,6 +291,13 @@ export default class Status {
     const ctx = { now: new Date(), best: best() };
     const say = E.bubble(e, ctx, { mood, who: waiting ? (waiting.space_name || waiting.program?.name || "에이전트") : "", drain: drain ?? { label: "5시간", pct: 80 } });
     const name = E.petOf(key)?.name ?? key;
+    // While it speaks, the bar draws the bubble beside it (bubble(): after the moss, which
+    // would cover it otherwise).
+    const speaking = this.sayAt && Date.now() - this.sayAt <= E.TALK.show;
+    this.speech = speaking ? {
+      words: this.sayMood === mood ? say : E.bubble(e, ctx, { mood: this.sayMood, who: waiting ? (waiting.space_name || waiting.program?.name || "에이전트") : "", drain: drain ?? { label: "5시간", pct: 80 } }),
+      at: room * this.pet.x, w: u(boxW), room,
+    } : null;
     const box = div().id("pet").absolute().top(u(-up)).h(u(H)).w(u(boxW)).left(room * this.pet.x)
       // transition("left") never moved it in Herdr 0.1.15 (measured); a spring with no
       // overshoot does, its response scaled to the planned walk time.
@@ -289,7 +326,7 @@ export default class Status {
     // Text sits on dark stone plates so the brick band doesn't eat its contrast.
     const plate = () => h_flex().h(u(20)).px(u(6)).gap(u(12)).items_center().bg(P.chrome).border(u(2)).border_color(P.ink);
     const moss = (side, at) => pic(u, "moss", 22, 6).absolute().top(0)[side](u(at));
-    const left = plate()
+    const left = plate().on_size_change((sz, cx) => { if (Math.abs(sz.width - (this.leftW ?? 0)) > 1) { this.leftW = sz.width; cx.notify(); } })
       .child(div().text_color(P.muted).child(space?.machine ?? "이 컴퓨터"))
       .child(h_flex().gap(u(6)).items_center()
         .child(small(u, "파티", P.gt2))
@@ -321,14 +358,15 @@ export default class Status {
         .when(Boolean(key), (el) => el.child(div().border(u(2)).border_color(P.b1).bg(P.raised).px(u(4)).child(small(u, key, P.text))))
         .child(small(u, "명령", P.dim)));
     // The bar no longer clips (the pet's marks reach above it), so its bricks clip in a box.
-    const bar = h_flex().on_size_change((sz, cx) => { if (lookBox({ workW: sz.width })) { this.dirty = true; cx.notify(); } }).w_full().h(u(28)).flex_none().relative().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
+    const bar = h_flex().on_size_change((sz, cx) => { this.barW = sz.width; if (lookBox({ workW: sz.width })) { this.dirty = true; cx.notify(); } }).w_full().h(u(28)).flex_none().relative().px(u(10)).gap(u(12)).items_center().bg(P.chrome).border_t(u(2)).border_color(P.ink)
       .child(div().absolute().top(0).left(0).right(0).bottom(0).overflow_hidden().child(texture(u, "strip", 2560, 48)).when(Boolean(veil()), (el) => el.child(veil())))
       .child(left)
       .child(this.petLane(u, list))
       .when(Boolean(mana), (el) => el.child(mana))
       .child(right)
       // Moss tufts belong to the dungeon (and the moss ruins); other zones keep their stone bare.
-      .when(!P.zone || P.zone === "moss", (el) => el.child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260)));
+      .when(!P.zone || P.zone === "moss", (el) => el.child(moss("left", 250)).child(moss("left", 560)).child(moss("right", 260)))
+      .when(Boolean(this.speech && this.leftW && this.barW), (el) => el.child(this.bubble(u)));
     // The tall block (44, layouts from stage 2 on) draws the spacer under the work body and
     // the stone sill itself; an older 28px block shows the bar alone.
     return root(u, v_flex().size_full().relative().justify_end()

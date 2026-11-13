@@ -15,7 +15,8 @@ Per zone, into mods/pixel-quest/art:
   zone/<zone>/dress-*.png                 a panel's edges and corner things (ice, crystal, throne)
   zone/<zone>/cap.png crest-*.png         things on the gold frames' top edges
   zone/<zone>/<sprite>.png                gold sprites in the zone's metal, flames in its fire
-  zone/<zone>/card.png                    the settings card (128x80)
+  zone/<zone>/card.png                    the layout preview (128x80)
+  zone/<zone>/card-l.png                  the settings card (192x120)
 Copyright (c) 2026 cubha. MIT License.
 """
 import json
@@ -278,6 +279,7 @@ def dress_parts(key):
 
 # ───────────── gold sprites, flames, frame tops ─────────────
 FLAMED = {'torch', 'torch-glow', 'sconce', 'sconce-b', 'sconce-halo', 'look/sconce-off'}
+CARD_L = (192, 120)    # the settings window's zone cards (gen_thumbs.py: the same for dark/light)
 SPRITES = ['knob-gold', 'emblem', 'wordmark', 'orn-l', 'orn-r', 'chain', 'torch', 'torch-glow', 'sconce', 'sconce-b', 'sconce-halo']
 
 
@@ -337,11 +339,11 @@ def shard(key):
     return out
 
 
-def card(key):
+def card(key, size=(128, 80)):
     """The settings card: the mockup's whole screen, small."""
     a, _ = GZ.screen(key, tab5.talk)
     tab5.rec_stop()
-    return np.array(Image.fromarray(a).convert('RGB').resize((128, 80), Image.LANCZOS))
+    return np.array(Image.fromarray(a).convert('RGB').resize(size, Image.LANCZOS))
 
 
 def zone(key):
@@ -372,6 +374,7 @@ def zone(key):
         for t, a in shard(key).items():
             save(a, os.path.join(Z, f'shard-{t}.png'))
     save(card(key), os.path.join(Z, 'card.png'))
+    save(card(key, CARD_L), os.path.join(Z, 'card-l.png'))
     print(key, 'ok', len(os.listdir(Z)), 'files in zone/' + key)
 
 

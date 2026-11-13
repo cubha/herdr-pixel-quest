@@ -56,6 +56,8 @@ export const MEDALS = [
 export const medalOf = (id) => MEDALS.find((m) => m.id === id);
 export const tierOf = (m) => m.art.split("-")[0];
 export const medalGold = (m) => GOLD[tierOf(m)];
+/** The zone a medal opens (zones.js), or null. */
+export const medalZone = (m) => ZONES.find((z) => z.open?.medal === m.id) ?? null;
 /** The pet a medal brings, if any. */
 export const medalPet = (m) => PETS.find((p) => p.medal === m.id) ?? null;
 
@@ -241,6 +243,20 @@ export function petArt(key, bond, crouch, right) {
 }
 
 /** One mood at a time: waiting > a quest just done > drained > working > rest. */
+// The speech bubble over the pet: it speaks up by itself, as things stand. A new wait for
+// input, low battery or a quest just done says so at once; waiting and low battery say it
+// again every 45 s while they last; otherwise the day's summary comes every 10 minutes.
+// Each time it stays 6 s. (Hover keeps the same words as a tooltip, any time.)
+export const TALK = { show: 6000, urgent: 45000, idle: 600000 };
+/** The next talk state from t ({ mood, at }: the mood last seen and when the bubble last
+ *  opened) at now: { mood, at, show } (show: open the bubble now). */
+export function talkNext(t, mood, now) {
+  const urgent = mood === "alert" || mood === "tired";
+  if (mood !== t.mood) return (urgent || mood === "hop") ? { mood, at: now, show: true } : { mood, at: t.at, show: false };
+  if (mood === "hop") return { ...t, show: false };
+  return now - t.at >= (urgent ? TALK.urgent : TALK.idle) ? { mood, at: now, show: true } : { ...t, show: false };
+}
+
 export function moodOf({ blocked, hop, tired, working }) {
   return blocked ? "alert" : hop ? "hop" : tired ? "tired" : working ? "walk" : "sleep";
 }

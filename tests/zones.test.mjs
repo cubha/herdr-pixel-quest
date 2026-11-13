@@ -117,3 +117,18 @@ test("each new zone has its own walls, floor and gold sprites; the dressing matc
     if (D.side) assert.deepEqual(pngSize(d("side-lt")), [D.side, 600 - D.top], `${k} side`);
   }
 });
+
+test("the reward table and the medals say which zones they open", async () => {
+  const G = await import("../mods/pixel-quest/progress.js");
+  const E = await import("../mods/pixel-quest/economy.js");
+  // Every zone that opens by level shows at that level in the adventure log's 해금표.
+  for (const z of Z.ZONES.filter((x) => x.open.level))
+    assert.ok(G.rewardsAt(z.open.level).some((r) => r.kind === "zone" && r.key === z.key), z.key);
+  // 왕좌의 방 comes with the 전설 medal, which Lv.20 gives.
+  assert.ok(G.rewardsAt(20).some((r) => r.kind === "zone" && r.key === "throne"));
+  for (const r of G.REWARDS.filter((x) => x.kind === "zone")) assert.ok(Z.zoneBy(r.key), r.key);
+  const zoneOf = (id) => E.medalZone(E.MEDALS.find((m) => m.id === id))?.key ?? null;
+  assert.equal(zoneOf("streak7"), "moss");
+  assert.equal(zoneOf("legend"), "throne");
+  assert.equal(zoneOf("first"), null);
+});
