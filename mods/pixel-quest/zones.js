@@ -56,26 +56,28 @@ export function howOpen(key) {
 
 // Each zone's surfaces and gold, from the confirmed mockup (stage 3, v13): the dark
 // look's navy stone turned to the zone's hue, its gold and bronze laid on the zone's
-// ramp. Text, the meaning colors and the bronze plates' text stay as they are.
+// ramp, the dim text (times, hints) in the zone's own gray (the mockup's terminal dim,
+// tools/gen-zone-files.mjs TERM). Text, the meaning colors and the bronze plates' text
+// stay as they are.
 const PALETTES = {
   ice: {
-    ink: "#060a0d", wall: "#0d181f", chrome: "#11202a", fill: "#162936", raised: "#1f3949", hover: "#2b4a5e", stone: "#3e596a", well: "#060a0d",
+    ink: "#060a0d", wall: "#0d181f", chrome: "#11202a", fill: "#162936", raised: "#1f3949", hover: "#2b4a5e", stone: "#3e596a", well: "#060a0d", dim: "#7e96b0",
     g0: "#16303f", g1: "#3c6c88", g2: "#8cc0d8", g3: "#d8f2fa", g4: "#ffffff", b0: "#16303f", b1: "#183444", b2: "#386681", b3: "#72a5be", gt: "#d8f2fa", gt2: "#8cc0d8",
   },
   lava: {
-    ink: "#0a0808", wall: "#181313", chrome: "#201a19", fill: "#2a2220", raised: "#382e2c", hover: "#483c3a", stone: "#524745", well: "#0a0808",
+    ink: "#0a0808", wall: "#181313", chrome: "#201a19", fill: "#2a2220", raised: "#382e2c", hover: "#483c3a", stone: "#524745", well: "#0a0808", dim: "#ac9688",
     g0: "#1c1010", g1: "#4c3028", g2: "#94603c", g3: "#f4802a", g4: "#ffd478", b0: "#1c1010", b1: "#1f1212", b2: "#472d26", b3: "#7d5136", gt: "#f4802a", gt2: "#94603c",
   },
   crystal: {
-    ink: "#09060d", wall: "#150e1d", chrome: "#1c1228", fill: "#251833", raised: "#322245", hover: "#422e59", stone: "#513f65", well: "#09060d",
+    ink: "#09060d", wall: "#150e1d", chrome: "#1c1228", fill: "#251833", raised: "#322245", hover: "#422e59", stone: "#513f65", well: "#09060d", dim: "#8c80aa",
     g0: "#2a1440", g1: "#6a3a9a", g2: "#b07ae0", g3: "#e4c0ff", g4: "#fff0ff", b0: "#2a1440", b1: "#2e1646", b2: "#643691", b3: "#9965c9", gt: "#e4c0ff", gt2: "#b07ae0",
   },
   throne: {
-    ink: "#0c0709", wall: "#1c1014", chrome: "#26151b", fill: "#311b23", raised: "#422630", hover: "#553340", stone: "#60434d", well: "#0c0709",
+    ink: "#0c0709", wall: "#1c1014", chrome: "#26151b", fill: "#311b23", raised: "#422630", hover: "#553340", stone: "#60434d", well: "#0c0709", dim: "#a08480",
     g0: "#6a3210", g1: "#b8741c", g2: "#f0b83a", g3: "#ffe680", g4: "#fffbe0", b0: "#6a3210", b1: "#6f3611", b2: "#b16e1b", b3: "#dea230", gt: "#ffe680", gt2: "#f0b83a",
   },
   moss: {
-    ink: "#080c0a", wall: "#131c17", chrome: "#19261f", fill: "#203128", raised: "#2c4237", hover: "#3b5548", stone: "#496054", well: "#080c0a",
+    ink: "#080c0a", wall: "#131c17", chrome: "#19261f", fill: "#203128", raised: "#2c4237", hover: "#3b5548", stone: "#496054", well: "#080c0a", dim: "#80907e",
     g0: "#22260e", g1: "#56581e", g2: "#9a963c", g3: "#d6d47c", g4: "#f6f6c8", b0: "#22260e", b1: "#25290f", b2: "#51531c", b3: "#848232", gt: "#d6d47c", gt2: "#9a963c",
   },
 };

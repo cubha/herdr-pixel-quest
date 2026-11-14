@@ -84,6 +84,11 @@ export default class Settings {
       .child(div().w(u(10)).h_full().bg(on ? P.g3 : P.stone).border(u(1)).border_color(P.ink));
   }
 
+  // A heading and its rows: close together, apart from the section above (the page's gap).
+  sect(u, title, ...rows) {
+    return v_flex().flex_none().gap(u(4)).child(div().pb(u(1)).child(small(u, title, P.gt2))).children(rows);
+  }
+
   row(u, title, hint, control) {
     return h_flex().flex_none().gap(u(8)).items_center().px(u(8)).py(u(4)).bg(P.raised).border(u(2)).border_color(P.ink)
       .child(v_flex().flex_1().min_w(0)
@@ -156,20 +161,19 @@ export default class Settings {
     const font = Number(shared("pq.font_size")) || Number(settings()?.font_size) || 12;
     const flag = (key) => shared(key) !== false;
     const setFont = (cx, n) => { this.note = `터미널 글꼴 크기 ${setTermFont(n)}`; cx.notify(); };
-    return v_flex().gap(u(6))
-      .child(small(u, "구역", P.gt2))
-      .child(h_flex().flex_wrap().gap(u(8)).children(ZONES.map(card)))
-      .child(small(u, "크기", P.gt2))
-      .child(this.row(u, "화면 크기", "Ctrl + / Ctrl - 와 같음",
-        this.stepper(u, "zoom", `${Math.round(zoom * 100)}%`, () => run("app.zoom_out"), () => run("app.zoom_in"))))
-      .child(this.row(u, "터미널 글꼴 크기", "Galmuri는 12에서 가장 또렷함",
-        this.stepper(u, "font", String(font), (_e, cx) => setFont(cx, font - 1), (_e, cx) => setFont(cx, font + 1))))
-      .child(small(u, "던전 연출", P.gt2))
-      .child(this.row(u, "시간대 연출", "창문 하늘 · 석판 빛줄기 · 낮엔 촛대 꺼짐 · 라이트는 밤에 침침",
-        this.toggle(u, "look-time", flag("pq.time"), () => { setShared("pq.time", !flag("pq.time")); applyLook(); })))
-      .child(this.row(u, "계절 장식", "겨울 눈 · 봄 벚꽃 · 여름 덩굴 · 가을 낙엽 · 할로윈 · 크리스마스",
-        this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })))
-      .child(this.row(u, "계절 고르기", "자동 = 달력대로 (10월 할로윈 · 12월 크리스마스 포함)", this.seasons(u, flag("pq.seasons"))));
+    return v_flex().gap(u(14))
+      .child(this.sect(u, "구역", h_flex().flex_wrap().gap(u(8)).children(ZONES.map(card))))
+      .child(this.sect(u, "크기",
+        this.row(u, "화면 크기", "Ctrl + / Ctrl - 와 같음",
+          this.stepper(u, "zoom", `${Math.round(zoom * 100)}%`, () => run("app.zoom_out"), () => run("app.zoom_in"))),
+        this.row(u, "터미널 글꼴 크기", "Galmuri는 12에서 가장 또렷함",
+          this.stepper(u, "font", String(font), (_e, cx) => setFont(cx, font - 1), (_e, cx) => setFont(cx, font + 1)))))
+      .child(this.sect(u, "던전 연출",
+        this.row(u, "시간대 연출", "창문 하늘 · 석판 빛줄기 · 낮엔 촛대 꺼짐 · 라이트는 밤에 침침",
+          this.toggle(u, "look-time", flag("pq.time"), () => { setShared("pq.time", !flag("pq.time")); applyLook(); })),
+        this.row(u, "계절 장식", "겨울 눈 · 봄 벚꽃 · 여름 덩굴 · 가을 낙엽 · 할로윈 · 크리스마스",
+          this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })),
+        this.row(u, "계절 고르기", "자동 = 달력대로 (10월 할로윈 · 12월 크리스마스 포함)", this.seasons(u, flag("pq.seasons")))));
   }
 
   sound(u) {
@@ -184,35 +188,35 @@ export default class Settings {
     }, eight ? "8비트 퀘스트 소리로 바꿨습니다" : "Herdr 기본 소리로 바꿨습니다");
     const seg = (id, label, active, act) => button(u, id, small(u, label, active ? P.g3 : P.text), act, { on: active, pad: [1, 8] });
     const tryIt = (id, kind) => button(u, id, small(u, "▶ 들어보기", P.text), () => playSound(ours ? SOUNDS[kind] : kind), { pad: [1, 8] });
-    return v_flex().gap(u(6))
-      .child(small(u, "알림음", P.gt2))
-      .child(this.row(u, "알림음 켜기", "에이전트가 끝나거나 입력이 필요할 때",
-        this.toggle(u, "snd-on", on, (cx) => this.edit(cx, (d) => { d.sounds = { ...(d.sounds ?? {}), enabled: !on }; }, on ? "알림음을 껐습니다" : "알림음을 켰습니다"))))
-      .child(small(u, "소리 종류", P.gt2))
-      .child(h_flex().gap(u(4))
-        .child(seg("snd-8bit", "8비트 퀘스트", ours, (_e, cx) => pickKind(cx, true)))
-        .child(seg("snd-herdr", "Herdr 기본", !ours, (_e, cx) => pickKind(cx, false))))
-      .child(this.row(u, "완료", ours ? "상승 아르페지오" : "Herdr 기본 완료음", tryIt("try-done", "done")))
-      .child(this.row(u, "입력 필요", ours ? "두 번 부르는 경고음" : "Herdr 기본 경고음", tryIt("try-blocked", "blocked")));
+    return v_flex().gap(u(14))
+      .child(this.sect(u, "알림음",
+        this.row(u, "알림음 켜기", "에이전트가 끝나거나 입력이 필요할 때",
+          this.toggle(u, "snd-on", on, (cx) => this.edit(cx, (d) => { d.sounds = { ...(d.sounds ?? {}), enabled: !on }; }, on ? "알림음을 껐습니다" : "알림음을 켰습니다")))))
+      .child(this.sect(u, "소리 종류",
+        h_flex().gap(u(4))
+          .child(seg("snd-8bit", "8비트 퀘스트", ours, (_e, cx) => pickKind(cx, true)))
+          .child(seg("snd-herdr", "Herdr 기본", !ours, (_e, cx) => pickKind(cx, false))),
+        this.row(u, "완료", ours ? "상승 아르페지오" : "Herdr 기본 완료음", tryIt("try-done", "done")),
+        this.row(u, "입력 필요", ours ? "두 번 부르는 경고음" : "Herdr 기본 경고음", tryIt("try-blocked", "blocked"))));
   }
 
   quest(u) {
     const info = lvInfo();
     const picks = Object.keys(shared(PICKS) ?? {}).length;
     const flag = (key) => shared(key) !== false;
-    return v_flex().gap(u(6))
-      .child(small(u, "퀘스트", P.gt2))
-      .child(this.row(u, "퀘스트 완료 배너", "작업이 끝나면 4.5초 동안", this.toggle(u, "q-banner", flag("pq.banner"), () => setShared("pq.banner", !flag("pq.banner")))))
-      .child(this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너와 골드·훈장·펫은 남습니다",
-        this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; })))
-      .child(small(u, "파티", P.gt2))
-      .child(this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))))
-      .child(this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges")))))
-      .child(small(u, "펫", P.gt2))
-      .child(this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 펫 상점에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))))
-      .child(this.row(u, "펫 걷기", "끄면 집 자리(파티 옆)에 가만히 있음", this.toggle(u, "q-petwalk", flag("pq.petWalk"), () => setShared("pq.petWalk", !flag("pq.petWalk")))))
-      .child(this.row(u, "초상 자동 배정으로 되돌리기", `직접 고른 초상 ${picks}개`,
-        this.twice(u, "f-reset", "되돌리기", () => { setShared(PICKS, {}); this.note = "초상을 모두 자동 배정으로 되돌렸습니다"; })));
+    return v_flex().gap(u(14))
+      .child(this.sect(u, "퀘스트",
+        this.row(u, "퀘스트 완료 배너", "작업이 끝나면 4.5초 동안", this.toggle(u, "q-banner", flag("pq.banner"), () => setShared("pq.banner", !flag("pq.banner")))),
+        this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너와 골드·훈장·펫은 남습니다",
+          this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; }))))
+      .child(this.sect(u, "파티",
+        this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))),
+        this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges"))))))
+      .child(this.sect(u, "펫",
+        this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 펫 상점에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))),
+        this.row(u, "펫 걷기", "끄면 집 자리(파티 옆)에 가만히 있음", this.toggle(u, "q-petwalk", flag("pq.petWalk"), () => setShared("pq.petWalk", !flag("pq.petWalk")))),
+        this.row(u, "초상 자동 배정으로 되돌리기", `직접 고른 초상 ${picks}개`,
+          this.twice(u, "f-reset", "되돌리기", () => { setShared(PICKS, {}); this.note = "초상을 모두 자동 배정으로 되돌렸습니다"; }))));
   }
 
   render() {
