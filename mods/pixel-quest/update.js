@@ -9,6 +9,8 @@ export const VERSION = "1.0.0";
 export const REPO = "cubha/herdr-pixel-quest";
 /** Public, no sign-in: 60 requests an hour per address, and this asks four times a day. */
 export const LATEST_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
+/** GitHub's API turns away a request with no User-Agent (403), and Herdr's fetch sends none. */
+export const HEADERS = { Accept: "application/vnd.github+json", "User-Agent": "herdr-pixel-quest" };
 export const EVERY = 6 * 3600 * 1000;      // look again this long after a look that worked
 export const RETRY = 30 * 60 * 1000;       // ... and this long after one that failed
 export const BUSY_FOR = 10 * 60 * 1000;    // an install older than this is taken for dead

@@ -209,7 +209,7 @@ export default class Status {
     cx.spawn(async (cx) => {
       let release = null;
       try {
-        const r = await fetch(U.LATEST_URL, { headers: { Accept: "application/vnd.github+json" } });
+        const r = await fetch(U.LATEST_URL, { headers: U.HEADERS });
         if (r.ok) release = U.fromRelease(await r.json());
       } catch { release = null; }
       setShared("pq.update", U.looked(cache, release, Date.now()));

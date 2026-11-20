@@ -11,6 +11,11 @@ test("this build's version is a release version, and mod.json says the same", ()
   assert.equal(mod.version, U.VERSION);
 });
 
+test("the request names itself: GitHub's API refuses one without a User-Agent", () => {
+  assert.ok(U.HEADERS["User-Agent"]);
+  assert.ok(U.LATEST_URL.startsWith("https://api.github.com/repos/cubha/herdr-pixel-quest/"));
+});
+
 test("versions: v or no v, three numbers, nothing else", () => {
   assert.deepEqual(U.parseVer("v1.2.3"), [1, 2, 3]);
   assert.deepEqual(U.parseVer(" 10.0.12 "), [10, 0, 12]);
