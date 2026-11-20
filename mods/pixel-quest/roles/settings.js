@@ -14,7 +14,8 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco, updateState, openUpdate } from "../kit.js";
+import { VERSION } from "../update.js";
 import { ZONES, layoutOf, isOpen, howOpen } from "../zones.js";
 import { titleOf } from "../progress.js";
 import { PINNED } from "../look.js";
@@ -173,7 +174,21 @@ export default class Settings {
           this.toggle(u, "look-time", flag("pq.time"), () => { setShared("pq.time", !flag("pq.time")); applyLook(); })),
         this.row(u, "계절 장식", "겨울 눈 · 봄 벚꽃 · 여름 덩굴 · 가을 낙엽 · 할로윈 · 크리스마스",
           this.toggle(u, "look-season", flag("pq.seasons"), () => { setShared("pq.seasons", !flag("pq.seasons")); applyLook(); })),
-        this.row(u, "계절 고르기", "자동 = 달력대로 (10월 할로윈 · 12월 크리스마스 포함)", this.seasons(u, flag("pq.seasons")))));
+        this.row(u, "계절 고르기", "자동 = 달력대로 (10월 할로윈 · 12월 크리스마스 포함)", this.seasons(u, flag("pq.seasons")))))
+      .child(this.sect(u, "업데이트", this.update(u)));
+  }
+
+  // The update row: the switch (off = no network request at all), where things stand, and a look now.
+  update(u) {
+    const on = shared("pq.updateCheck") !== false, st = updateState();
+    const says = { off: "꺼짐 · GitHub에 묻지 않습니다", unknown: "아직 확인 전", current: "최신 버전입니다", new: `새 버전 v${st.latest}이 나왔습니다` }[st.state];
+    return this.row(u, `업데이트 확인 · 지금 v${VERSION}`, `시작할 때와 6시간마다 GitHub 공개 주소 한 곳에 새 버전을 물어봄 · ${says}`,
+      h_flex().gap(u(6)).items_center()
+        .when(st.state === "new", (el) => el.child(button(u, "upd-open", small(u, "업데이트", P.g3), () => openUpdate(), { pad: [1, 8] })))
+        .when(on && st.state !== "new", (el) => el.child(button(u, "upd-now", small(u, "지금 확인", P.text), (_e, cx) => {
+          run("pixel-quest.update_check"); this.note = "새 버전을 확인합니다"; cx.notify();
+        }, { pad: [1, 8] })))
+        .child(this.toggle(u, "upd-on", on, () => { setShared("pq.updateCheck", !on); if (!on) run("pixel-quest.update_check"); })));
   }
 
   sound(u) {

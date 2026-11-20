@@ -22,11 +22,21 @@
 // with a blinking low battery (usage 80%+, click: the usage card), hopping (a quest
 // just done). It speaks up in a bubble over its head by itself (economy.js talkNext: news at
 // once, then on its own beat); hover shows the same words as a tooltip.
+//
+// In-app update (update.js): at start and every six hours it asks GitHub for the newest
+// release (one public address, no sign-in; shared pq.update keeps the answer so copies don't
+// ask twice; off with pq.updateCheck false, and then nothing is asked). A new one gets a
+// notification once (click: the update window) and a crystal on the brand bar. The window's
+// [업데이트] comes back here as `update_run`: the mod's update.ps1 / update.sh downloads the
+// release, checks it and only then replaces the mod (Herdr reloads it in place). The start
+// after that shows the patch notes once (pq.update.seen). Commands: update (the window),
+// update_check (look now), update_run, notes.
 
 import { div, svg } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
-import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, coin, announce } from "../kit.js";
+import { h_flex, v_flex, Popup } from "gpui-base";
+import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify, exec, checking } from "herdr";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, coin, announce, openUpdate, updateState } from "../kit.js";
+import * as U from "../update.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick, equipables } from "../progress.js";
 import * as E from "../economy.js";
 
@@ -115,6 +125,8 @@ export default class Status {
     // (measured), so they go out from this timer.
     cx.timer.every(500, (cx) => {
       if (this.medalQueue.length) { const got = this.medalQueue; this.medalQueue = []; announce(got); }
+      // The patch notes after an update, once the saves have settled (three quiet seconds).
+      if (shared("pq.update.notes") && Date.now() - this.bornAt > 3000) { setShared("pq.update.notes", null); openUpdate(true); }
       if (this.hopUntil && Date.now() > this.hopUntil) { this.hopUntil = 0; cx.notify(); }
       const now = Date.now();
       if (this.shown && this.mood) {
@@ -124,6 +136,22 @@ export default class Status {
       }
       if (this.sayAt && now - this.sayAt > E.TALK.show) { this.sayAt = 0; cx.notify(); }
     });
+    // In-app update. A check (herdr-app check) asks nothing and writes nothing.
+    this.looking = 0;
+    this.bornAt = Date.now();
+    if (!checking()) {
+      const seen = shared("pq.update.seen");
+      if (seen !== U.VERSION) {
+        // A newer build than the one last seen: its patch notes once (never on a first install),
+        // and an install that was under way is over. The notes wait in shared state: an update
+        // saves many files and each save starts this copy again, so a note kept here would be lost.
+        if (U.notesDue(seen)) setShared("pq.update.notes", U.VERSION);
+        setShared("pq.update.seen", U.VERSION);
+        setShared("pq.update.busy", null);
+      }
+      this.look(cx);
+      cx.timer.every(600000, (cx) => this.look(cx));
+    }
     // Only status changes seen while this runs count: no fanfare for the past.
     this.last = new Map(agents().map((a) => [a.address, a.status]));
     // `pixel-quest.quest` (a key or `herdr-app do`) shows the banner once, to try it.
@@ -152,12 +180,76 @@ export default class Status {
           const k = (this.medals = ((this.medals ?? -1) + 1) % E.MEDALS.length);
           announce([E.MEDALS[k]], true);
         }
+        else if (c === "update") openUpdate();
+        else if (c === "notes") openUpdate(true);
+        else if (c === "update_check") this.look(cx, true);
+        else if (c === "update_run") this.install(cx);
         else if (c === "toast") {
           const k = (this.toasts = ((this.toasts ?? -1) + 1) % SAMPLES.length);
           notify(SAMPLES[k]);
         }
         cx.notify();
       }
+    });
+  }
+
+  // Asks GitHub for the newest release when it is time (force: now, and say what came of it).
+  look(cx, force = false) {
+    if (shared("pq.updateCheck") === false) {
+      if (force) notify({ title: "업데이트 확인이 꺼져 있습니다", body: "던전 설정 · 모양 · 업데이트에서 켤 수 있습니다", level: "info" });
+      return;
+    }
+    const cache = shared("pq.update") ?? null;
+    if (!force && !U.due(cache, Date.now())) { this.tell(false, true); return; }
+    // (A look that never came back stops counting after two minutes.)
+    if (Date.now() - this.looking < U.LOOK_FOR) return;
+    this.looking = Date.now();
+    // The time goes in first, so another copy that starts meanwhile doesn't ask too.
+    setShared("pq.update", { ...(cache ?? {}), at: Date.now() });
+    cx.spawn(async (cx) => {
+      let release = null;
+      try {
+        const r = await fetch(U.LATEST_URL, { headers: { Accept: "application/vnd.github+json" } });
+        if (r.ok) release = U.fromRelease(await r.json());
+      } catch { release = null; }
+      setShared("pq.update", U.looked(cache, release, Date.now()));
+      this.looking = 0;
+      this.tell(force, Boolean(release));
+      cx.notify();
+    });
+  }
+
+  // A new version: a notification once per version (force: the window at once).
+  tell(force, ok) {
+    const st = updateState();
+    if (st.state === "new") {
+      if (force) openUpdate();
+      else if (shared("pq.update.told") !== st.latest) {
+        setShared("pq.update.told", st.latest);
+        notify({ title: `새 버전 v${st.latest}`, body: "눌러서 업데이트", level: "info", action: { name: "pixel-quest.update" } });
+      }
+    } else if (force) {
+      notify(ok ? { title: "최신 버전입니다", body: `Pixel Quest v${U.VERSION}`, level: "success" }
+        : { title: "새 버전을 확인하지 못했습니다", body: "네트워크를 확인하고 잠시 뒤 다시 해 주세요", level: "warning" });
+    }
+  }
+
+  // Installs the newest release (the update window's button). One at a time, in every copy.
+  install(cx) {
+    const st = updateState();
+    if (st.state !== "new") return;
+    const now = Date.now();
+    if (now - (Number(shared("pq.update.busy")) || 0) < U.BUSY_FOR) { notify({ title: "이미 업데이트하는 중입니다", level: "info" }); return; }
+    const plan = U.installer(window()?.platform, appHome(), st.latest);
+    if (!plan) return;
+    setShared("pq.update.busy", now);
+    notify({ title: `v${st.latest} 받는 중…`, body: "검사를 통과하면 바로 바뀝니다. 잠시만 기다려 주세요", level: "info" });
+    cx.spawn(async () => {
+      let r = null, why = "";
+      try { r = await exec(plan.command, plan.args, { timeout: 300000 }); } catch (e) { why = String(e?.message ?? e); }
+      setShared("pq.update.busy", null);
+      if (r?.code === 0) notify({ title: `v${st.latest} 설치 완료`, body: "바뀐 모습이 안 보이면 Herdr를 한 번 껐다 켜 주세요", level: "success", action: { name: "pixel-quest.notes" } });
+      else notify({ title: "업데이트하지 못했습니다", body: `${U.lastLine(r) || why || "알 수 없는 오류"} · 지금 버전은 그대로입니다`, level: "error" });
     });
   }
 
@@ -229,20 +321,18 @@ export default class Status {
   }
 
   // The pet's speech bubble (the confirmed mockup's: fill, dark rim, a thin gold line inside),
-  // in the bar beside the pet, on the side with more room, two lines at most.
-  // The block clips what goes above it (measured), so it can't sit over the pet's head.
+  // over the pet's head. The status block clips what is drawn above it (measured) and the
+  // terminal paints over the rest, so the bubble is a Popup: Herdr paints it in a layer above
+  // the whole window, on its own opaque fill, and keeps it inside the window's edges.
   bubble(u) {
     const s = this.speech;
     const lane = u(10) + this.leftW + u(12);           // the bar's padding, the left plate, the gap
-    // Its lane is narrow beside the gauges, so for its few seconds the bubble may reach over
-    // the plates next to it (up to 280px, never past the bar's ends).
-    const leftRoom = lane + s.at - u(14), rightRoom = this.barW - (lane + s.at + s.w) - u(14);
-    const toLeft = leftRoom > rightRoom;
-    const maxW = Math.max(u(80), Math.min(u(280), toLeft ? leftRoom : rightRoom));
-    const el = div().id("pet-say").absolute().bottom(u(3)).max_w(maxW)
-      .bg(P.fill).border(u(2)).border_color(P.ink).p(u(1))
+    const words = div().id("pet-say").max_w(u(280)).mb(u(2))
+      .bg(P.raised).border(u(2)).border_color(P.ink).p(u(1))
       .child(div().border(u(1)).border_color(P.g2).px(u(6)).py(u(1)).child(small(u, s.words, P.text)));
-    return toLeft ? el.right(this.barW - (lane + s.at) + u(4)) : el.left(lane + s.at + s.w + u(4));
+    // The trigger is the top edge of the pet's box (it stands still while it speaks).
+    return Popup.new("pet-say-at", div().size_full()).absolute().top(u(-(this.tall ? 18 : 0))).h(u(2)).w(s.w).left(lane + s.at)
+      .anchor("bottom_center").content(root(u, words));
   }
 
   // The pet's lane: the free stretch right of the party bar. Home is its left end.

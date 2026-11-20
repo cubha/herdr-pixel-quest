@@ -9,6 +9,7 @@
 
 import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
+import { standing } from "./update.js";
 import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, notify, window as hwin } from "herdr";
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
@@ -143,6 +144,15 @@ export function veil() {
 
 /** The big stone floor behind a panel (480x1600 flagstones). */
 export const FLOOR = ["floor", 480, 1600];
+/**
+ * The stone floor laid side by side under a panel that can be dragged wide
+ * (the file and changes panels): one 480px copy leaves the rest bare.
+ * The box must be relative().overflow_hidden(). Same image each time, so
+ * nothing more is loaded.
+ */
+export function floorTiles(u, n = 6) {
+  return Array.from({ length: n }, (_, i) => pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1] * i)));
+}
 
 /** A brick-band header for menus and small windows: the strip texture behind a gold caption. */
 export function bandHead(u, title) {
@@ -202,8 +212,8 @@ export function frame(u, kind, content, o = {}) {
   // A stone floor (and a cobweb) under the content, cut to the window.
   const dressed = o.floor && DRESS[P.zone];
   if (o.floor || o.web || o.edge) inner = inner.relative().overflow_hidden();
-  // The floor is 480px wide: a second copy covers windows wider than that.
-  if (o.floor) inner = inner.child(texture(u, ...FLOOR)).child(pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1])))
+  // The floor is 480px wide: more copies cover windows wider than that.
+  if (o.floor) inner = inner.children(floorTiles(u, o.tiles ?? 2))
     .when(Boolean(veil()), (el) => el.child(veil()));
   // A zone's panel edges and corner thing (ice, crystal, throne) in place of the cobweb.
   if (dressed) inner = inner.child(dressing(u, o.web ? (o.web === "bl" ? "bl" : "br") : null, o.thin));
@@ -376,6 +386,14 @@ export function openGoto() {
 
 export function openPalette() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 400, props: { role: "palette" } });
+}
+
+// ---- in-app update (update.js decides, roles/status.js looks and installs, roles/update.js shows) ----
+/** Where this build stands against the newest release: { state: "off" | "unknown" | "current" | "new", latest }. */
+export const updateState = () => standing(shared("pq.update"), shared("pq.updateCheck") !== false);
+/** The update window: a new version's patch notes with [업데이트], or (notes: true) this version's notes. */
+export function openUpdate(notes = false) {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 460, height: 420, props: { role: "update", notes } });
 }
 
 // ---- the look: time of day and seasons on the work area (look.js) ----

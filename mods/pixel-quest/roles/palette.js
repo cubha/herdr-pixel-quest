@@ -9,7 +9,7 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
-import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop } from "../kit.js";
+import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop, openUpdate } from "../kit.js";
 import { keyParts as capsOf } from "../dialogs.js";
 import { ZONES, layoutOf } from "../zones.js";
 
@@ -55,6 +55,8 @@ const NAMED = [
   ["pq:shop", {}, "앱", "펫 상점", "pet shop gold buy dex collection"],
   ["pq:dex", {}, "앱", "펫 도감", "pet dex collection choose"],
   ["pq:medals", {}, "앱", "훈장 보기", "medals achievements badges"],
+  ["pixel-quest.update_check", {}, "앱", "Pixel Quest 업데이트 확인", "pixel quest update check new version release theme"],
+  ["pq:notes", {}, "앱", "Pixel Quest 패치 노트", "pixel quest patch notes release changes version"],
   ["pixel-quest.quest", {}, "앱", "퀘스트 배너 시험", "quest test banner"],
   ["pixel-quest.pet_try", {}, "앱", "펫 상황 시험", "pet test mood"],
   ["app.settings", {}, "앱", "Herdr 기본 설정", "herdr settings machine update keys"],
@@ -166,6 +168,7 @@ export default class Palette {
     else if (e.name === "pq:rename_tab") openRename("tab");
     else if (e.name === "pq:rename_space") openRename("space");
     else if (e.name === "pq:help") openHelp();
+    else if (e.name === "pq:notes") openUpdate(true);
     else run(e.name, e.name === "layout.clone" ? { name: shared("layout") ?? "main" } : e.args);
   }
 

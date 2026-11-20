@@ -6,7 +6,7 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
 import { spaces, panes, focused, exec, readTextFile, watchFolder, settings } from "herdr";
-import { P, unit, root, small, button, texture, FLOOR, web } from "../kit.js";
+import { P, unit, root, small, button, floorTiles, web } from "../kit.js";
 
 function location() {
   const space = spaces().find((s) => s.active), f = focused();
@@ -190,7 +190,7 @@ export default class Changes {
       .child(div().flex_1())
       .child(small(u, `+${add}`, P.done)).child(small(u, `−${del}`, P.blocked));
     const list = div().flex_1().min_h(u(44)).max_h(u(this.files.length * 28 + 12)).relative().overflow_hidden().border_b(u(2)).border_color(P.ink)
-      .child(texture(u, ...FLOOR))
+      .children(floorTiles(u))
       .child(v_flex().id("changes-list").absolute().inset_0().overflow_y_scroll().p(u(4)).children(this.files.map((f) => {
         const parts = f.path.split("/"), name = parts.pop(), on = this.open === f.path;
         return h_flex().id(`change-${f.path}`).h(u(28)).flex_none().px(u(6)).gap(u(8)).items_center().cursor_pointer()

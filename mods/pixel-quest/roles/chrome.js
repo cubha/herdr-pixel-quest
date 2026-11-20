@@ -3,7 +3,7 @@
 // pixel buttons, "설정" / "머신 추가" as bronze buttons.
 
 import { View, div, image, svg } from "gpui-kit";
-import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto, openMachine } from "../kit.js";
+import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto, openMachine, openUpdate, updateState } from "../kit.js";
 import { titleOf, goldBadge } from "../progress.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, run, props, window, shared, setShared, updates, layout, spaces, agents } from "herdr";
@@ -60,7 +60,11 @@ export default class WorkspaceChrome {
       .when(!collapsed, (el) => el.child(pic(u, "emblem", 24, 28)))
       .when(!collapsed, (el) => el.child(h_flex().flex_1().gap(u(8)).items_center()
         .child(pic(u, "wordmark", 76, 22))
-        .child(this.badge(u))))
+        .child(this.badge(u))
+        // A new release is out: a twinkling crystal beside the badge (click: its patch notes and [업데이트]).
+        .when(updateState().state === "new", (el) => el.child(div().id("pq-update-gem").flex_none().cursor_pointer()
+          .tooltip(`새 버전 v${updateState().latest} · 눌러서 업데이트`).on_click(() => openUpdate())
+          .child(pic(u, "ico-crystal", 16).loop("opacity", { from: 0.35, to: 1, period: 900 }))))))
       .when(!collapsed, (el) => el.child(button(u, "search", icon("search"), () => openGoto(), { pad: [3, 4], tooltip: "찾기" })))
       .when(!(collapsed && window()?.platform === "macos"), (el) => el.child(button(u, "sidebar-toggle", icon("sidebar"), toggleSidebar, { pad: [3, 4], tooltip: "사이드바 접기" }))));
   }
