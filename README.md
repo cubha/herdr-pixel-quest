@@ -8,7 +8,7 @@ A pixel-art layout + theme for the Herdr desktop app: gold-framed inventory
 panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 8-bit alert sounds. Original art; Korean UI labels.
 
-> **v1.0.0부터 앱 안에서 업데이트됩니다.** 새 버전이 나오면 Herdr 안에서 알려 주고 버튼 한 번으로 받습니다.
+> **v1.0.1부터 앱 안에서 업데이트됩니다.** 새 버전이 나오면 Herdr 안에서 알려 주고 버튼 한 번으로 받습니다.
 > 그 전에 설치했다면 아래 [업데이트](#3-업데이트) 방법으로 **한 번만** 직접 받아 주세요.
 
 ![Pixel Quest](preview.png)
@@ -124,7 +124,7 @@ sh install.sh
 
 ### 3. 업데이트
 
-**v1.0.0부터: 앱 안에서.**
+**v1.0.1부터: 앱 안에서.**
 
 - Herdr를 켤 때와 6시간마다 새 버전이 있는지 확인합니다. 새 버전이 나오면 알림("새 버전 vX.Y.Z — 눌러서 업데이트")이 뜨고 사이드바 맨 위 `Lv` 배지 옆에 수정이 반짝입니다.
 - 알림이나 수정을 누르면 패치 노트가 있는 창이 열립니다. **[업데이트]** 를 누르면 그 버전을 받아 `herdr-app check`로 검사한 뒤 바꿉니다. Herdr를 다시 켜지 않아도 바로 반영되고, 패치 노트를 한 번 보여 줍니다. 받기나 검사가 실패하면 지금 버전을 그대로 둡니다.
@@ -137,7 +137,7 @@ sh install.sh
 
 **네트워크 요청:** 이 확인은 `https://api.github.com/repos/cubha/herdr-pixel-quest/releases/latest` 한 곳에 로그인 없이 묻는 것이 전부이고(하루 네 번쯤), 보내는 정보는 없습니다. 던전 설정 · 모양 · 업데이트에서 **업데이트 확인**을 끄면 아무 요청도 하지 않습니다. [업데이트]를 누를 때만 `github.com`에서 그 버전의 압축 파일을 받습니다(모드 폴더의 `update.ps1` / `update.sh`가 실행).
 
-**v1.0.0 이전 버전이거나 직접 받고 싶을 때:**
+**v1.0.0 이하 버전이거나 직접 받고 싶을 때:**
 
 ```powershell
 cd herdr-pixel-quest
@@ -184,7 +184,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `install.sh` | macOS · Linux 설치 스크립트(`--sounds`, `--light`) |
-| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.0.0`) |
+| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.0.1`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
 | `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
 | `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `shop`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)을, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
