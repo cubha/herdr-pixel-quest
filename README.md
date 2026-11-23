@@ -36,8 +36,9 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 퀘스트·레벨 | **퀘스트 = 에이전트가 일을 끝낸 횟수**(작업 중·입력 필요 → 완료). 완료 배너가 4.5초 동안 뜸. 레벨은 갈수록 느려짐: Lv.n에서 다음 레벨까지 `5 + ⌊(n−1)²/4⌋`퀘스트(Lv.10 누적 95, Lv.20 누적 620). Lv.2~20마다 꾸미기를 얻음(새 초상, 액자, 배너 장식 깃발·횃불·보석 비·왕관·전설, 칭호 견습·모험가·기사·영웅·전설, Lv.19 금장 배지). 기능은 잠그지 않음. 레벨이 오르면 레벨 업 배너. 퀘스트 수를 초기화해도 이미 얻은 것은 남음 |
 | 모험 일지 | 브랜드의 `Lv` 배지나 상태바 퀘스트를 누르면 열림: 레벨·칭호·다음 레벨까지, 해금표(레벨로 열리는 구역 포함), 꾸미기(액자·배너 고르기), 훈장, 최근 퀘스트 30개 |
 | 골드·훈장 | 퀘스트 +10 G, 최고 레벨이 오를 때 +50 G, 훈장 동 100 · 은 300 · 금 1,000 G. 훈장 17개(첫 걸음, 100·1,000번째, 하루 10·30개, 3·7·30일 연속, 한밤·새벽 퀘스트, 4명 동시 작업, Lv.10·20, 사계절, 펫 5·12마리, 모든 훈장) — 받으면 알림. 업데이트한 날 지금까지의 퀘스트·레벨만큼 한 번 소급 지급. 퀘스트를 초기화해도 골드·훈장·펫은 남음 |
-| 펫 | 상태바 오른쪽 판의 골드를 누르면 **펫 상점**(상점 8종 300~5,000 G, 도감 12종 — 4종은 훈장 전용). 데려간 펫은 파티 표시 오른쪽에 살며 상황을 몸으로 알림: 모두 쉬면 잠, 작업 중엔 걸어 다님, 입력 대기면 느낌표(누르면 그 에이전트로), 사용량 80% 넘으면 쭈그려 기며 배터리 깜빡(누르면 사용량 카드), 퀘스트 끝나면 뜀. 펫이 스스로 말풍선으로 말함: 입력 대기·방전·퀘스트 완료는 바로(대기·방전은 이어지는 동안 45초마다), 평소엔 10분마다 오늘 퀘스트·연속 출석·가까운 훈장. 6초 동안 펫 옆에 뜨고 그동안 펫은 멈춰 섬. 마우스를 올리면 같은 내용이 툴팁으로. 함께 끝낸 퀘스트(친밀도) 50·200에서 자람. 설정에서 펫 표시·걷기 끄기 |
-| 구역 | 설정 · 모양에서 고르는 일곱 구역: 던전·햇빛 석실(처음부터), 얼음 동굴(최고 Lv.4), 이끼 유적(훈장 "일주일 출석"), 용암 굴(Lv.12), 수정 광산(펫 상점 3,000 G), 왕좌의 방(훈장 "전설"). 구역마다 벽·바닥·석판·금속색·터미널 색과 구석 장면이 함께 바뀌고, 계절 장식은 그 장면 위에 쌓임. 잠긴 구역은 여는 조건만 보이고, 기능은 잠기지 않음. 레벨로 열리는 구역은 모험 일지 해금표와 레벨업 배너에, 훈장으로 열리는 구역은 그 훈장 설명과 알림에 나옴 |
+| 캐릭터 | 사이드바 맨 위 **캐릭터** 패널: 도트 초상화(120×131), 남/여, 등급(견습 Lv.1 · 모험가 5 · 기사 10 · 영웅 15 · 전설 20 — 최고 레벨로 열린 것 중에서), 투구·갑옷·무기 칸(누르면 가진 것 중 다음 것으로). 머리줄을 누르면 접히고, 초상화를 누르면 **캐릭터 창**: 인벤토리(장비 칸 + 칸 가방, 가방 장비를 누르면 끼고 장비 칸을 누르면 뺌)와 상점(장비 · 펫 · 구역). 장비는 구역을 연 뒤 골드로 칸마다 사고(투구 · 무기 · 갑옷 = 구역 기준값 × 1 · 1.5 · 2), 세트를 섞어 입을 수 있음. 상점에서는 사기 전에 입어 볼 수 있음. 장비 그림은 등급과 관계없이 같고, 등급마다 다른 건 얼굴과 머리카락 |
+| 펫 | 상태바 오른쪽 판의 골드를 누르면 캐릭터 창 상점의 **펫** 탭(상점 8종 300~5,000 G, 도감 12종 — 4종은 훈장 전용). 데려간 펫은 파티 표시 오른쪽에 살며 상황을 몸으로 알림: 모두 쉬면 잠, 작업 중엔 걸어 다님, 입력 대기면 느낌표(누르면 그 에이전트로), 사용량 80% 넘으면 쭈그려 기며 배터리 깜빡(누르면 사용량 카드), 퀘스트 끝나면 뜀. 펫이 스스로 말풍선으로 말함: 입력 대기·방전·퀘스트 완료는 바로(대기·방전은 이어지는 동안 45초마다), 평소엔 10분마다 오늘 퀘스트·연속 출석·가까운 훈장. 6초 동안 펫 옆에 뜨고 그동안 펫은 멈춰 섬. 마우스를 올리면 같은 내용이 툴팁으로. 함께 끝낸 퀘스트(친밀도) 50·200에서 자람. 설정에서 펫 표시·걷기 끄기 |
+| 구역 | 설정 · 모양에서 고르는 일곱 구역: 던전·햇빛 석실(처음부터), 얼음 동굴(최고 Lv.4), 이끼 유적(훈장 "일주일 출석"), 용암 굴(Lv.12), 수정 광산(상점 3,000 G), 왕좌의 방(훈장 "전설"). 구역마다 벽·바닥·석판·금속색·터미널 색과 구석 장면이 함께 바뀌고, 계절 장식은 그 장면 위에 쌓임. 잠긴 구역은 여는 조건만 보이고, 기능은 잠기지 않음. 레벨로 열리는 구역은 모험 일지 해금표와 레벨업 배너에, 훈장으로 열리는 구역은 그 훈장 설명과 알림에 나옴 |
 | 파티 서랍 | 오른쪽 가장자리의 플로팅 서랍. 보석과 초상만 보이다가 마우스를 올리면 이름이 나옴 |
 | 접힌 사이드바 | 문장과 보석만 남은 레일 |
 | 던전 디테일 | 사이드바 패널 안쪽 석판 바닥, 두 패널 사이 쇠사슬과 거미줄, 탭바·상태바 벽돌 띠, 횃불 양옆 벽 촛대(깜빡임), 상태바 이끼, 작업 영역 아래 돌 문턱. 그림은 늘리지 않고 원래 크기로 잘라 씀 |
@@ -173,7 +174,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 
 상태줄이 없으면 `node /path/to/pq-usage.js`만 넣습니다. Node로 만든 상태줄이면 그 안에서 `require("/path/to/pq-usage.js").save(input)`를 불러도 됩니다. Claude Code는 WSL에, Herdr는 Windows에 있으면 `PQ_USAGE_FILE=/mnt/c/Users/<나>/.config/herdr-app/pixel-quest-usage.json`을 지정하세요. 파일이 없으면 게이지는 나오지 않습니다. 모델별(예: Fable) 주간 한도는 상태줄 값에 없어서 표시하지 않습니다.
 
-**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal` · `pixel-quest.help` · `pixel-quest.rename_tab` · `pixel-quest.rename_space`는 팔레트·찾기·설정·모험 일지·단축키·탭/스페이스 이름 바꾸기를 엽니다. `pixel-quest.levelup`은 지금 레벨의 레벨업 배너를 띄워 봅니다. `pixel-quest.look_phase` · `pixel-quest.look_season`은 시간대(새벽→낮→저녁→밤→지금)·계절(겨울→크리스마스→봄→여름→가을→할로윈→지금)을 하나씩 넘겨 미리 봅니다. `pixel-quest.toast`는 알림 토스트 견본을 오류→경고→성공→안내 순으로 하나씩 띄웁니다. `pixel-quest.shop`은 펫 상점을 열고, `pixel-quest.pet_try`는 펫 상황(쉼→작업 중→입력 대기→사용량→퀘스트 완료→실제)을 하나씩 넘겨 보며, `pixel-quest.medal_try`는 훈장 알림 견본을 띄웁니다(골드·훈장은 주지 않음). keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
+**명령:** `herdr-app do pixel-quest.quest`는 퀘스트 배너를 한 번 띄워 봅니다(퀘스트 수에는 세지 않음). `pixel-quest.quest_reset`은 퀘스트 수를 0으로 되돌립니다(얻은 꾸미기는 남음). `pixel-quest.palette` · `pixel-quest.goto` · `pixel-quest.settings` · `pixel-quest.journal` · `pixel-quest.help` · `pixel-quest.rename_tab` · `pixel-quest.rename_space`는 팔레트·찾기·설정·모험 일지·단축키·탭/스페이스 이름 바꾸기를 엽니다. `pixel-quest.levelup`은 지금 레벨의 레벨업 배너를 띄워 봅니다. `pixel-quest.look_phase` · `pixel-quest.look_season`은 시간대(새벽→낮→저녁→밤→지금)·계절(겨울→크리스마스→봄→여름→가을→할로윈→지금)을 하나씩 넘겨 미리 봅니다. `pixel-quest.toast`는 알림 토스트 견본을 오류→경고→성공→안내 순으로 하나씩 띄웁니다. `pixel-quest.shop`은 캐릭터 창의 상점을 열고, `pixel-quest.pet_try`는 펫 상황(쉼→작업 중→입력 대기→사용량→퀘스트 완료→실제)을 하나씩 넘겨 보며, `pixel-quest.medal_try`는 훈장 알림 견본을 띄웁니다(골드·훈장은 주지 않음). keys.json에 `"<키>": "pixel-quest.<명령>"`으로 묶을 수 있습니다.
 
 ## 폴더
 
@@ -184,13 +185,14 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `install.sh` | macOS · Linux 설치 스크립트(`--sounds`, `--light`) |
-| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.0.1`) |
+| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.1.0`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
 | `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
-| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `shop`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)을, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
-| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 구역, 사용량 병합, 단축키·이름 바꾸기 글, 버전 비교·업데이트 판정), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
+| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `hero` `character`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)을, `gear.js`가 장비 세트·값·사기·끼기·가방 배치·초상화 층(`pq.eco.hero`)을, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
+| `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 장비·초상화 층, 구역, 사용량 병합, 단축키·이름 바꾸기 글, 버전 비교·업데이트 판정), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_pets.py` | 펫 12종(3단계 × 깬·쭈그린 × 좌우), 동전, 훈장 17개, 느낌표·Z·배터리 생성기. `python3 art-src/gen_pets.py mods/pixel-quest/art` |
+| `art-src/gen_hero.py` · `art-src/gen_hero_icons.py` | 캐릭터 초상화 층(바탕 · 무기 · 머리 · 갑옷 · 투구, 남녀 × 등급 × 세트)과 가방·상점 아이콘 생성기 → `mods/pixel-quest/art/hero/`. 입력은 확정 도트 시안(저장소 밖) |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
 | `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
 | `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy). `slab()`은 이끼를 뺀 석판도 만듦 |

@@ -25,6 +25,19 @@
           "type": "column",
           "children": [
             {
+              "id": "hero",
+              "type": "block",
+              "content": {
+                "mod": "pixel-quest",
+                "props": {
+                  "role": "hero"
+                }
+              },
+              "size": {
+                "px": 318
+              }
+            },
+            {
               "id": "spaces",
               "type": "block",
               "content": {

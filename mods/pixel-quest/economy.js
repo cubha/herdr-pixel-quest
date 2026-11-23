@@ -1,7 +1,8 @@
 // Pixel Quest economy: gold, medals, the pet shop and the pet's moods.
 // Plain data and arithmetic (no Herdr imports) so tests/economy.test.mjs can run it
 // under node. Everything lives in one shared value, `pq.eco`:
-//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones }
+//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones, hero }
+// (hero: the player's portrait and gear, gear.js; every function here carries it along as it is)
 // total: quests ever (a quest reset leaves it), lvPaid: the best level already paid
 // for (level-up gold follows pq.best, so a reset never pays twice), days: quests per
 // day (YYYY-MM-DD, the last 60), medals: id -> when, pets: key -> { bond }, pet: the
@@ -203,7 +204,7 @@ export function buy(eco, key, ctx = { now: new Date() }) {
   if (eco.gold < p.price) return { eco, ok: false, got: [], msg: `${p.name}: ${fmt(p.price - eco.gold)} G가 모자랍니다` };
   const e = { ...eco, gold: eco.gold - p.price, pets: { ...eco.pets, [key]: { bond: 0 } }, pet: eco.pet ?? key };
   const r = award(e, { best: 1, ...ctx });
-  return { eco: r.eco, ok: true, got: r.got, msg: `${p.name}을(를) 샀습니다. 도감에서 데려갈 수 있습니다` };
+  return { eco: r.eco, ok: true, got: r.got, msg: `${p.name}을(를) 샀습니다. 상점의 펫 탭에서 데려갈 수 있습니다` };
 }
 
 // Zones for sale (the rest open by level or medal): price and name from zones.js, one place.

@@ -57,6 +57,10 @@ export function mainArea({ vh, workW, panel }) {
 const LEDGE = { id: "ledge", type: "block", content: { mod: "pixel-quest", props: { role: "ledge" } }, size: { px: 8 } };
 const UNDER = { id: "ledge-under", type: "column", size: { px: 8 }, children: [] };
 
+// The hero's panel on top of the sidebar's lists (roles/hero.js): open, or folded to its band.
+export const HERO_PX = { open: 318, shut: 28 };
+const HERO = { id: "hero", type: "block", content: { mod: "pixel-quest", props: { role: "hero" } }, size: { px: HERO_PX.open } };
+
 const find = (n, id) => (n && typeof n === "object" ? (n.id === id ? n : (n.children ?? []).map((c) => find(c, id)).find(Boolean)) : null);
 
 /** The side panel: shown and how wide, a click (layouts/.state) over the file. */
@@ -66,6 +70,13 @@ export function panelState(file, state) {
   const hidden = c.hidden ?? p.hidden ?? false;
   return { open: !hidden, w: Number(c.size?.px ?? p.size?.px) || 368 };
 }
+
+/** The sidebar's width: a click (layouts/.state) over the file. */
+export function sidebarW(file, state) {
+  return Number(state?.nodes?.sidebar?.size?.px ?? find(file, "sidebar")?.size?.px) || 268;
+}
+/** The hero panel's height: open unless folded (on false) or the sidebar is down to its rail. */
+export const heroPx = (on, sideW) => (on !== false && sideW >= 160 ? HERO_PX.open : HERO_PX.shut);
 
 /** The art for a look: { tablet, deco, wall } (wall: the light layout's outer wall, else null). */
 export function lookArt({ theme, phase, season, bucket }) {
@@ -90,12 +101,12 @@ export function lookNow(d, { time = true, seasons = true, season = null } = {}) 
 
 /**
  * The layout file's text with the look in it, or null when it isn't a Pixel Quest
- * layout. o: { art, fontSize?, panelColor? }. Moves an older file to the two-layer
+ * layout. o: { art, fontSize?, panelColor?, heroPx? (the hero panel's height) }. Moves an older file to the two-layer
  * shape (main inside main-wrap, the party drawer on main-wrap). Everything else stays
  * as written, the panel's hidden flag included (layout.set would drop it).
  * Returns the same text when nothing changes.
  */
-export function layoutWith(text, { art, fontSize, panelColor } = {}) {
+export function layoutWith(text, { art, fontSize, panelColor, heroPx } = {}) {
   let root;
   try { root = JSON.parse(text); } catch { return null; }
   const body = find(root, "work-body");
@@ -122,6 +133,14 @@ export function layoutWith(text, { art, fontSize, panelColor } = {}) {
   if (work && Array.isArray(work.children) && bar && bar.size?.px === 28) {
     work.children = work.children.filter((c) => c.id !== "ledge-under" && c.id !== "sill");
     bar.size = { px: 44 };
+  }
+  // The hero's panel: an older file gets the block, every file the height asked for.
+  const lists = find(root, "sidebar-lists");
+  if (lists && Array.isArray(lists.children)) {
+    let hero = find(lists, "hero");
+    // (Herdr's script engine has no structuredClone)
+    if (!hero) { hero = JSON.parse(JSON.stringify(HERO)); lists.children.unshift(hero); }
+    if (heroPx) hero.size = { px: heroPx };
   }
   const main = find(wrap, "main");
   if (!main) return null;

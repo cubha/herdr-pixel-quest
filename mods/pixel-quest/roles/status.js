@@ -35,7 +35,7 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex, Popup } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify, exec, checking } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, coin, announce, openUpdate, updateState } from "../kit.js";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, openHero, coin, announce, openUpdate, updateState } from "../kit.js";
 import * as U from "../update.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick, equipables } from "../progress.js";
 import * as E from "../economy.js";
@@ -171,6 +171,7 @@ export default class Status {
         else if (c === "look_phase") tryLook("phase");
         else if (c === "look_season") tryLook("season");
         else if (c === "shop") openShop();
+        else if (c === "hero") openHero();
         else if (c === "pet_try") {
           const list = [null, "sleep", "walk", "alert", "tired", "hop"];
           this.tryMood = list[(list.indexOf(this.tryMood) + 1) % list.length];
@@ -349,7 +350,7 @@ export default class Status {
       .on_size_change((sz, cx) => { if (Math.abs(sz.width - this.laneW) > 1) { this.laneW = sz.width; cx.notify(); } });
     if (!this.shown) {
       return shared("pq.petShow") === false ? lane : lane.child(div().id("pet-none").absolute().right(0).top(u(5)).cursor_pointer()
-        .tooltip("골드로 펫을 사면 여기서 함께 다닙니다 · 누르면 펫 상점").on_click(() => openShop())
+        .tooltip("골드로 펫을 사면 여기서 함께 다닙니다 · 누르면 상점").on_click(() => openShop("dex"))
         .child(small(u, "펫 없음", P.dim)));
     }
     const bond = e.pets[key]?.bond ?? 0;
@@ -396,7 +397,7 @@ export default class Status {
       .on_click(() => {
         if (mood === "alert" && waiting?.pane) run("pane.focus", { pane: waiting.pane });
         else if (mood === "tired") openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 340, height: 296, props: { role: "usage" } });
-        else openShop();
+        else openShop("dex");
       })
       .child(img)
       .when(Boolean(mark), (el) => el.child(mark));
@@ -440,7 +441,7 @@ export default class Status {
         .child(small(u, `퀘스트 ${lv.q}`, P.gt2))
         .child(cells(u, { pct: lv.frac * 100, tone: P.g2 }, 10, 4, 10)))
       .child(h_flex().id("gold").gap(u(4)).items_center().cursor_pointer()
-        .tooltip(`골드 ${E.fmt(e.gold)} · 지금까지 ${E.fmt(e.earned)} · 누르면 펫 상점`)
+        .tooltip(`골드 ${E.fmt(e.gold)} · 지금까지 ${E.fmt(e.earned)} · 누르면 상점`)
         .on_click(() => openShop())
         .child(coin(u))
         .child(small(u, E.fmt(e.gold), P.gt)))

@@ -228,7 +228,7 @@ export default class Settings {
         this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))),
         this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges"))))))
       .child(this.sect(u, "펫",
-        this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 펫 상점에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))),
+        this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 상점의 펫 탭에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))),
         this.row(u, "펫 걷기", "끄면 집 자리(파티 옆)에 가만히 있음", this.toggle(u, "q-petwalk", flag("pq.petWalk"), () => setShared("pq.petWalk", !flag("pq.petWalk")))),
         this.row(u, "초상 자동 배정으로 되돌리기", `직접 고른 초상 ${picks}개`,
           this.twice(u, "f-reset", "되돌리기", () => { setShared(PICKS, {}); this.note = "초상을 모두 자동 배정으로 되돌렸습니다"; }))));

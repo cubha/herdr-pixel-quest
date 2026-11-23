@@ -148,3 +148,19 @@ test("a season pinned in the settings beats the calendar; 자동 (null) follows 
   assert.equal(L.lookNow(oct, { season: "xmas" }).season, "halloween");   // only the four can be pinned
   assert.equal(L.lookNow(oct, { seasons: false, season: "summer" }).season, "none");
 });
+
+test("the hero's panel: an older layout gets the block, its height follows the fold", () => {
+  const withLists = { ...LAYOUT, children: [{ id: "sidebar", type: "column", size: { px: 268 }, children: [{ id: "sidebar-lists", type: "column", children: [{ id: "spaces", type: "block" }, { id: "agents", type: "block" }] }] }, ...(LAYOUT.children ?? [])] };
+  const art = L.lookArt({ theme: "dark", phase: "none", season: "none", bucket: 136 });
+  const out = JSON.parse(L.layoutWith(JSON.stringify(withLists), { art, heroPx: L.heroPx(true, 268) }));
+  const lists = out.children[0].children[0];
+  assert.deepEqual(lists.children.map((c) => c.id), ["hero", "spaces", "agents"]);
+  assert.deepEqual(lists.children[0].size, { px: L.HERO_PX.open });
+  assert.deepEqual(lists.children[0].content, { mod: "pixel-quest", props: { role: "hero" } });
+  const shut = JSON.parse(L.layoutWith(JSON.stringify(out), { art, heroPx: L.heroPx(false, 268) }));
+  assert.equal(shut.children[0].children[0].children.length, 3);
+  assert.deepEqual(shut.children[0].children[0].children[0].size, { px: L.HERO_PX.shut });
+  assert.equal(L.heroPx(true, 44), L.HERO_PX.shut);
+  assert.equal(L.sidebarW(withLists, { nodes: { sidebar: { size: { px: 44 } } } }), 44);
+  assert.equal(L.sidebarW(withLists, null), 268);
+});

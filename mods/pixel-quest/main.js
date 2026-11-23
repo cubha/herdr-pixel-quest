@@ -19,7 +19,8 @@
 //   palette  the command palette (keys.json "pixel-quest.palette")
 //   goto     "찾기": go to a tab, space or agent (the search button, "pixel-quest.goto")
 //   confirm  "close it?" for closes started from the theme's own menus
-//   shop     "펫 상점": buy pets for gold, pick the one along (상점 / 도감)
+//   hero     the hero's panel on top of the sidebar: portrait, man / woman, rank, three gear slots
+//   character "캐릭터": the bag (gear slots, grid bag) and the shop (gear, pets, the zone for gold)
 //   update   a new version's patch notes with [업데이트], or this version's notes after one
 //
 // Roles adapted from Herdr's shipped mods are marked in their files
@@ -53,10 +54,11 @@ import Help from "./roles/help.js";
 import Worktree from "./roles/worktree.js";
 import Machine from "./roles/machine.js";
 import Confirm from "./roles/confirm.js";
-import Shop from "./roles/shop.js";
+import Character from "./roles/character.js";
+import Hero from "./roles/hero.js";
 import Update from "./roles/update.js";
 
-const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, ledge: Ledge, toast: Toast, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine, shop: Shop, update: Update };
+const ROLES = { pane: Pane, spaces: Spaces, agents: Agents, tabs: Tabs, chrome: Chrome, status: Status, menu: Menu, newmenu: NewMenu, quest: Quest, party: Party, sill: Sill, ledge: Ledge, toast: Toast, usage: Usage, files: Files, picker: Picker, journal: Journal, changes: Changes, settings: Settings, palette: Palette, confirm: Confirm, goto: Goto, prompt: Prompt, help: Help, worktree: Worktree, machine: Machine, character: Character, hero: Hero, update: Update };
 
 export default class PixelQuest extends View {
   init(p, cx) {

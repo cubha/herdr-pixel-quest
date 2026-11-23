@@ -9,7 +9,7 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { commands, layouts, keys, run, props, closeOverlay, openOverlay, shared, window as win } from "herdr";
-import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop, openUpdate } from "../kit.js";
+import { P, unit, root, pic, frame, small, cursor, bandHead, openSettings, openJournal, openGoto, openRename, openHelp, openShop, openHero, openUpdate } from "../kit.js";
 import { keyParts as capsOf } from "../dialogs.js";
 import { ZONES, layoutOf } from "../zones.js";
 
@@ -52,8 +52,9 @@ const NAMED = [
   ["window.close", {}, "창", "창 닫기", "close window quit"],
   ["pq:settings", {}, "앱", "던전 설정", "settings preferences theme sound pixel quest"],
   ["pq:journal", {}, "앱", "모험 일지", "journal level quest unlock frame banner"],
-  ["pq:shop", {}, "앱", "펫 상점", "pet shop gold buy dex collection"],
-  ["pq:dex", {}, "앱", "펫 도감", "pet dex collection choose"],
+  ["pq:hero", {}, "앱", "캐릭터 · 인벤토리", "hero character inventory bag gear equip portrait"],
+  ["pq:shop", {}, "앱", "상점 (장비 · 펫 · 구역)", "shop gold buy gear pet zone"],
+  ["pq:dex", {}, "앱", "펫 고르기", "pet dex collection choose"],
   ["pq:medals", {}, "앱", "훈장 보기", "medals achievements badges"],
   ["pixel-quest.update_check", {}, "앱", "Pixel Quest 업데이트 확인", "pixel quest update check new version release theme"],
   ["pq:notes", {}, "앱", "Pixel Quest 패치 노트", "pixel quest patch notes release changes version"],
@@ -162,6 +163,7 @@ export default class Palette {
     if (e.name === "pq:settings") openSettings();
     else if (e.name === "pq:journal") openJournal();
     else if (e.name === "pq:shop") openShop();
+    else if (e.name === "pq:hero") openHero();
     else if (e.name === "pq:dex") openShop("dex");
     else if (e.name === "pq:medals") openJournal("medals");
     else if (e.name === "pq:goto") openGoto();

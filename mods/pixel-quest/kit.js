@@ -14,8 +14,9 @@ import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appH
 import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
 import { read as readEco, fmt, medalGold, medalPet, medalZone } from "./economy.js";
-import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim } from "./look.js";
+import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim, sidebarW, heroPx } from "./look.js";
 import { zoneOf, lookTheme, paletteOf, DRAWN, DRESS } from "./zones.js";
+import { readHero, rankNow, layers, PORTRAIT } from "./gear.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -356,9 +357,58 @@ export function openJournal(tab = "map") {
 /** The economy state, filled in. */
 export const eco = () => readEco(shared("pq.eco"));
 export const setEco = (e) => setShared("pq.eco", e);
-/** The pet shop (role shop): tab shop | dex. */
+/** The character window (role character): tab bag | shop, the shop's part gear | pet | zone. */
+export function openHero(tab = "bag", sub = "gear") {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 460, height: 480, props: { role: "character", tab, sub } });
+}
+/** The shop: now a tab of the character window (tab "dex": its pets). */
 export function openShop(tab = "shop") {
-  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 460, height: 400, props: { role: "shop", tab } });
+  openHero("shop", tab === "dex" ? "pet" : "gear");
+}
+/** The hero as stored, with the rank shown now: { sex, rank, own, eq, shown }. */
+export function hero() {
+  const e = eco();
+  return { ...readHero(e), shown: rankNow(e, best()) };
+}
+/** The hero's portrait (120x131): the rank's base, then the weapon, armor and helmet worn
+ *  (eq: what to show, the worn ones unless trying something on), in a sunk gold-lined box. */
+/** The portrait's own ground (the navy the dot portraits were drawn on, in every look). */
+export const HERO_BG = "#101729";
+export function heroPortrait(u, h, eq = h.eq) {
+  const [w, ht] = PORTRAIT;
+  return div().flex_none().border(u(2)).border_color(P.ink)
+    .child(div().border(u(1)).border_color(P.g2)
+      .child(div().relative().w(u(w)).h(u(ht)).bg(HERO_BG)
+        .children(layers(h.sex, h.shown, eq).map((n) => image(`${ART}/${n}.png`).absolute().top(0).left(0).w(u(w)).h(u(ht))))));
+}
+// A piece's picture (art-src/gen_hero_icons.py): helmet 38x38, armor 58x38, weapon 18x38,
+// the weapon large (its slot in the window) 26x84. All show the whole piece.
+const ICON = { h: [38, 38], t: [58, 38], w: [18, 38], wl: [26, 84] };
+/** o.large: the weapon's large picture; o.shade: the black shape (a locked zone's piece). */
+export function gearIcon(u, set, slot, o = {}) {
+  const k = slot === "w" && o.large ? "wl" : slot;
+  return image(`${ART}/hero/it-${set}-${k}${o.shade ? "-x" : ""}.png`).flex_none().w(u(ICON[k][0])).h(u(ICON[k][1]));
+}
+/** A gear slot: sunk and faint while empty, a bronze plate with the piece on it when worn.
+ *  o: { w, h, large (the weapon's large picture), aim (gold: the hovered piece goes here), tooltip, onHover }. */
+export function gearSlot(u, id, slot, set, onClick, o = {}) {
+  const inside = set ? gearIcon(u, set, slot, { large: o.large }) : gearGhost(u, slot, o.large);
+  const face = div().flex().flex_1().items_center().justify_center().child(inside);
+  let el = div().id(id).flex().flex_none().w(u(o.w)).h(u(o.h)).border(u(2)).border_color(o.aim ? P.g3 : P.ink).bg(set ? P.b1 : P.chrome)
+    .cursor_pointer().hover((s) => s.border_color(P.g2))
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click((e, cx) => { cx.stop_propagation(); onClick(e, cx); })
+    .child(set
+      ? div().flex().flex_1().border_r(u(2)).border_b(u(2)).border_color(P.b0).child(div().flex().flex_1().border_t(u(2)).border_l(u(2)).border_color(P.b3).child(face))
+      : div().flex().flex_1().border(u(2)).border_color(o.aim ? P.g2 : P.ink).child(face));
+  if (o.tooltip) el = el.tooltip(o.tooltip);
+  if (o.onHover) el = el.on_hover(o.onHover);
+  return el;
+}
+/** An empty slot's faint shape. */
+export function gearGhost(u, slot, large = false) {
+  const k = slot === "w" && large ? "wl" : slot;
+  return image(`${ART}/hero/ghost-${k}.png`).flex_none().w(u(ICON[k][0])).h(u(ICON[k][1]));
 }
 /** The gold coin (8x8 art px). */
 export const coin = (u) => pic(u, "coin", 16);
@@ -439,7 +489,7 @@ export async function applyLook() {
     const prev = shared("pq.look");
     if (!prev || prev.theme !== theme || prev.phase !== now.phase || prev.season !== now.season) setShared("pq.look", { theme, ...now });
     const panelColor = theme === "light" ? dim(LIGHT.fill, "light", now.phase) : undefined;
-    const next = layoutWith(text, { art, fontSize: Number(shared("pq.font_size")) || undefined, panelColor });
+    const next = layoutWith(text, { art, fontSize: Number(shared("pq.font_size")) || undefined, panelColor, heroPx: heroPx(shared("pq.hero"), sidebarW(file, state)) });
     if (next && next !== text) await writeTextFile(path, next, text);
   } catch { /* a stale read (someone else wrote the file): the next tick tries again */ } finally {
     busy = false;
