@@ -116,3 +116,58 @@ test("home shown as ~ whatever the slashes", () => {
   assert.equal(D.tilde("/home/x/a", "/home/x"), "~/a");
   assert.equal(D.tilde("/srv/a", "/home/x"), "/srv/a");
 });
+
+// ---- party names ----
+const ag = (address, tab, space_name, extra = {}) => ({ address, tab, space_name, program: { name: "Claude Code", key: "claude", agent: true }, title: "", ...extra });
+const sp = (tabs) => [{ id: "w1", tabs }];
+
+test("party name: a named tab leads, the space moves to the second line", () => {
+  const a = ag("t1", "tab1", "herdr-pixel-quest");
+  const n = D.agentNames([a], [], sp([{ id: "tab1", name: "로그인 고치기", named: true }]));
+  assert.equal(n.detail(a), "로그인 고치기");
+  assert.deepEqual(D.partyLines(a, n.detail(a)), { name: "로그인 고치기", sub: "herdr-pixel-quest" });
+  assert.equal(n.alone(a), true);
+});
+
+test("party name: two agents of one repo in unnamed tabs read their own titles", () => {
+  const a = ag("t1", "tab1", "repo"), b = ag("t2", "tab2", "repo");
+  const panes = [{ tab: "tab1", terminal: "t1", program: a.program, title: "✳ 결제 API 리팩터" }, { tab: "tab2", terminal: "t2", program: b.program, title: "✳ README 정리" }];
+  const n = D.agentNames([a, b], panes, sp([{ id: "tab1", name: "1", named: false }, { id: "tab2", name: "2", named: false }]));
+  assert.equal(n.detail(a), "결제 API 리팩터");
+  assert.equal(n.detail(b), "README 정리");
+});
+
+test("party name: nothing telling -> the space is the name; a lone number shows only when two would clash", () => {
+  const a = ag("t1", "tab1", "repo");
+  const one = D.agentNames([a], [], sp([{ id: "tab1", name: "1", named: false }]));
+  assert.equal(one.detail(a), null);
+  assert.deepEqual(D.partyLines(a, null), { name: "repo", sub: null });
+  const b = ag("t2", "tab2", "repo");
+  const two = D.agentNames([a, b], [], sp([{ id: "tab1", name: "1", named: false }, { id: "tab2", name: "2", named: false }]));
+  assert.equal(two.detail(a), "1");
+  assert.equal(two.detail(b), "2");
+  assert.deepEqual(D.partyLines(b, "2"), { name: "Claude Code 2", sub: "repo" });
+});
+
+test("party name: once one member is named, the other of the space keeps its tab number", () => {
+  const a = ag("t1", "tab1", "repo"), b = ag("t2", "tab2", "repo");
+  const n = D.agentNames([a, b], [], sp([{ id: "tab1", name: "1", named: false }, { id: "tab2", name: "결제", named: true }]));
+  assert.equal(n.detail(b), "결제");
+  assert.deepEqual(D.partyLines(a, n.detail(a)), { name: "Claude Code 1", sub: "repo" });
+});
+
+test("party name: several agents in one tab use their own titles and can't be named through it", () => {
+  const a = ag("t1", "tab1", "repo", { title: "✳ 테스트 작성" }), b = ag("t2", "tab1", "repo", { title: "✳ 빌드 고치기" });
+  const n = D.agentNames([a, b], [], sp([{ id: "tab1", name: "작업", named: true }]));
+  assert.equal(n.detail(a), "테스트 작성");
+  assert.equal(n.alone(a), false);
+});
+
+test("rename spec for a party member: renames its tab, empty follows the agent's title", () => {
+  const s = D.renameSpec("agent", { id: "tab1", name: "1", named: false });
+  assert.equal(s.title, "파티원 이름 바꾸기");
+  assert.equal(s.value, "");
+  assert.match(s.hint, /작업 제목/);
+  assert.deepEqual(s.command, { name: "tab.rename", args: { id: "tab1" } });
+  assert.equal(D.renameSpec("agent", { id: "tab1", name: "1", named: false }, "결제 API 리팩터").placeholder, "결제 API 리팩터");
+});

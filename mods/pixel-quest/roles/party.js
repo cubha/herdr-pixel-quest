@@ -1,11 +1,12 @@
 // The party drawer: a floating block on the right edge (layout `floating`,
 // `peek`). Only the gems and portraits peek out; hover slides the names in.
-// Click a member to go to its pane. Copyright (c) 2026 cubha. MIT.
+// Click a member to go to its pane, double-click to name it. Copyright (c) 2026 cubha. MIT.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { agents, run, placement } from "herdr";
-import { P, unit, root, gem, small, faceMap, agentFace, portrait, texture, FLOOR } from "../kit.js";
+import { agents, run, placement, panes, spaces } from "herdr";
+import { agentNames, partyLines } from "../dialogs.js";
+import { P, unit, root, gem, small, faceMap, agentFace, portrait, texture, FLOOR, openRename } from "../kit.js";
 
 const WORD = { blocked: "입력 필요", done: "완료", working: "작업 중", idle: "대기" };
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
@@ -17,19 +18,22 @@ export default class Party {
     const faces = faceMap(all);
     const list = [...all].sort((a, b) => (RANK[b.status] ?? 0) - (RANK[a.status] ?? 0)).slice(0, 8);
     if (!list.length) return div();
+    const names = agentNames(all, panes(), spaces());
     const pl = placement();
     const right = pl?.edge !== "left";
     const row = (a) => {
       const pic = h_flex().flex_none().gap(u(4)).items_center()
         .child(gem(u, a.status, `party-gem-${a.address}`))
         .child(portrait(u, agentFace(u, faces.get(a.address), a.program?.name ?? a.address, 24)));
+      // The member's own name (tab or agent title) leads, its space beside the status word.
+      const { name, sub } = partyLines(a, names.detail(a));
       const text = v_flex().w(u(150)).min_w(0)
-        .child(div().truncate().text_color(a.focused ? P.gt : P.text).child(a.space_name || a.program?.name || a.address))
-        .child(small(u, WORD[a.status] ?? "", { blocked: P.blocked, done: P.done, working: P.working }[a.status] ?? P.dim));
+        .child(div().truncate().text_color(a.focused ? P.gt : P.text).child(name))
+        .child(div().truncate().child(small(u, [WORD[a.status], sub].filter(Boolean).join(" · "), { blocked: P.blocked, done: P.done, working: P.working }[a.status] ?? P.dim)));
       return h_flex().id(`party-${a.address}`).h(u(40)).px(u(6)).gap(u(8)).items_center().cursor_pointer()
         .hover((s) => s.bg(P.hover))
         .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-        .on_click(() => run("pane.focus", { pane: a.pane }))
+        .on_click((e) => (e?.click_count === 2 && names.alone(a) ? openRename("agent", a.tab, name) : run("pane.focus", { pane: a.pane })))
         .children(right ? [text, pic] : [pic, text]);
     };
     // Stone floor inside the drawer (its rounded outer frame is Herdr's).

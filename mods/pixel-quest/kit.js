@@ -520,16 +520,17 @@ export function setTermFont(n) {
   return size;
 }
 
-/** Renames a tab or a space (id; none: the one shown) in the theme's window (role prompt),
- *  in place of Herdr's own. */
-export function openRename(kind, id) {
+/** Renames a tab, a party member (its tab) or a space (id; none: the one shown) in the theme's window (role prompt),
+ *  in place of Herdr's own. shown: the name it goes by now (a party member's), as the hint. */
+export function openRename(kind, id, shown) {
   const all = spaces();
   const f = focused();
   const space = kind === "space" ? all.find((s) => s.id === (id ?? f?.space)) : null;
-  const tab = kind === "tab" ? all.flatMap((s) => s.tabs ?? []).find((t) => t.id === (id ?? f?.tab)) : null;
-  const spec = renameSpec(kind, space ?? tab);
+  // "agent": a party member, named through its tab (dialogs.js RENAME.agent).
+  const tab = kind !== "space" ? all.flatMap((s) => s.tabs ?? []).find((t) => t.id === (id ?? f?.tab)) : null;
+  const spec = renameSpec(kind, space ?? tab, shown);
   // Nothing to aim at (no focus): Herdr's own command decides.
-  if (!spec) return run(kind === "tab" ? "tab.rename" : "space.rename", id ? { id } : {});
+  if (!spec) return run(kind !== "space" ? "tab.rename" : "space.rename", id ? { id } : {});
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 170, props: { role: "prompt", ...spec } });
 }
 /** The key list (role help), in place of Herdr's app.help. */

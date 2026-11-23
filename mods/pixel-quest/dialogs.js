@@ -8,22 +8,86 @@
 const RENAME = {
   tab: { title: "탭 이름 바꾸기", hint: "비우면 탭 번호로 돌아갑니다", command: "tab.rename" },
   space: { title: "스페이스 이름 바꾸기", hint: "비우면 폴더 이름을 따릅니다", command: "space.rename" },
+  // A party member's name is its tab's: the party list reads the tab name first.
+  agent: { title: "파티원 이름 바꾸기", hint: "비우면 에이전트의 작업 제목을 따릅니다", command: "tab.rename" },
 };
 
 /** What the rename window shows and runs for a tab or a space ({id, name, named}); null
  *  without one. An unnamed one starts empty (its shown name as the placeholder), so Enter
- *  alone keeps it following its number / folder instead of pinning that as a name. */
-export function renameSpec(kind, target) {
+ *  alone keeps it following its number / folder instead of pinning that as a name.
+ *  shown: the name it goes by now, for the placeholder (a party member's title). */
+export function renameSpec(kind, target, shown) {
   const r = RENAME[kind];
   if (!r || !target?.id) return null;
   const name = target.name ?? "";
-  return { title: r.title, value: target.named === false ? "" : name, placeholder: name || "이름", hint: r.hint, command: { name: r.command, args: { id: target.id } } };
+  return { title: r.title, value: target.named === false ? "" : name, placeholder: shown || name || "이름", hint: r.hint, command: { name: r.command, args: { id: target.id } } };
 }
 
 /** The command's args with the typed name. Always has `name` ("" = Herdr's own name
  *  again): without it Herdr would open its own prompt instead. */
 export function renameArgs(command, text) {
   return { ...(command?.args ?? {}), name: String(text ?? "").trim() };
+}
+
+// ---- party names (roles agents, party) ----
+
+const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}]+/u, "").trim();
+
+// Each tab's lead pane: its first agent, else first focused terminal, else first terminal.
+function leadPanes(all) {
+  const leads = new Map();
+  for (const p of all) {
+    if (!p.terminal) continue;
+    const current = leads.get(p.tab);
+    if (!current || (!current.program?.agent && (p.program?.agent || (!current.focused && p.focused)))) leads.set(p.tab, p);
+  }
+  return leads;
+}
+
+// A named tab, else the lead's own title when it says something (not a path, a
+// user@host or the program's name), else the tab's automatic name.
+function title(tab, l) {
+  const prog = l?.program?.name;
+  const live = clean(l?.title);
+  const telling = live && live !== prog && !/^[~/]|^[A-Za-z]:\\/.test(live) && !live.includes("@") && live.toLowerCase() !== l?.program?.key;
+  return (tab.name === prog || !tab.named) && telling ? live : tab.name;
+}
+
+/** What tells party members apart beyond their space, from agents(), panes() and
+ *  spaces(). label(a): the tab someone named or the agent's own title (Claude Code
+ *  names its session), else the tab's automatic name. detail(a): the label, or null
+ *  when it is only an automatic tab number and the member is alone in its space.
+ *  alone(a): the only member in its tab, so renaming the tab names it (with
+ *  several, each shows its own title and the tab name is not read). */
+export function agentNames(list, paneList, spaceList) {
+  const leads = leadPanes(paneList ?? []);
+  const tabs = new Map((spaceList ?? []).flatMap((s) => s.tabs ?? []).map((tab) => [tab.id, tab]));
+  const counts = new Map();
+  for (const a of list) counts.set(a.tab, (counts.get(a.tab) ?? 0) + 1);
+  const labels = new Map(list.map((a) => {
+    const tab = tabs.get(a.tab);
+    const many = counts.get(a.tab) > 1;
+    return [a.address, tab ? title(many ? { ...tab, named: false } : tab, many ? a : leads.get(a.tab)) : (a.title || a.program?.name || "")];
+  }));
+  const label = (a) => labels.get(a.address) ?? "";
+  const detail = new Map(list.map((a) => [a.address, /^\d+$/.test(label(a)) ? null : label(a) || null]));
+  // With another member in the same space, even a tab number says which one it is.
+  const perSpace = {};
+  for (const a of list) perSpace[a.space_name] = (perSpace[a.space_name] ?? 0) + 1;
+  for (const a of list) {
+    if (detail.get(a.address) == null && perSpace[a.space_name] > 1) detail.set(a.address, label(a) || null);
+  }
+  return { label, detail: (a) => detail.get(a.address) ?? null, alone: (a) => counts.get(a.tab) === 1 && tabs.has(a.tab) };
+}
+
+/** A party row's two lines: the member's own name big, its space small beside the
+ *  status word. Without anything telling it apart, the space is the name. */
+export function partyLines(a, detail) {
+  const space = a.space_name || "";
+  if (!detail) return { name: space || a.program?.name || a.address, sub: null };
+  // Only a tab number tells them apart: read it as the tab bar does ("Claude Code 2").
+  const name = /^\d+$/.test(detail) && a.program?.name ? `${a.program.name} ${detail}` : detail;
+  return { name, sub: space && space !== detail ? space : null };
 }
 
 // ---- key list (role help) ----

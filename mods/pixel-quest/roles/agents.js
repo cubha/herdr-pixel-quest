@@ -7,7 +7,8 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, battle, thin, texture, FLOOR, web, bandHead } from "../kit.js";
+import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, openRename, battle, thin, texture, FLOOR, web, bandHead } from "../kit.js";
+import { agentNames, partyLines } from "../dialogs.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
 function find(node, id) {
@@ -31,25 +32,6 @@ function toggleSidebar() {
   run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : window()?.platform === "macos" ? 76 : 44 });
 }
 
-const clean = (s) => (s ?? "").replace(/^[^\p{L}\p{N}]+/u, "").trim();
-
-function leadPanes(all) {
-  const leads = new Map();
-  for (const p of all) {
-    if (!p.terminal) continue;
-    const current = leads.get(p.tab);
-    // First agent, else first focused terminal, else first terminal in the tab.
-    if (!current || (!current.program?.agent && (p.program?.agent || (!current.focused && p.focused)))) leads.set(p.tab, p);
-  }
-  return leads;
-}
-
-function title(tab, l) {
-  const prog = l?.program?.name;
-  const live = clean(l?.title);
-  const telling = live && live !== prog && !/^[~/]|^[A-Za-z]:\\/.test(live) && !live.includes("@") && live.toLowerCase() !== l?.program?.key;
-  return (tab.name === prog || !tab.named) && telling ? live : tab.name;
-}
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 // A sub-agent without a pane isn't in agents(): its raw word, error counting as
 // blocked. It's never done: it reports to its parent, and the parent's done is the news.
@@ -245,8 +227,6 @@ export default class Agents {
     // it, it gets no row of its own, unless it's pinned.
     const nested = new Set(collapsed ? [] : list.flatMap((a) => this.tree(all, a.address).map((s) => s.t.address)));
     list = list.filter((a) => a.pinned || !nested.has(a.address));
-    const tabCounts = new Map();
-    for (const a of list) tabCounts.set(a.tab, (tabCounts.get(a.tab) ?? 0) + 1);
     const byPriority = sort.id === "priority";
     const urgency = new Map(list.map((a) => [a.address, Math.max(this.rank(a), ...this.tree(all, a.address).map((s) => RANK[kidStatus(s.t, this.listed)] ?? 0))]));
     const rankOf = (a) => urgency.get(a.address);
@@ -289,30 +269,18 @@ export default class Agents {
         .when(!open, (el) => el.child(String(subs.length)));
     };
 
-    // A row reads "space \u00b7 detail": the detail is a tab someone named or the
-    // agent's own title, never an automatic tab number unless two rows would
-    // otherwise read the same.
+    // A row reads its own name (a tab someone named or the agent's own title; an
+    // automatic tab number only beside another member of the space), its space
+    // beside the status word below (dialogs.js agentNames, partyLines).
     // Read the pane snapshot once: every host read copies the whole list into JS.
-    const leads = leadPanes(panes());
+    const names = agentNames(list, panes(), spaces());
     // Portraits: by space, a click picks another (kept for next time).
     const faces = faceMap(agents());
-    const tabs = new Map(spaces().flatMap(s => s.tabs).map(tab => [tab.id, tab]));
-    const labels = new Map(list.map(a => {
-      const tab = tabs.get(a.tab);
-      const many = tabCounts.get(a.tab) > 1;
-      return [a.address, tab ? title(many ? { ...tab, named: false } : tab, many ? a : leads.get(a.tab)) : (a.title || a.program?.name || "")];
-    }));
-    const label = (a) => labels.get(a.address);
-    const detail = new Map(list.map(a => [a.address, /^\d+$/.test(label(a)) ? null : label(a)]));
-    const seen = {};
-    for (const a of list) { const k = `${a.space_name}\u0000${detail.get(a.address) ?? ""}`; seen[k] = (seen[k] ?? 0) + 1; }
-    for (const a of list) {
-      if (detail.get(a.address) == null && seen[`${a.space_name}\u0000`] > 1) detail.set(a.address, label(a));
-    }
+    const label = names.label;
 
     const row = (a, i, subs = []) => {
       const pic = icon(a.program, 16, t.foreground);
-      const more = detail.get(a.address);
+      const more = names.detail(a);
       // An agent on another machine (`vps/t7`) says which.
       const machine = a.address.includes("/") ? a.address.split("/")[0] : null;
       if (collapsed) {
@@ -351,11 +319,15 @@ export default class Agents {
       // Under a space header the space goes without saying; an automatic tab number says nothing.
       // Without a space header above (priority, pinned) the row names its space.
       const full = byPriority || isPinned;
-      const name = full ? a.space_name || label(a) : more ?? (/^\d+$/.test(label(a)) ? a.program?.name || label(a) : label(a));
+      // The member's own name leads; its space moves down beside the status word.
+      const lines = partyLines(a, more);
+      // Under a space header a lone tab number reads "Claude Code 1" too, never a bare "1".
+      const name = full || more ? lines.name : /^\d+$/.test(label(a)) ? a.program?.name || label(a) : label(a);
+      const where = full ? lines.sub : null;
       const u = unit();
       const word = WORD[a.status] ?? "";
       const tone = { blocked: P.blocked, done: P.done, working: P.working }[a.status] ?? P.dim;
-      const line = [word, more && full ? more : null].filter(Boolean).join(" · ");
+      const line = [word, where].filter(Boolean).join(" · ");
       return selected(u, h_flex(), a.focused)
         .id(`ag-${a.address}`)
         .relative()
@@ -374,7 +346,8 @@ export default class Agents {
           else if (this.hovered === a.address) this.hovered = null;
           cx.notify();
         })
-        .on_click(() => run("pane.focus", { pane: a.pane }))
+        // A double-click names the member (its tab), in the theme's rename window.
+        .on_click((e) => (e?.click_count === 2 && names.alone(a) ? openRename("agent", a.tab, name) : run("pane.focus", { pane: a.pane })))
         .child(div().id(`agent-fold-${a.address}`).relative().flex_none()
           .when(subs.length > 0, el => el.on_click((_e, cx) => {
             cx.stop_propagation();
@@ -390,14 +363,18 @@ export default class Agents {
         .child(battle(u, a.status))
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().min_w(0).gap(u(6)).items_center()
-            .child(div().min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text).child(name))
+            .child(div().id(`agent-name-${a.address}`).min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text)
+              .when(names.alone(a), (el) => el.tooltip("더블클릭: 이름 바꾸기"))
+              .child(name))
             .when(Boolean(machine), el => el.child(small(u, machine)))
             .child(div().flex_1())
             .when(subs.length > 0, el => el.child(fold(a, subs)))
             .when(this.hovered === a.address, el => el.child(pin))
             .when(this.hovered !== a.address && Boolean(when), el => el.child(small(u, duration(now - when)))))
           .child(a.status === "working"
-            ? h_flex().h(u(12)).items_center().child(div().h(u(4)).flex_1().bg(P.ink).child(div().h_full().w(u(40)).bg(P.working).loop("left", { from: 0, to: u(120), period: 1400 })))
+            ? h_flex().h(u(12)).min_w(0).gap(u(6)).items_center()
+              .when(Boolean(where), (el) => el.child(div().flex_none().max_w(u(90)).truncate().child(small(u, where, P.working))))
+              .child(div().h(u(4)).flex_1().min_w(u(24)).overflow_hidden().bg(P.ink).child(div().h_full().w(u(40)).bg(P.working).loop("left", { from: 0, to: u(120), period: 1400 })))
             : div().truncate().child(small(u, line || " ", tone))));
     };
 
