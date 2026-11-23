@@ -75,8 +75,28 @@ export function panelState(file, state) {
 export function sidebarW(file, state) {
   return Number(state?.nodes?.sidebar?.size?.px ?? find(file, "sidebar")?.size?.px) || 268;
 }
-/** The hero panel's height: open unless folded (on false) or the sidebar is down to its rail. */
-export const heroPx = (on, sideW) => (on !== false && sideW >= 160 ? HERO_PX.open : HERO_PX.shut);
+/** The hero panel's state from shared pq.hero: "open" (true / unset), "big" ("big": the
+ *  portrait alone, as wide as the panel) or "shut" (false, or "big-shut": folded from big). */
+export const heroMode = (v) => (v === false || v === "big-shut" ? "shut" : v === "big" ? "big" : "open");
+/** The band's zoom icon: open <-> big. */
+export const heroToggleBig = (v) => (heroMode(v) === "big" ? true : "big");
+/** The band's fold icon: folds, and unfolds back to the state it was folded from. */
+export const heroToggleFold = (v) => (v === "big" ? "big-shut" : v === "big-shut" ? "big" : v === false ? true : false);
+/** The big panel for a sidebar width: the portrait's size (120 x 131 scaled to the panel's
+ *  inside, 3x at most) and the block's height. Inside = width - root 8 - panel border 4 -
+ *  padding 4 - portrait frame 6; height = portrait + root 8 + band 20 + gap 6 + border 4 +
+ *  padding 4 + frame 6 + 2 to spare. */
+export function heroBig(sideW) {
+  const w = Math.max(0, Math.min(360, (Number(sideW) || 0) - 22));
+  const h = Math.round((w * 131) / 120);
+  return { w, h, px: h + 50 };
+}
+/** The hero panel's height: by its state (pq.hero), folded while the sidebar is down to its rail. */
+export function heroPx(v, sideW) {
+  const mode = heroMode(v);
+  if (sideW < 160 || mode === "shut") return HERO_PX.shut;
+  return mode === "big" ? heroBig(sideW).px : HERO_PX.open;
+}
 
 /** The art for a look: { tablet, deco, wall } (wall: the light layout's outer wall, else null). */
 export function lookArt({ theme, phase, season, bucket }) {

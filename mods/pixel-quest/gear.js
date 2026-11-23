@@ -7,7 +7,7 @@
 // Copyright (c) 2026 cubha. MIT License.
 
 import { ZONES, isOpen, howOpen, zoneBy } from "./zones.js";
-import { fmt } from "./economy.js";
+import { fmt, josa } from "./economy.js";
 
 export const SETS = ZONES.map((z) => z.key);
 /** A set's short name (the piece's name: "던전 투구"). */
@@ -76,15 +76,15 @@ export function buyGear(eco, set, slot, at = {}) {
   if (!valid(set, slot)) return { eco, ok: false, msg: "없는 장비입니다" };
   const h = readHero(eco), name = pieceName(set, slot), p = price(set, slot);
   if (!setOpen(set, at)) return { eco, ok: false, msg: `먼저 구역을 열어야 합니다 · ${zoneName(set)}: ${setHow(set)}` };
-  if (h.own[`${set}-${slot}`]) return { eco, ok: false, msg: `${name}: 이미 가지고 있습니다` };
-  if ((eco.gold ?? 0) < p) return { eco, ok: false, msg: `${name}: ${fmt(p - (eco.gold ?? 0))} G가 모자랍니다` };
-  return { eco: { ...eco, gold: eco.gold - p, hero: { ...h, own: { ...h.own, [`${set}-${slot}`]: 1 } } }, ok: true, msg: `${name}을(를) 샀습니다 · 가방에 들어갔습니다` };
+  if (h.own[`${set}-${slot}`]) return { eco, ok: false, msg: `${name}: 이미 보유한 장비입니다` };
+  if ((eco.gold ?? 0) < p) return { eco, ok: false, msg: `${name}: 골드가 ${fmt(p - (eco.gold ?? 0))} G 부족합니다` };
+  return { eco: { ...eco, gold: eco.gold - p, hero: { ...h, own: { ...h.own, [`${set}-${slot}`]: 1 } } }, ok: true, msg: `${josa(name, "을/를")} 구매했습니다 · 인벤토리에 넣었습니다` };
 }
 
 /** Puts an owned piece on (whatever was in that slot goes back to the bag). */
 export function equip(eco, set, slot) {
   const h = readHero(eco);
-  if (!valid(set, slot) || !h.own[`${set}-${slot}`]) return { eco, ok: false, msg: "가지고 있지 않은 장비입니다" };
+  if (!valid(set, slot) || !h.own[`${set}-${slot}`]) return { eco, ok: false, msg: "보유하지 않은 장비입니다" };
   return { eco: put(eco, { ...h, eq: { ...h.eq, [slot]: set } }), ok: true, msg: `${pieceName(set, slot)} 착용` };
 }
 /** Takes a slot's piece off, back into the bag. */
@@ -92,16 +92,50 @@ export function unequip(eco, slot) {
   const h = readHero(eco);
   const s = h.eq[slot];
   if (!s) return { eco, ok: false, msg: null };
-  return { eco: put(eco, { ...h, eq: { ...h.eq, [slot]: null } }), ok: true, msg: `${pieceName(s, slot)}을(를) 가방에 넣었습니다` };
+  return { eco: put(eco, { ...h, eq: { ...h.eq, [slot]: null } }), ok: true, msg: `${josa(pieceName(s, slot), "을/를")} 해제했습니다` };
 }
 /** The sidebar's slot buttons: the next owned piece for the slot, then none, round and round. */
 export function cycle(eco, slot) {
   const h = readHero(eco);
   if (!SLOTS.includes(slot)) return { eco, ok: false, msg: null };
   const opts = [null, ...SETS.filter((s) => h.own[`${s}-${slot}`])];
-  if (opts.length === 1) return { eco, ok: false, msg: `가진 ${SLOT_KO[slot]}이(가) 없습니다 · 상점에서 살 수 있습니다` };
+  if (opts.length === 1) return { eco, ok: false, msg: `보유한 ${josa(SLOT_KO[slot], "이/가")} 없습니다 · 상점에서 구매할 수 있습니다` };
   const next = opts[(opts.indexOf(h.eq[slot]) + 1) % opts.length];
   return { eco: put(eco, { ...h, eq: { ...h.eq, [slot]: next } }), ok: true, msg: next ? `${pieceName(next, slot)} 착용` : `${SLOT_KO[slot]} 없음` };
+}
+
+// ---- the shop's gear tab: a pick per slot, tried on and bought together ----
+/** The picks ({ h, t, w }: a set or null each) as rows in slot order, each with its state:
+ *  "worn", "own" (owned, not worn), "lock" (its zone isn't open: try on only) or "buy".
+ *  buy: the rows to buy, total: their price, short: gold missing, wear: owned rows not worn. */
+export function quote(eco, picks = {}, at = {}) {
+  const h = readHero(eco);
+  const rows = SLOTS.filter((l) => valid(picks?.[l], l)).map((slot) => {
+    const set = picks[slot], own = Boolean(h.own[`${set}-${slot}`]);
+    const state = own ? (h.eq[slot] === set ? "worn" : "own") : setOpen(set, at) ? "buy" : "lock";
+    return { slot, set, name: pieceName(set, slot), price: price(set, slot), state };
+  });
+  const buy = rows.filter((r) => r.state === "buy");
+  const total = buy.reduce((a, r) => a + r.price, 0);
+  return { rows, buy, total, short: Math.max(0, total - (eco.gold ?? 0)), wear: rows.filter((r) => r.state === "own") };
+}
+/** Buys every buyable pick at once, or none of them (short of gold). They go into the bag. */
+export function buyMany(eco, picks, at = {}) {
+  const q = quote(eco, picks, at);
+  if (!q.buy.length) return { eco, ok: false, msg: "구매할 장비가 없습니다" };
+  if (q.short > 0) return { eco, ok: false, msg: `골드가 ${fmt(q.short)} G 부족합니다` };
+  const h = readHero(eco), own = { ...h.own };
+  for (const r of q.buy) own[`${r.set}-${r.slot}`] = 1;
+  const what = q.buy.length === 1 ? josa(q.buy[0].name, "을/를") : `${q.buy.length}개를`;
+  return { eco: { ...eco, gold: eco.gold - q.total, hero: { ...h, own } }, ok: true, msg: `${what} 구매했습니다 · 인벤토리에 넣었습니다` };
+}
+/** Puts on every owned pick not worn yet (the picks tried on, kept). */
+export function equipMany(eco, picks) {
+  const q = quote(eco, picks);
+  if (!q.wear.length) return { eco, ok: false, msg: "착용할 장비가 없습니다" };
+  const h = readHero(eco), eq = { ...h.eq };
+  for (const r of q.wear) eq[r.slot] = r.set;
+  return { eco: put(eco, { ...h, eq }), ok: true, msg: q.wear.length === 1 ? `${q.wear[0].name} 착용` : `${q.wear.length}개를 착용했습니다` };
 }
 
 // ---- the bag: a grid where a piece takes the cells of its size ----

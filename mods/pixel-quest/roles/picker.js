@@ -9,6 +9,7 @@ import { h_flex, v_flex } from "gpui-base";
 import { agents, props, shared, setShared, closeOverlay } from "herdr";
 import { P, unit, root, pic, frame, plaque, small, button, faceMap, best, PICKS } from "../kit.js";
 import { SHAPES, ROWS, faceLevel, faceName, shapeName, total } from "../progress.js";
+import { josa } from "../economy.js";
 
 export default class Picker {
   init() { this.hover = null; }
@@ -62,7 +63,7 @@ export default class Picker {
     const h = this.hover;
     let hint;
     if (h && faceLevel(h) > lv) hint = `${faceName(h)} · Lv.${faceLevel(h)}에 해금 · ${Math.max(0, total(faceLevel(h)) - q)} 퀘스트 남음`;
-    else if (h && others.has(h) && h !== cur) hint = `${faceName(h)} · ${others.get(h)}이(가) 쓰는 중`;
+    else if (h && others.has(h) && h !== cur) hint = `${faceName(h)} · ${josa(others.get(h), "이/가")} 쓰는 중`;
     else if (h) hint = h === cur ? `${faceName(h)} · 지금 초상` : faceName(h);
     else hint = cur ? `${faceName(cur)} · 지금 초상` : "";
 

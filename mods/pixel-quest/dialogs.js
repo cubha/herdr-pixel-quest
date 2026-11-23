@@ -102,12 +102,12 @@ const WORDS = {
   "agent.next": "다음 에이전트", "agent.prev": "이전 에이전트",
   "terminal.copy": "복사", "terminal.paste": "붙여넣기", "terminal.paste_image": "이미지 붙여넣기", "terminal.search": "터미널에서 찾기",
   "layout.switch": "다음 레이아웃", "layout.toggle:sidebar": "사이드바 접기·펴기",
-  "app.zoom_in": "확대", "app.zoom_out": "축소", "app.zoom_reset": "확대 되돌리기",
+  "app.zoom_in": "확대", "app.zoom_out": "축소", "app.zoom_reset": "원래 크기로",
   "app.help": "단축키 보기", "app.settings": "Herdr 기본 설정", "app.palette": "Herdr 기본 팔레트", "app.quit": "Herdr 끝내기",
   "mod.open:picker": "Herdr 기본 찾기",
-  "window.close": "창 닫기", "window.minimize": "창 내리기", "window.maximize": "창 최대화",
+  "window.close": "창 닫기", "window.minimize": "창 최소화", "window.maximize": "창 최대화",
   "pixel-quest.goto": "찾기", "pixel-quest.palette": "명령 팔레트", "pixel-quest.help": "단축키 보기",
-  "pixel-quest.settings": "던전 설정", "pixel-quest.journal": "모험 일지", "pixel-quest.quest": "퀘스트 배너 시험",
+  "pixel-quest.settings": "던전 설정", "pixel-quest.journal": "모험 일지", "pixel-quest.quest": "퀘스트 배너 미리보기",
   "pixel-quest.rename_tab": "탭 이름 바꾸기", "pixel-quest.rename_space": "스페이스 이름 바꾸기",
 };
 const SENDS = { "\u0017": "앞 단어 지우기", "\u001bb": "한 단어 왼쪽으로", "\u001bf": "한 단어 오른쪽으로" };

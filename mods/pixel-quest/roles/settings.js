@@ -181,7 +181,7 @@ export default class Settings {
   // The update row: the switch (off = no network request at all), where things stand, and a look now.
   update(u) {
     const on = shared("pq.updateCheck") !== false, st = updateState();
-    const says = { off: "꺼짐 · GitHub에 묻지 않습니다", unknown: "아직 확인 전", current: "최신 버전입니다", new: `새 버전 v${st.latest}이 나왔습니다` }[st.state];
+    const says = { off: "꺼짐 · 새 버전을 확인하지 않습니다", unknown: "아직 확인 전", current: "최신 버전입니다", new: `새 버전 v${st.latest}이 나왔습니다` }[st.state];
     return this.row(u, `업데이트 확인 · 지금 v${VERSION}`, `시작할 때와 6시간마다 GitHub 공개 주소 한 곳에 새 버전을 물어봄 · ${says}`,
       h_flex().gap(u(6)).items_center()
         .when(st.state === "new", (el) => el.child(button(u, "upd-open", small(u, "업데이트", P.g3), () => openUpdate(), { pad: [1, 8] })))
@@ -226,7 +226,7 @@ export default class Settings {
           this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; }))))
       .child(this.sect(u, "파티",
         this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))),
-        this.row(u, "사용량 게이지", "상태바 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges"))))))
+        this.row(u, "사용량 게이지", "상태 줄 5H · 7D", this.toggle(u, "q-gauges", flag("pq.gauges"), () => setShared("pq.gauges", !flag("pq.gauges"))))))
       .child(this.sect(u, "펫",
         this.row(u, "펫 표시", "상태 줄 파티 옆에 데리고 다니는 펫 · 상점의 펫 탭에서 고름", this.toggle(u, "q-pet", flag("pq.petShow"), () => setShared("pq.petShow", !flag("pq.petShow")))),
         this.row(u, "펫 걷기", "끄면 집 자리(파티 옆)에 가만히 있음", this.toggle(u, "q-petwalk", flag("pq.petWalk"), () => setShared("pq.petWalk", !flag("pq.petWalk")))),

@@ -113,3 +113,55 @@ test("a stored value that is old or broken is read without throwing", () => {
   assert.deepEqual(h, { sex: "f", rank: null, own: { "ice-h": 1 }, eq: { h: "ice", t: null, w: null } });
   assert.equal(G.setSex(empty(), "f").hero.sex, "f");
 });
+
+// The shop's gear tab: a pick per slot ({ h, t, w }), tried on together, bought together.
+const OPEN4 = { best: 15, medals: {}, zones: [] };   // dungeon, sunlit, ice, lava open; moss, crystal, throne not
+const owning = (gold, own, eq = {}) => ({ ...rich(gold), hero: { sex: "m", rank: null, own, eq: { h: null, t: null, w: null, ...eq } } });
+
+test("quote: each pick's state, what can be bought and what can be worn", () => {
+  const eco = owning(5000, { "dungeon-t": 1, "sunlit-h": 1 }, { t: "dungeon" });
+  const q = G.quote(eco, { h: "ice", t: "lava", w: "moss" }, OPEN4);
+  assert.deepEqual(q.rows.map((r) => [r.slot, r.set, r.state]), [["h", "ice", "buy"], ["t", "lava", "buy"], ["w", "moss", "lock"]]);
+  assert.equal(q.total, 500 + 1600);
+  assert.deepEqual(q.buy.map((r) => r.slot), ["h", "t"]);
+  assert.equal(q.short, 0);
+  assert.deepEqual(q.wear, []);
+  const q2 = G.quote(eco, { h: "sunlit", t: "dungeon" }, OPEN4);
+  assert.deepEqual(q2.rows.map((r) => r.state), ["own", "worn"]);
+  assert.deepEqual(q2.wear.map((r) => r.slot), ["h"]);
+  assert.equal(q2.total, 0);
+  assert.equal(G.quote(owning(100, {}), { h: "ice" }, OPEN4).short, 400);
+  assert.deepEqual(G.quote(eco, { h: "nope", x: "ice" }, OPEN4).rows, []);
+});
+
+test("buyMany: every buyable pick or none; locked and owned ones are left out", () => {
+  const eco = owning(5000, { "dungeon-t": 1 }, { t: "dungeon" });
+  const r = G.buyMany(eco, { h: "ice", t: "lava", w: "moss" }, OPEN4);
+  assert.equal(r.ok, true);
+  assert.equal(r.eco.gold, 5000 - 2100);
+  assert.deepEqual(Object.keys(G.readHero(r.eco).own).sort(), ["dungeon-t", "ice-h", "lava-t"]);
+  assert.deepEqual(G.readHero(r.eco).eq, { h: null, t: "dungeon", w: null });   // bought, not worn
+  assert.equal(r.msg, "2개를 구매했습니다 · 인벤토리에 넣었습니다");
+  const one = G.buyMany(eco, { h: "ice" }, OPEN4);
+  assert.equal(one.msg, "얼음 투구를 구매했습니다 · 인벤토리에 넣었습니다");
+  const poor = G.buyMany(owning(1000, {}), { h: "ice", t: "lava" }, OPEN4);
+  assert.equal(poor.ok, false);
+  assert.equal(poor.eco.gold, 1000);
+  assert.deepEqual(G.readHero(poor.eco).own, {});
+  assert.equal(poor.msg, "골드가 1,100 G 부족합니다");
+  const none = G.buyMany(eco, { t: "dungeon", w: "moss" }, OPEN4);
+  assert.equal(none.ok, false);
+  assert.equal(none.msg, "구매할 장비가 없습니다");
+});
+
+test("equipMany: puts on every owned pick not worn yet", () => {
+  const eco = owning(0, { "dungeon-t": 1, "ice-h": 1, "lava-t": 1 }, { t: "dungeon" });
+  const r = G.equipMany(eco, { h: "ice", t: "lava", w: "moss" });
+  assert.equal(r.ok, true);
+  assert.deepEqual(G.readHero(r.eco).eq, { h: "ice", t: "lava", w: null });
+  assert.equal(r.msg, "2개를 착용했습니다");
+  assert.equal(G.equipMany(eco, { h: "ice" }).msg, "얼음 투구 착용");
+  const none = G.equipMany(eco, { t: "dungeon", w: "moss" });
+  assert.equal(none.ok, false);
+  assert.equal(none.eco, eco);
+});

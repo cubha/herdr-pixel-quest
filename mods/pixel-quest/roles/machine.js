@@ -9,6 +9,7 @@ import { div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, TextView } from "gpui-base";
 import { hc, exec, home, readTextFile, props, closeOverlay } from "herdr";
 import { P, unit, root, frame, small, bandHead, pic, button } from "../kit.js";
+import { josa } from "../economy.js";
 
 const ICON = (name) => `mods/pixel-quest/icons/${name}.svg`;
 
@@ -134,7 +135,7 @@ export default class Machine {
       } else if (["hc_missing", "incompatible", "login_needed", "auth_failed", "host_key"].includes(why.kind) || /password|passphrase|host key|permission denied|login/i.test(why.message ?? "")) {
         const quoted = /^[a-z0-9_@%+=:,./-]+$/i.test(target) ? target : "'" + target.replace(/'/g, "'\\''") + "'";
         this.pending.add(target);
-        this.state[target] = `${target}은(는) 여기서 바로 추가할 수 없습니다: 답할 것이 있습니다(비밀번호, 새 호스트 키, 또는 그쪽에 herdr-core 설치). 터미널에서 \`hc machine add ${quoted}\`를 실행하세요. 옵션은 \`hc machine --help\`.`;
+        this.state[target] = `${josa(target, "은/는")} 여기서 바로 추가할 수 없습니다: 직접 입력할 것이 있습니다(비밀번호, 새 호스트 키, 또는 그쪽에 herdr-core 설치). 터미널에서 \`hc machine add ${quoted}\`를 실행하세요. 옵션은 \`hc machine --help\`.`;
       } else this.state[target] = why.message || "추가하지 못했습니다";
       await this.refresh();
       cx.notify();
@@ -155,8 +156,8 @@ export default class Machine {
   macCard(u, target) {
     const mac = this.macs[target];
     return v_flex().mx(u(4)).mb(u(6)).p(u(8)).gap(u(6)).bg(P.raised).border(u(2)).border_color(P.blocked)
-      .child(div().text_color(P.gt).child(`${mac.name}은(는) Mac입니다: 폴더 접근을 한 번 허용하세요`))
-      .child(small(u, "macOS는 에이전트가 데스크탑·문서·다운로드를 읽기 전에 Mac 화면에서 묻고, 누가 답할 때까지 기다립니다. 그쪽에서 herdr-core에 전체 디스크 접근 권한을 주면 다시 묻지 않습니다: 목록에서 +를 눌러 이 파일을 고르세요.", P.muted))
+      .child(div().text_color(P.gt).child(`${josa(mac.name, "은/는")} Mac입니다: 폴더 접근을 한 번 허용하세요`))
+      .child(small(u, "macOS는 에이전트가 데스크톱·문서·다운로드를 읽기 전에 Mac 화면에서 묻고, 누가 답할 때까지 기다립니다. 그쪽에서 herdr-core에 전체 디스크 접근 권한을 주면 다시 묻지 않습니다: 목록에서 +를 눌러 이 파일을 고르세요.", P.muted))
       .child(div().px(u(6)).py(u(2)).bg(P.well).border(u(2)).border_color(P.b1).child(small(u, mac.core, P.text)))
       .child(h_flex().gap(u(8)).items_center()
         .child(button(u, `ma-mac-${target}`, small(u, `${mac.name}에서 설정 열기`, P.g4), (_e, cx) => {

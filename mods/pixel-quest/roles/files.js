@@ -224,7 +224,7 @@ export default class Files {
           value: text.length > 400000 ? text.slice(0, 400000) + "\n… (파일이 길어 잘림)" : text,
           font_family: settings().font_family, font_size: 12,
           syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
-      } catch { if (this.file === path && this.current(context)) this.fileError = "미리볼 수 없는 파일입니다 (바이너리·너무 큼·읽기 불가)"; }
+      } catch { if (this.file === path && this.current(context)) this.fileError = "미리 볼 수 없는 파일입니다 (바이너리·너무 큼·읽기 불가)"; }
       finally { cx.notify(); }
     });
   }

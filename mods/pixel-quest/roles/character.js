@@ -6,20 +6,23 @@
 // piece lights the slot it goes to and names it on the strip under the bag.
 // 상점: 장비 (seven sets, piece by piece, once the set's zone is open), 펫 (the eight for
 // gold and the four medal ones; an owned one can come along) and 구역 (the zone for gold).
-// A click picks; the right side shows it (gear: tried on the portrait) with its price and
-// [사기]. No selling back. Rules: gear.js (pq.eco.hero), economy.js (gold, pets, zones).
+// 장비: a pick per slot (another piece of that slot replaces it, the same one again drops
+// it), all tried on the portrait together; the right side lists the picks and buys every
+// buyable one at once ([구매], all or none), wears the owned ones ([착용]) or drops them
+// ([선택 비우기]). A locked zone's piece is tried on only. 펫 · 구역: one pick, [구매].
+// No selling back. Rules: gear.js (pq.eco.hero, quote / buyMany / equipMany), economy.js.
 // Opened from the sidebar's hero panel, the pet, the gold on the status bar, the palette
 // and `pixel-quest.shop`. Copyright (c) 2026 cubha. MIT License.
 
-import { div } from "gpui-kit";
+import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay } from "herdr";
 import { P, unit, root, pic, frame, plaque, small, button, eco, setEco, coin, announce, best, hero, heroPortrait, gearIcon, gearSlot, HERO_BG } from "../kit.js";
 import { PETS, GROW, buy, choose, howTo, fmt, petArt, stageOf, buyZone, ZONE_PRICE } from "../economy.js";
 import { zoneBy } from "../zones.js";
-import { SETS, SLOT_KO, SET_COLOR, RANKS, BAG, PORTRAIT, price, pieceName, rankOpen, setRank, setSex, setOpen, setHow, zoneName, buyGear, equip, unequip, pack } from "../gear.js";
+import { SETS, SLOTS, SLOT_KO, SET_COLOR, RANKS, BAG, PORTRAIT, price, pieceName, rankOpen, setRank, setSex, setOpen, setHow, zoneName, equip, unequip, pack, quote, buyMany, equipMany } from "../gear.js";
 
-const OWN = "#7fd66b";     // "가짐" on bronze
+const OWN = "#7fd66b";     // "보유" on bronze
 const PIECE = "#3a2416";   // a piece's cell (bag, shop)
 
 export default class Character {
@@ -29,7 +32,8 @@ export default class Character {
     this.sub = ["gear", "pet", "zone"].includes(p.sub) ? p.sub : "gear";
     this.hint = null;
     this.info = null;   // the piece under the pointer: { set, slot, on (worn) }
-    this.sel = null;    // the shop's pick: { k: "gear", set, slot } | { k: "pet", key } | { k: "zone", key }
+    this.sel = null;    // the pet / zone tab's pick: { k: "pet", key } | { k: "zone", key }
+    this.picks = { h: null, t: null, w: null };   // the gear tab's picks, a set per slot
   }
 
   close() { closeOverlay(props()?.overlay); }
@@ -83,8 +87,8 @@ export default class Character {
         div().w(u(60)).flex().flex_none().items_center().justify_center().child(gearIcon(u, i.set, i.slot)),
         v_flex().min_w(0)
           .child(div().text_color(SET_COLOR[i.set]).child(pieceName(i.set, i.slot)))
-          .child(small(u, `${SLOT_KO[i.slot]} · ${zoneName(i.set)} 세트 · ${i.on ? "착용 중 · 누르면 가방으로" : `누르면 ${SLOT_KO[i.slot]} 칸에 착용`}`, P.muted)),
-      ] : [small(u, "물건에 마우스를 올리면 여기에 이름과 할 수 있는 일이 보입니다", P.dim)]);
+          .child(small(u, `${SLOT_KO[i.slot]} · ${zoneName(i.set)} 세트 · ${i.on ? "착용 중 · 누르면 해제" : `누르면 ${SLOT_KO[i.slot]} 칸에 착용`}`, P.muted)),
+      ] : [small(u, "아이템에 마우스를 올리면 정보가 보입니다", P.dim)]);
     return v_flex().flex_1().min_h(0).gap(u(6))
       .child(top)
       .child(h_flex().gap(u(4)).items_center().justify_center().child(sex("m", "남자")).child(sex("f", "여자")).child(div().w(u(8))).children(ranks))
@@ -93,17 +97,19 @@ export default class Character {
   }
 
   // ---- 상점 ----
-  pick(u, id, on, o, art, tag, act, w = 60) {
-    return v_flex().id(id).flex_none().w(u(w)).h(u(60)).items_center().pb(u(2))
+  pick(u, id, on, o, art, tag, act, w = 60, check = false) {
+    return v_flex().id(id).relative().flex_none().w(u(w)).h(u(60)).items_center().pb(u(2))
       .border(u(2)).border_color(on ? P.g3 : P.ink).bg(on ? P.b2 : o.lock ? P.raised : o.own ? P.b1 : PIECE)
       .cursor_pointer().hover((s) => s.border_color(P.g2))
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => { cx.stop_propagation(); act(cx); })
       .child(div().flex().flex_1().min_h(0).items_center().justify_center().when(Boolean(o.lock), (el) => el.opacity(0.4)).child(art))
-      .child(tag);
+      .child(tag)
+      .when(check, (el) => el.child(div().absolute().top(u(-2)).right(u(-2)).w(u(12)).h(u(12)).flex().items_center().justify_center()
+        .bg(P.g3).border(u(1)).border_color(P.ink).child(svg("mods/pixel-quest/icons/check.svg").size(u(9)).text_color(P.ink))));
   }
 
-  tag(u, own, lock, poor, p, ownText = "가짐") {
+  tag(u, own, lock, poor, p, ownText = "보유") {
     if (lock) return small(u, "잠김", P.dim);
     if (own) return small(u, ownText, OWN);
     return h_flex().gap(u(2)).items_center().child(coin(u)).child(small(u, fmt(p), poor ? P.poor : P.onb));
@@ -112,18 +118,13 @@ export default class Character {
   selected() {
     const x = this.sel, e = eco();
     if (!x) return null;
-    if (x.k === "gear") {
-      const h = hero();
-      return { name: pieceName(x.set, x.slot), color: SET_COLOR[x.set], sub: `${SLOT_KO[x.slot]} · ${zoneName(x.set)} 세트`, price: price(x.set, x.slot),
-        own: Boolean(h.own[`${x.set}-${x.slot}`]), lock: !setOpen(x.set, this.at()), why: setHow(x.set) };
-    }
     if (x.k === "pet") {
       const p = PETS.find((q) => q.key === x.key), own = e.pets[p.key];
       const bond = own?.bond ?? 0, st = stageOf(bond);
       return { name: p.name, color: P.gt, pet: p, along: e.pet === p.key, price: p.price, own: Boolean(own), lock: !own && !p.price, why: howTo(p),
         sub: own ? `친밀도 ${bond} · ${st}단계${st < 3 ? ` (다음까지 ${GROW[st - 1] - bond})` : ""}` : "펫 · 상태 줄에 데리고 다닙니다" };
     }
-    return { name: zoneBy(x.key)?.name ?? x.key, color: SET_COLOR[x.key] ?? P.gt, sub: `구역 · 열면 ${zoneBy(x.key)?.name ?? ""} 세트 장비가 팔립니다`,
+    return { name: zoneBy(x.key)?.name ?? x.key, color: SET_COLOR[x.key] ?? P.gt, sub: `구역 · 열면 ${zoneBy(x.key)?.name ?? ""} 세트 장비를 구매할 수 있습니다`,
       price: ZONE_PRICE[x.key], own: e.zones.includes(x.key), lock: false };
   }
 
@@ -131,8 +132,7 @@ export default class Character {
     const x = this.sel;
     if (!x) return;
     let r;
-    if (x.k === "gear") r = buyGear(eco(), x.set, x.slot, this.at());
-    else if (x.k === "pet") { r = buy(eco(), x.key, { now: new Date(), best: best() }); if (r.ok) announce(r.got); }
+    if (x.k === "pet") { r = buy(eco(), x.key, { now: new Date(), best: best() }); if (r.ok) announce(r.got); }
     else r = buyZone(eco(), x.key);
     if (r.ok) setEco(r.eco);
     this.hint = r.msg;
@@ -152,16 +152,16 @@ export default class Character {
             .child(div().truncate().text_color(open ? SET_COLOR[set] : P.dim).child(zoneName(set)))
             .child(small(u, open ? "열림" : setHow(set), P.dim)))
           .children([["h", 48], ["w", 50], ["t", 62]].map(([slot, w]) => {
-            const own = Boolean(h.own[`${set}-${slot}`]), p = price(set, slot), on = s?.k === "gear" && s.set === set && s.slot === slot;
+            const own = Boolean(h.own[`${set}-${slot}`]), p = price(set, slot), on = this.picks[slot] === set;
             return this.pick(u, `ch-pick-${set}-${slot}`, on, { own, lock: !open }, gearIcon(u, set, slot, { shade: !open }),
-              this.tag(u, own, !open, e.gold < p, p), (cx) => { this.sel = { k: "gear", set, slot }; this.hint = null; cx.notify(); }, w);
+              this.tag(u, own, !open, e.gold < p, p), (cx) => { this.picks = { ...this.picks, [slot]: on ? null : set }; this.hint = null; cx.notify(); }, w, on);
           }));
       }));
     } else if (this.sub === "pet") {
       list = h_flex().id("ch-pet-list").flex_1().min_h(0).flex_wrap().content_start().gap(u(4)).overflow_y_scrollbar().children(PETS.map((p) => {
         const own = e.pets[p.key], on = s?.k === "pet" && s.key === p.key, along = e.pet === p.key;
         const art = own ? petArt(p.key, own.bond ?? 0, false, false) : p.price ? petArt(p.key, 0, false, false) : { name: `pet-${p.key}-1-s-x`, w: 24, h: 20 };
-        const tag = !own && !p.price ? small(u, "훈장", P.dim) : this.tag(u, Boolean(own), false, e.gold < p.price, p.price, along ? "함께" : "가짐");
+        const tag = !own && !p.price ? small(u, "훈장", P.dim) : this.tag(u, Boolean(own), false, e.gold < p.price, p.price, along ? "동행" : "보유");
         return this.pick(u, `ch-pick-pet-${p.key}`, on, { own: Boolean(own), lock: !own && !p.price }, pic(u, art.name, art.w, art.h), tag,
           (cx) => { this.sel = { k: "pet", key: p.key }; this.hint = null; cx.notify(); });
       }));
@@ -172,6 +172,7 @@ export default class Character {
           (cx) => { this.sel = { k: "zone", key }; this.hint = null; cx.notify(); });
       }));
     }
+    if (this.sub === "gear") return this.shopFrame(u, e, sub, list, this.gearDetail(u, h, e, at));
     const x = this.selected();
     const box = (child) => div().flex_none().border(u(2)).border_color(P.ink).child(div().border(u(1)).border_color(P.g2)
       .child(div().w(u(PORTRAIT[0])).h(u(PORTRAIT[1])).bg(HERO_BG).flex().items_center().justify_center().child(child)));
@@ -181,17 +182,17 @@ export default class Character {
       const art = own ? petArt(s.key, own.bond ?? 0, false, false) : x.pet.price ? petArt(s.key, 0, false, false) : { name: `pet-${s.key}-1-s-x`, w: 24, h: 20 };
       view = box(div().when(!own && !x.pet.price, (el) => el.opacity(0.4)).child(pic(u, art.name, art.w, art.h)));
     } else if (s?.k === "zone") view = box(pic(u, `zone/${s.key}/emblem`, 24, 28));
-    else view = heroPortrait(u, h, s?.k === "gear" ? { ...h.eq, [s.slot]: s.set } : h.eq);
+    else view = heroPortrait(u, h);
     const line = (el) => h_flex().w_full().justify_center().min_w(0).child(el);
     let detail = v_flex().flex_1().min_w(0).gap(u(4)).items_center().child(view);
-    if (!x) detail = detail.child(line(small(u, "물건을 누르면 여기에서", P.dim))).child(line(small(u, "입어 본 모습과 값이 보입니다", P.dim)));
+    if (!x) detail = detail.child(line(small(u, "아이템을 누르면 여기에", P.dim))).child(line(small(u, "정보와 가격이 보입니다", P.dim)));
     else {
       const poor = !x.own && !x.lock && e.gold < x.price;
       const state = x.lock ? small(u, `${x.pet ? "얻는 방법" : "여는 조건"}: ${x.why}`, P.dim)
-        : x.own ? small(u, x.pet ? (x.along ? "함께 다니는 중" : "가지고 있습니다") : s.k === "zone" ? "열려 있습니다" : "가지고 있습니다", OWN)
-        : h_flex().gap(u(3)).items_center().child(coin(u)).child(small(u, `${fmt(x.price)} G${poor ? ` · ${fmt(x.price - e.gold)} 모자람` : ""}`, poor ? P.poor : P.gt));
+        : x.own ? small(u, x.pet ? (x.along ? "동행 중" : "보유 중") : s.k === "zone" ? "열려 있습니다" : "보유 중", OWN)
+        : h_flex().gap(u(3)).items_center().child(coin(u)).child(small(u, `${fmt(x.price)} G${poor ? ` · ${fmt(x.price - e.gold)} G 부족` : ""}`, poor ? P.poor : P.gt));
       const off = x.lock || poor || (x.own && !(x.pet && !x.along));
-      const label = x.lock ? "잠김" : x.own ? (x.pet ? (x.along ? "함께하는 중" : "데려가기") : s.k === "zone" ? "열림" : "가짐") : "사기";
+      const label = x.lock ? "잠김" : x.own ? (x.pet ? (x.along ? "동행 중" : "데려가기") : s.k === "zone" ? "열림" : "보유") : "구매";
       const go = (_e, cx) => {
         if (x.pet && x.own) { const r = choose(eco(), x.pet.key); if (r.ok) setEco(r.eco); this.hint = r.msg; cx.notify(); return; }
         if (x.lock) { this.hint = x.pet ? `얻는 방법: ${x.why}` : `먼저 구역을 열어야 합니다 · ${x.why}`; cx.notify(); return; }
@@ -203,11 +204,60 @@ export default class Character {
         .child(line(state))
         .child(button(u, "ch-buy", small(u, label, off ? P.dim : P.text), go, { pad: [1, 12] }).when(off, (el) => el.opacity(0.55)));
     }
+    return this.shopFrame(u, e, sub, list, detail);
+  }
+
+  shopFrame(u, e, sub, list, detail) {
     return v_flex().flex_1().min_h(0).gap(u(6))
-      .child(h_flex().gap(u(4)).items_center().child(sub("gear", "장비")).child(sub("pet", `펫 ${Object.keys(e.pets).length} / ${PETS.length}`)).child(sub("zone", "구역")))
+      .child(h_flex().gap(u(4)).items_center().child(sub("gear", "장비")).child(sub("pet", `펫 ${Object.keys(e.pets).length} / ${PETS.length}`)).child(sub("zone", "구역"))
+        .when(this.sub === "gear", (el) => el.child(div().flex_1()).child(small(u, `고른 부위 ${SLOTS.filter((l) => this.picks[l]).length} / 3`, P.muted))))
       .child(h_flex().flex_1().min_h(0).gap(u(8)).items_start()
         .child(v_flex().w(u(256)).flex_none().h_full().min_h(0).child(list))
         .child(detail));
+  }
+
+  // The gear tab's right side: every pick tried on, a line per slot, the sum, the buttons.
+  gearDetail(u, h, e, at) {
+    const q = quote(e, this.picks, at);
+    const tried = { ...h.eq };
+    for (const r of q.rows) tried[r.slot] = r.set;
+    const done = (r, cx) => { if (r.ok) setEco(r.eco); this.hint = r.msg; cx.notify(); };
+    const STATE = { buy: (r) => [`${fmt(r.price)} G`, q.short > 0 ? P.poor : P.gt], own: () => ["보유", OWN], worn: () => ["착용 중", OWN], lock: () => ["잠김", P.dim] };
+    const lines = SLOTS.map((l) => {
+      const r = q.rows.find((x) => x.slot === l);
+      const line = h_flex().id(`ch-line-${l}`).w_full().h(u(20)).px(u(4)).gap(u(4)).items_center().bg(P.chrome).border(u(1)).border_color(P.ink);
+      if (!r) return line.child(small(u, `${SLOT_KO[l]} · 착용 장비 그대로`, P.dim));
+      const [text, color] = STATE[r.state](r);
+      const row = line.when(r.state === "lock", (el) => el.tooltip(`여는 조건: ${setHow(r.set)}`))
+        .child(div().w(u(26)).flex().flex_none().items_center().justify_center().child(gearIcon(u, r.set, r.slot, { scale: 0.42 })))
+        .child(div().flex_none().child(small(u, r.name, SET_COLOR[r.set])))
+        .child(div().flex_1().min_w(0).flex().justify_end().child(div().min_w(0).truncate().child(small(u, text, color))))
+        .child(div().id(`ch-drop-${l}`).flex().flex_none().items_center().justify_center().w(u(12)).h(u(12)).cursor_pointer().tooltip("선택 해제")
+          .hover((s) => s.bg(P.b1))
+          .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+          .on_click((_e, cx) => { cx.stop_propagation(); this.picks = { ...this.picks, [l]: null }; this.hint = null; cx.notify(); })
+          .child(svg("mods/pixel-quest/icons/x.svg").size(u(9)).text_color(P.dim)));
+      // A locked piece: how its zone opens, under the row (too long for the row itself).
+      return r.state !== "lock" ? row : v_flex().w_full().child(row)
+        .child(div().w_full().pl(u(34)).truncate().child(small(u, setHow(r.set), P.dim)));
+    });
+    const any = q.rows.length > 0;
+    const locked = q.rows.some((r) => r.state === "lock");
+    const total = h_flex().w_full().justify_between().items_center()
+      .child(div().flex_1().min_w(0).truncate().child(small(u, `${q.buy.length}개 구매${locked ? " · 잠김 제외" : ""}`, P.muted)))
+      .child(h_flex().gap(u(3)).items_center().child(coin(u)).child(small(u, `${fmt(q.total)} G`, q.short > 0 ? P.poor : P.gt)));
+    const buyOff = !q.buy.length || q.short > 0;
+    const buyLabel = !q.buy.length ? "구매" : q.short > 0 ? `${fmt(q.short)} G 부족` : `구매 · ${q.buy.length}개 · ${fmt(q.total)} G`;
+    const btn = (id, label, off, go) => button(u, id, small(u, label, off ? P.dim : id === "ch-buy" ? P.g3 : P.text), go, { pad: [1, 8] }).when(off, (el) => el.opacity(0.55));
+    return v_flex().flex_1().min_w(0).gap(u(4)).items_center()
+      .child(heroPortrait(u, h, tried))
+      .when(!any, (el) => el.child(v_flex().items_center().child(small(u, "아이템을 누르면", P.dim)).child(small(u, "착용 모습과 가격이 보입니다", P.dim))))
+      .children(lines)
+      .child(total)
+      .child(btn("ch-buy", buyLabel, buyOff, (_e, cx) => done(buyMany(eco(), this.picks, this.at()), cx)))
+      .child(h_flex().gap(u(4)).justify_center()
+        .child(btn("ch-wear", q.wear.length ? `착용 · ${q.wear.length}개` : "착용", !q.wear.length, (_e, cx) => done(equipMany(eco(), this.picks), cx)))
+        .child(btn("ch-clear", "선택 비우기", !any, (_e, cx) => { this.picks = { h: null, t: null, w: null }; this.hint = null; cx.notify(); })));
   }
 
   render() {
@@ -215,7 +265,9 @@ export default class Character {
     const e = eco(), h = hero();
     const tab = (k, label) => button(u, `ch-tab-${k}`, small(u, label, this.tab === k ? P.g3 : P.text),
       (_ev, cx) => { this.tab = k; this.hint = null; this.info = null; cx.notify(); }, { on: this.tab === k, pad: [1, 8] });
-    const hint = this.hint ?? (this.tab === "bag" ? "가방의 장비를 누르면 끼웁니다 · 장비 칸을 누르면 가방으로 돌아갑니다" : "물건을 누르면 오른쪽에서 입어 보고, \"사기\"로 삽니다");
+    const hint = this.hint ?? (this.tab === "bag" ? "인벤토리의 장비를 누르면 착용합니다 · 장비 칸을 누르면 해제합니다"
+      : this.sub === "gear" ? "부위가 다르면 여러 개를 함께 골라 입어 볼 수 있습니다"
+      : "아이템을 누르면 오른쪽에 정보와 가격이 보입니다");
     const body = v_flex().size_full().gap(u(6))
       .child(plaque(u, h_flex().gap(u(6)).items_center().child(pic(u, "ico-chest-open", 16)).child("캐릭터")))
       .child(h_flex().gap(u(4)).items_center()
@@ -226,7 +278,7 @@ export default class Character {
       .child(this.tab === "bag" ? this.bag(u, h) : this.shop(u, h))
       .child(h_flex().flex_none().gap(u(8)).items_center()
         .child(div().flex_1().min_w(0).truncate().child(small(u, hint, this.hint ? P.done : P.muted)))
-        .when(this.tab === "shop" && this.sub === "pet" && e.pet != null, (el) => el.child(button(u, "ch-alone", small(u, "혼자 다니기", P.text), (_ev, cx) => {
+        .when(this.tab === "shop" && this.sub === "pet" && e.pet != null, (el) => el.child(button(u, "ch-alone", small(u, "펫 없이 다니기", P.text), (_ev, cx) => {
           setEco(choose(eco(), null).eco); this.hint = "펫 없이 다닙니다"; cx.notify();
         }, { pad: [1, 8] })))
         .child(button(u, "ch-close", small(u, "닫기", P.text), () => this.close(), { pad: [1, 8] })));

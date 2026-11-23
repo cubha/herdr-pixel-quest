@@ -46,7 +46,7 @@ const MOOD_KO = { sleep: "모두 쉼", walk: "작업 중", alert: "입력 대기
 // `pixel-quest.toast`: notifications to try the look with, one level per press.
 const SAMPLES = [
   { title: "space.new failed", body: "cannot reach build-box: ssh: Could not resolve hostname build-box", level: "error" },
-  { title: "에이전트가 입력을 기다립니다", body: "my-api · 계속하려면 확인이 필요해요", level: "warning" },
+  { title: "에이전트가 입력을 기다립니다", body: "my-api · 계속하려면 확인이 필요합니다", level: "warning" },
   { title: "퀘스트 완료", body: "notes-app · 에이전트가 일을 마쳤습니다", level: "success" },
   { title: "Herdr 업데이트", body: "0.1.15 · 새 기능을 확인하세요", level: "info" },
 ];
@@ -158,7 +158,7 @@ export default class Status {
     cx.spawn(async (cx) => {
       for (;;) {
         const c = await nextCommand();
-        if (c === "quest") this.fanfare({ space_name: "시험 퀘스트", address: "demo" }, false);
+        if (c === "quest") this.fanfare({ space_name: "미리보기 퀘스트", address: "demo" }, false);
         else if (c === "quest_reset") { setShared("pq.quests", 0); setShared("pq.floor", null); }
         else if (c === "palette") openPalette();
         else if (c === "goto") openGoto();
@@ -167,7 +167,7 @@ export default class Status {
         else if (c === "rename_tab") openRename("tab");
         else if (c === "rename_space") openRename("space");
         else if (c === "help") openHelp();
-        else if (c === "levelup") this.fanfare({ space_name: "시험 퀘스트", address: "demo" }, false, lvInfo().lv);
+        else if (c === "levelup") this.fanfare({ space_name: "미리보기 퀘스트", address: "demo" }, false, lvInfo().lv);
         else if (c === "look_phase") tryLook("phase");
         else if (c === "look_season") tryLook("season");
         else if (c === "shop") openShop();
@@ -175,7 +175,7 @@ export default class Status {
         else if (c === "pet_try") {
           const list = [null, "sleep", "walk", "alert", "tired", "hop"];
           this.tryMood = list[(list.indexOf(this.tryMood) + 1) % list.length];
-          notify({ title: "펫 시험", body: this.tryMood ? `상황: ${MOOD_KO[this.tryMood]}` : "실제 상황으로 돌아감", level: "info" });
+          notify({ title: "펫 상황 미리보기", body: this.tryMood ? `상황: ${MOOD_KO[this.tryMood]}` : "실제 상황으로 돌아감", level: "info" });
         }
         else if (c === "medal_try") {
           const k = (this.medals = ((this.medals ?? -1) + 1) % E.MEDALS.length);
@@ -350,7 +350,7 @@ export default class Status {
       .on_size_change((sz, cx) => { if (Math.abs(sz.width - this.laneW) > 1) { this.laneW = sz.width; cx.notify(); } });
     if (!this.shown) {
       return shared("pq.petShow") === false ? lane : lane.child(div().id("pet-none").absolute().right(0).top(u(5)).cursor_pointer()
-        .tooltip("골드로 펫을 사면 여기서 함께 다닙니다 · 누르면 상점").on_click(() => openShop("dex"))
+        .tooltip("상점에서 펫을 구매하면 여기서 함께 다닙니다 · 누르면 상점").on_click(() => openShop("dex"))
         .child(small(u, "펫 없음", P.dim)));
     }
     const bond = e.pets[key]?.bond ?? 0;
@@ -441,7 +441,7 @@ export default class Status {
         .child(small(u, `퀘스트 ${lv.q}`, P.gt2))
         .child(cells(u, { pct: lv.frac * 100, tone: P.g2 }, 10, 4, 10)))
       .child(h_flex().id("gold").gap(u(4)).items_center().cursor_pointer()
-        .tooltip(`골드 ${E.fmt(e.gold)} · 지금까지 ${E.fmt(e.earned)} · 누르면 상점`)
+        .tooltip(`골드 ${E.fmt(e.gold)} G · 누적 ${E.fmt(e.earned)} G · 누르면 상점`)
         .on_click(() => openShop())
         .child(coin(u))
         .child(small(u, E.fmt(e.gold), P.gt)))

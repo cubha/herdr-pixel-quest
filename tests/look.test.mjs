@@ -164,3 +164,35 @@ test("the hero's panel: an older layout gets the block, its height follows the f
   assert.equal(L.sidebarW(withLists, { nodes: { sidebar: { size: { px: 44 } } } }), 44);
   assert.equal(L.sidebarW(withLists, null), 268);
 });
+
+test("the hero's panel has three states in pq.hero: open, big and folded (from either)", () => {
+  assert.equal(L.heroMode(undefined), "open");
+  assert.equal(L.heroMode(true), "open");
+  assert.equal(L.heroMode(false), "shut");
+  assert.equal(L.heroMode("big"), "big");
+  assert.equal(L.heroMode("big-shut"), "shut");
+  assert.equal(L.heroMode("junk"), "open");
+  // the zoom icon: open <-> big
+  assert.equal(L.heroToggleBig(true), "big");
+  assert.equal(L.heroToggleBig(undefined), "big");
+  assert.equal(L.heroToggleBig("big"), true);
+  // the fold icon: unfolding goes back to the state it was folded from
+  assert.equal(L.heroToggleFold(true), false);
+  assert.equal(L.heroToggleFold(false), true);
+  assert.equal(L.heroToggleFold("big"), "big-shut");
+  assert.equal(L.heroToggleFold("big-shut"), "big");
+});
+
+test("the big panel: the portrait fills the sidebar's width, the block's height follows", () => {
+  const b = L.heroBig(268);
+  assert.equal(b.w, 246);                       // 268 - root 8 - panel border 4 - padding 4 - portrait frame 6
+  assert.equal(b.h, Math.round(246 * 131 / 120));
+  assert.equal(b.px, b.h + 50);                 // root 8, band 20, gap 6, border 4, padding 4, frame 6, 2 to spare
+  assert.ok(Math.abs(b.px - L.HERO_PX.open) <= 4);  // about the open height: the lists below don't move
+  assert.equal(L.heroBig(900).w, 360);          // a wide sidebar stops at 3x
+  assert.equal(L.heroPx("big", 268), b.px);
+  assert.equal(L.heroPx("big-shut", 268), L.HERO_PX.shut);
+  assert.equal(L.heroPx("big", 120), L.HERO_PX.shut);   // down to its rail
+  assert.equal(L.heroPx(true, 268), L.HERO_PX.open);
+  assert.equal(L.heroPx(undefined, 268), L.HERO_PX.open);
+});

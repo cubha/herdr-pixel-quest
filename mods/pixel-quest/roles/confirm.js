@@ -26,7 +26,7 @@ export default class Confirm {
     const p = props() ?? {};
     const body = v_flex().size_full().gap(u(8))
       .child(bandHead(u, "확인").mx(u(-10)).mt(u(-8)))
-      .child(div().text_color(P.gt).child(p.title ?? "정말 할까요?"))
+      .child(div().text_color(P.gt).child(p.title ?? "계속할까요?"))
       .child(div().flex_1().min_h(0).child(small(u, p.detail ?? "", P.muted)))
       .child(h_flex().gap(u(8)).items_center().justify_end()
         .child(small(u, "Enter 확인 · Esc 취소", P.dim).mr(u(4)))

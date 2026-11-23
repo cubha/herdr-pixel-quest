@@ -139,8 +139,8 @@ test("the shop: buy at once with enough gold, the shortfall otherwise, no second
   const b = E.buy(a.eco, "dragon");
   assert.equal(b.ok, false);
   assert.equal(b.eco, a.eco);
-  assert.equal(b.msg, "새끼 용: 4,800 G가 모자랍니다");
-  assert.equal(E.buy(a.eco, "cat").msg, "고양이: 이미 가진 펫입니다");
+  assert.equal(b.msg, "새끼 용: 골드가 4,800 G 부족합니다");
+  assert.equal(E.buy(a.eco, "cat").msg, "고양이: 이미 보유한 펫입니다");
   assert.equal(E.buy(a.eco, "owl").ok, false);
   assert.equal(E.buy(a.eco, "nope").ok, false);
   const c = E.buy(a.eco, "slime");
@@ -264,7 +264,7 @@ test("a zone for gold: short of gold says by how much, other zones are not for s
   const poor = E.buyZone({ ...E.read({}), gold: 2500 }, "crystal");
   assert.equal(poor.ok, false);
   assert.equal(poor.eco.gold, 2500);
-  assert.match(poor.msg, /500 G가 모자랍니다/);
+  assert.match(poor.msg, /골드가 500 G 부족합니다/);
   assert.equal(E.buyZone({ ...E.read({}), gold: 9999 }, "ice").ok, false);
   assert.equal(E.ZONE_PRICE.crystal, 3000);
 });
@@ -288,4 +288,16 @@ test("the pet speaks up by itself: at once for news, then again on its own beat"
   assert.equal(talkNext(t, "tired", 7000).show, true);
   const h = talkNext(t, "hop", 9000); assert.equal(h.show, true);        // a quest just done
   assert.equal(talkNext(h, "hop", 9000 + TALK.urgent).show, false);      // once per hop
+});
+
+test("josa: the particle by the last syllable's final consonant (not Korean: as with one)", () => {
+  assert.equal(E.josa("얼음 투구", "을/를"), "얼음 투구를");
+  assert.equal(E.josa("던전 갑옷", "을/를"), "던전 갑옷을");
+  assert.equal(E.josa("얼음 동굴", "이/가"), "얼음 동굴이");
+  assert.equal(E.josa("투구", "이/가"), "투구가");
+  assert.equal(E.josa("고양이", "와/과"), "고양이와");
+  assert.equal(E.josa("새끼 용", "와/과"), "새끼 용과");
+  assert.equal(E.josa("왕좌의 방", "은/는"), "왕좌의 방은");
+  assert.equal(E.josa("build-box", "은/는"), "build-box은");
+  assert.equal(E.josa("모험", "이/가"), "모험이");
 });

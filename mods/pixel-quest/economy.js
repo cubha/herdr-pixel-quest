@@ -17,6 +17,18 @@ export const GOLD = { quest: 10, level: 50, bronze: 100, silver: 300, gold: 1000
 /** Thousands with commas (this runtime's toLocaleString may ignore the locale). */
 export const fmt = (n) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
+// The form that follows a final consonant, whichever way round a pair is written.
+const AFTER_FINAL = new Set(["을", "이", "은", "과"]);
+/** A word with its particle ("을/를", "이/가", "은/는", "와/과", either order), by the last
+ *  syllable's final consonant; anything not Korean takes the after-consonant form. */
+export function josa(word, pair) {
+  const w = String(word ?? "");
+  const [a, b] = String(pair).split("/");
+  const [withF, without] = AFTER_FINAL.has(a) ? [a, b] : [b, a];
+  const c = w.charCodeAt(w.length - 1);
+  return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 === 0 ? without : withF);
+}
+
 // price 0: not for sale, comes with the medal.
 export const PETS = [
   { key: "slime", name: "슬라임", price: 300 },
@@ -199,12 +211,12 @@ export function onParty(eco, working, ctx) {
 /** Buys a shop pet at once (no confirmation, no selling back). The first pet comes along. */
 export function buy(eco, key, ctx = { now: new Date() }) {
   const p = petOf(key);
-  if (!p || !p.price) return { eco, ok: false, got: [], msg: p ? `${p.name}: 상점에서 팔지 않습니다` : "없는 펫입니다" };
-  if (eco.pets[key]) return { eco, ok: false, got: [], msg: `${p.name}: 이미 가진 펫입니다` };
-  if (eco.gold < p.price) return { eco, ok: false, got: [], msg: `${p.name}: ${fmt(p.price - eco.gold)} G가 모자랍니다` };
+  if (!p || !p.price) return { eco, ok: false, got: [], msg: p ? `${p.name}: 상점에서 판매하지 않습니다` : "없는 펫입니다" };
+  if (eco.pets[key]) return { eco, ok: false, got: [], msg: `${p.name}: 이미 보유한 펫입니다` };
+  if (eco.gold < p.price) return { eco, ok: false, got: [], msg: `${p.name}: 골드가 ${fmt(p.price - eco.gold)} G 부족합니다` };
   const e = { ...eco, gold: eco.gold - p.price, pets: { ...eco.pets, [key]: { bond: 0 } }, pet: eco.pet ?? key };
   const r = award(e, { best: 1, ...ctx });
-  return { eco: r.eco, ok: true, got: r.got, msg: `${p.name}을(를) 샀습니다. 상점의 펫 탭에서 데려갈 수 있습니다` };
+  return { eco: r.eco, ok: true, got: r.got, msg: `${josa(p.name, "을/를")} 구매했습니다 · 펫 탭에서 데려갈 수 있습니다` };
 }
 
 // Zones for sale (the rest open by level or medal): price and name from zones.js, one place.
@@ -214,11 +226,11 @@ const ZONE_KO = Object.fromEntries(ZONES.map((z) => [z.key, z.name]));
 /** Buys a zone at once (no selling back). It shows from the settings' 모양 tab. */
 export function buyZone(eco, key) {
   const price = ZONE_PRICE[key], name = ZONE_KO[key];
-  if (!price) return { eco, ok: false, msg: "상점에서 팔지 않는 구역입니다" };
+  if (!price) return { eco, ok: false, msg: "상점에서 판매하지 않는 구역입니다" };
   const have = Array.isArray(eco.zones) ? eco.zones : [];
   if (have.includes(key)) return { eco, ok: false, msg: `${name}: 이미 열린 구역입니다` };
-  if (eco.gold < price) return { eco, ok: false, msg: `${name}: ${fmt(price - eco.gold)} G가 모자랍니다` };
-  return { eco: { ...eco, gold: eco.gold - price, zones: [...have, key] }, ok: true, msg: `${name}이(가) 열렸습니다. 설정 · 모양에서 고를 수 있습니다` };
+  if (eco.gold < price) return { eco, ok: false, msg: `${name}: 골드가 ${fmt(price - eco.gold)} G 부족합니다` };
+  return { eco: { ...eco, gold: eco.gold - price, zones: [...have, key] }, ok: true, msg: `${josa(name, "이/가")} 열렸습니다 · 설정 · 모양에서 고를 수 있습니다` };
 }
 
 /** How to get a pet, as the dex says it. */
@@ -230,7 +242,7 @@ export function choose(eco, key) {
   const p = petOf(key);
   if (!p) return { eco, ok: false, msg: "없는 펫입니다" };
   if (!eco.pets[key]) return { eco, ok: false, msg: `얻는 방법: ${howTo(p)}` };
-  return { eco: { ...eco, pet: key }, ok: true, msg: `${p.name}와(과) 함께 다닙니다` };
+  return { eco: { ...eco, pet: key }, ok: true, msg: `${josa(p.name, "와/과")} 함께 다닙니다` };
 }
 
 // ---- the pet on the status bar ----
@@ -291,11 +303,6 @@ export function nextSpot(mood, x, rand = Math.random) {
   return { x: 0, ms: Math.round(x * 100 * 50 + 400), easing: "linear" };
 }
 
-// 이 / 가 after a name: by the last syllable's final consonant (anything else: 이).
-const subj = (w) => {
-  const c = String(w).charCodeAt(String(w).length - 1);
-  return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 === 0 ? "가" : "이";
-};
 
 /** The nearest medal still counted in quests: { m, left }. */
 export function nearest(eco, ctx) {
@@ -312,7 +319,7 @@ export function nearest(eco, ctx) {
 /** The pet's speech bubble. o: { mood, who (the waiting agent), drain ({ label, pct }) }. */
 export function bubble(eco, ctx, o = {}) {
   const t = today(eco, ctx.now);
-  if (o.mood === "alert") return `${o.who}${subj(o.who)} 입력을 기다립니다 · 누르면 이동`;
+  if (o.mood === "alert") return `${josa(o.who, "이/가")} 입력을 기다립니다 · 누르면 이동`;
   if (o.mood === "tired" && o.drain) return `방전! ${o.drain.label} 사용량 ${o.drain.pct}% · 누르면 사용량 카드`;
   if (o.mood === "hop") return `퀘스트 완료! +${GOLD.quest} G · 오늘 ${t}개째`;
   const n = nearest(eco, ctx);

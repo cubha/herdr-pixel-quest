@@ -374,8 +374,9 @@ export function hero() {
  *  (eq: what to show, the worn ones unless trying something on), in a sunk gold-lined box. */
 /** The portrait's own ground (the navy the dot portraits were drawn on, in every look). */
 export const HERO_BG = "#101729";
-export function heroPortrait(u, h, eq = h.eq) {
-  const [w, ht] = PORTRAIT;
+/** size: [w, h] to draw it at (the sidebar's big panel), else its own 120 x 131. */
+export function heroPortrait(u, h, eq = h.eq, size = PORTRAIT) {
+  const [w, ht] = size;
   return div().flex_none().border(u(2)).border_color(P.ink)
     .child(div().border(u(1)).border_color(P.g2)
       .child(div().relative().w(u(w)).h(u(ht)).bg(HERO_BG)
@@ -384,10 +385,11 @@ export function heroPortrait(u, h, eq = h.eq) {
 // A piece's picture (art-src/gen_hero_icons.py): helmet 38x38, armor 58x38, weapon 18x38,
 // the weapon large (its slot in the window) 26x84. All show the whole piece.
 const ICON = { h: [38, 38], t: [58, 38], w: [18, 38], wl: [26, 84] };
-/** o.large: the weapon's large picture; o.shade: the black shape (a locked zone's piece). */
+/** o.large: the weapon's large picture; o.shade: the black shape (a locked zone's piece);
+ *  o.scale: drawn smaller (the shop's pick lines). */
 export function gearIcon(u, set, slot, o = {}) {
-  const k = slot === "w" && o.large ? "wl" : slot;
-  return image(`${ART}/hero/it-${set}-${k}${o.shade ? "-x" : ""}.png`).flex_none().w(u(ICON[k][0])).h(u(ICON[k][1]));
+  const k = slot === "w" && o.large ? "wl" : slot, s = o.scale ?? 1;
+  return image(`${ART}/hero/it-${set}-${k}${o.shade ? "-x" : ""}.png`).flex_none().w(u(ICON[k][0] * s)).h(u(ICON[k][1] * s));
 }
 /** A gear slot: sunk and faint while empty, a bronze plate with the piece on it when worn.
  *  o: { w, h, large (the weapon's large picture), aim (gold: the hovered piece goes here), tooltip, onHover }. */
@@ -420,7 +422,7 @@ export function medalIcon(u, m, got = true) {
 export function announce(got, sample = false) {
   for (const m of got ?? []) {
     const pet = medalPet(m), zone = medalZone(m);
-    notify({ title: `훈장: ${m.name}`, body: `${m.cond} · +${fmt(medalGold(m))} G${pet ? ` · 펫 ${pet.name}` : ""}${zone ? ` · 구역 ${zone.name}` : ""}${sample ? " (시험)" : ""}`,
+    notify({ title: `훈장: ${m.name}`, body: `${m.cond} · +${fmt(medalGold(m))} G${pet ? ` · 펫 ${pet.name}` : ""}${zone ? ` · 구역 ${zone.name}` : ""}${sample ? " (미리보기)" : ""}`,
       level: "success", icon: `${ART}/medal-${m.art}.png` });
   }
 }
