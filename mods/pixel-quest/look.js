@@ -82,20 +82,25 @@ export const heroMode = (v) => (v === false || v === "big-shut" ? "shut" : v ===
 export const heroToggleBig = (v) => (heroMode(v) === "big" ? true : "big");
 /** The band's fold icon: folds, and unfolds back to the state it was folded from. */
 export const heroToggleFold = (v) => (v === "big" ? "big-shut" : v === "big-shut" ? "big" : v === false ? true : false);
-/** The big panel for a sidebar width: the portrait's size (120 x 131 scaled to the panel's
- *  inside, 3x at most) and the block's height. Inside = width - root 8 - panel border 4 -
- *  padding 4 - portrait frame 6; height = portrait + root 8 + band 20 + gap 6 + border 4 +
- *  padding 4 + frame 6 + 2 to spare. */
+/** The big panel for a sidebar width: the portrait at the largest whole multiple of 120 x 131
+ *  that fits the panel's inside (1x to 3x: whole px per cell keep the dots sharp, since Herdr
+ *  stretches images smoothly), and the block's height, fitted to that portrait (never under
+ *  the open panel's, so 2x keeps the lists below where they were). Inside = width - root 8 -
+ *  panel border 4 - padding 4 - portrait frame 6; height = portrait + root 8 + band 20 +
+ *  gap 6 + border 4 + padding 4 + frame 6 + 2 to spare. Under 2x (k 1) there is no big view:
+ *  the panel shows as open (heroPx, roles/hero.js). */
 export function heroBig(sideW) {
-  const w = Math.max(0, Math.min(360, (Number(sideW) || 0) - 22));
-  const h = Math.round((w * 131) / 120);
-  return { w, h, px: h + 50 };
+  const room = Math.max(0, Math.min(360, (Number(sideW) || 0) - 22));
+  const k = Math.max(1, Math.min(3, Math.floor(room / 120)));
+  return { w: 120 * k, h: 131 * k, k, px: Math.max(131 * k + 50, HERO_PX.open) };
 }
+/** Whether the sidebar is wide enough for the big view (2x or more). */
+export const canBig = (sideW) => heroBig(sideW).k >= 2;
 /** The hero panel's height: by its state (pq.hero), folded while the sidebar is down to its rail. */
 export function heroPx(v, sideW) {
   const mode = heroMode(v);
   if (sideW < 160 || mode === "shut") return HERO_PX.shut;
-  return mode === "big" ? heroBig(sideW).px : HERO_PX.open;
+  return mode === "big" && canBig(sideW) ? heroBig(sideW).px : HERO_PX.open;
 }
 
 /** The art for a look: { tablet, deco, wall } (wall: the light layout's outer wall, else null). */

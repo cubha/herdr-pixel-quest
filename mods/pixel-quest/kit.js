@@ -377,10 +377,12 @@ export const HERO_BG = "#101729";
 /** size: [w, h] to draw it at (the sidebar's big panel), else its own 120 x 131. */
 export function heroPortrait(u, h, eq = h.eq, size = PORTRAIT) {
   const [w, ht] = size;
+  // Herdr stretches an image smoothly, so 2x and 3x use their own files (art-src/gen_hero_scaled.py).
+  const k = w / PORTRAIT[0], dir = k === 2 || k === 3 ? `x${k}/` : "";
   return div().flex_none().border(u(2)).border_color(P.ink)
     .child(div().border(u(1)).border_color(P.g2)
       .child(div().relative().w(u(w)).h(u(ht)).bg(HERO_BG)
-        .children(layers(h.sex, h.shown, eq).map((n) => image(`${ART}/${n}.png`).absolute().top(0).left(0).w(u(w)).h(u(ht))))));
+        .children(layers(h.sex, h.shown, eq).map((n) => image(`${ART}/${n.replace("hero/", `hero/${dir}`)}.png`).absolute().top(0).left(0).w(u(w)).h(u(ht))))));
 }
 // A piece's picture (art-src/gen_hero_icons.py): helmet 38x38, armor 58x38, weapon 18x38,
 // the weapon large (its slot in the window) 26x84. All show the whole piece.

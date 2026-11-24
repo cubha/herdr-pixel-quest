@@ -4,13 +4,15 @@
 // level-up banner instead, listing what the new level gives. It leaves by
 // itself after a few seconds. Click: go to that agent's pane (level up: open
 // the adventure log). A new frame or banner can be put on right there (바로 착용). props.gold:
-// the gold the quest made (one more line, "+10 G"). Copyright (c) 2026 cubha. MIT License.
+// the gold the quest made (one more line, "+10 G"). props.loot: the item that dropped
+// (loot.js drop's got): its picture and name, new to the dex or how many now. Copyright (c) 2026 cubha. MIT License.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay, run, shared, setShared } from "herdr";
 import { P, unit, root, pic, frame, small, button, rewardIcon, openJournal, coin } from "../kit.js";
 import { fmt } from "../economy.js";
+import { RAR_KO, RAR_COLOR } from "../loot.js";
 import { rewardsAt, titleOf, equipables } from "../progress.js";
 
 // Gems falling in the gem-rain banners: [left, start offset, speed px/s, art, size].
@@ -89,6 +91,15 @@ export default class Quest {
         div().max_w(u(300)).truncate().text_color(P.text).child(p.title ?? ""),
         small(u, `보상: 경험치 +1 · 누적 퀘스트 ${p.quests ?? 1}`, P.done),
       ];
+    }
+    const L = p.loot;
+    if (L) {
+      const note = L.title ? `구역 5종 완성 · 칭호 "${L.title}"` : L.first ? "처음 발견 · 도감에 기록" : L.rar === "l" ? "또 얻음 · 골드로 바꿈" : `보유 ${L.count}개`;
+      lines.push(h_flex().gap(u(6)).items_center().justify_center()
+        .child(pic(u, `loot/${L.key}`, 28))
+        .child(v_flex()
+          .child(h_flex().gap(u(4)).items_center().child(small(u, "전리품", P.muted)).child(div().text_color(RAR_COLOR[L.rar]).child(L.name)).child(small(u, RAR_KO[L.rar], RAR_COLOR[L.rar])))
+          .child(small(u, note, L.title ? P.gt : P.done))));
     }
     if (p.gold) lines.push(h_flex().gap(u(4)).items_center().justify_center().child(coin(u)).child(small(u, `+${fmt(p.gold)} G`, P.gt2)));
     const body = v_flex().relative().size_full().overflow_hidden().items_center().justify_center().gap(u(4))

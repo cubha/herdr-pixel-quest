@@ -14,7 +14,7 @@ import { h_flex, v_flex } from "gpui-base";
 import { layout, shared, setShared } from "herdr";
 import { P, unit, root, pic, small, button, eco, setEco, best, lvInfo, hero, heroPortrait, gearSlot, openHero, applyLook, texture, veil, FLOOR } from "../kit.js";
 import { SLOTS, SLOT_KO, pieceName, rankName, setSex, stepRank, cycle } from "../gear.js";
-import { heroMode, heroToggleBig, heroToggleFold, heroBig } from "../look.js";
+import { heroMode, heroToggleBig, heroToggleFold, heroBig, canBig } from "../look.js";
 
 const find = (n, id) => (n?.id === id ? n : (n?.children ?? []).map((c) => find(c, id)).find(Boolean));
 const sideW = () => find(layout(), "sidebar")?.size?.px ?? 268;
@@ -37,7 +37,9 @@ export default class Hero {
       return root(u, div().size_full().flex().items_center().justify_center()
         .child(button(u, "hero-rail", pic(u, "ico-chest", 16), () => openHero(), { pad: [1, 2], tooltip: "캐릭터" })));
     }
-    const v = shared("pq.hero"), mode = heroMode(v);
+    const v = shared("pq.hero"), wide = canBig(sideW());
+    // Under 2x there is no big view: a big panel shows as open (the setting stays, back when wider).
+    const mode = heroMode(v) === "big" && !wide ? "open" : heroMode(v);
     const h = hero();
     const set = (next, cx) => { setShared("pq.hero", next); applyLook(); cx.notify(); };
     // A 16-cell icon on the band: dim gold, a gold plate under the pointer, its name as the tooltip.
@@ -61,9 +63,8 @@ export default class Hero {
           .child(div().text_color(P.g3).child("캐릭터"))
           .when(mode !== "open", (el) => el.child(small(u, `· Lv.${lvInfo().lv} ${rankName(h.shown)}`, P.onb)))
           .child(div().flex_1())
-          .when(mode !== "shut", (el) => el.child(mode === "big"
-            ? icon("hero-zoom", "unzoom", "보통 크기로", heroToggleBig(v))
-            : icon("hero-zoom", "zoom", "초상화 크게 보기", heroToggleBig(v))))
+          .when(mode === "big", (el) => el.child(icon("hero-zoom", "unzoom", "보통 크기로", heroToggleBig(v))))
+          .when(mode === "open" && wide, (el) => el.child(icon("hero-zoom", "zoom", "초상화 크게 보기", heroToggleBig(v))))
           .child(fold)));
     if (mode === "shut") return root(u, v_flex().size_full().px(u(4)).py(u(4)).child(band));
 

@@ -46,7 +46,9 @@ panels, status gems, a torch-lit tab bar, a "quest complete" banner and
 | 시간대 연출 | 컴퓨터 시계를 따라 바뀜(새벽 5–7 · 낮 7–17 · 저녁 17–21 · 밤 21–5). 탭바 벽 양쪽 창문의 하늘과 해·달, 창문에서 석판으로 드는 빛줄기(새벽 분홍 · 낮 곧게 · 저녁 주황 · 밤 달빛), 낮에는 촛대가 꺼지고 연기만 남음. 다크의 밤은 석판 가장자리가 어두워지고 횃불 아래만 따뜻함. 라이트는 낮이 기본이고 새벽·저녁·밤에는 벽돌·바닥·석판·사이드바가 침침해지며 촛불 둘레만 밝음. 설정 창에서 끌 수 있음 |
 | 계절 장식 | 1–2월 겨울(바닥 눈 더미·고드름·작업 영역 테두리 위와 액자 위 눈) · 3–5월 봄(벚꽃 가지·들꽃·꽃잎 더미) · 6–8월 여름(늘어진 덩굴·빛버섯) · 9·11월 가을(낙엽 더미·단풍 덩굴) · 10월 할로윈(초록 불꽃·거미줄·호박등·박쥐) · 12월 크리스마스(꼬마전구·트리·화환). 석판 이끼 색도 계절 따라 바뀜. 장식은 석판 위·글자 아래 층이라 터미널 글자를 가리지 않고, 패널을 열거나 사이드바를 접어도 모서리 장식이 잘리지 않게 작업 영역 모양(5가지)에 맞는 그림을 고름. 움직이지 않음(전구·빛버섯도 켜진 채). 설정 창에서 끌 수 있고, "계절 고르기"로 자동(달력대로, 기본) 대신 봄·여름·가을·겨울 중 하나로 고정할 수 있음 |
 | 레벨업 바로 착용 | 레벨업 배너에 새로 열린 액자·배너의 "바로 착용" 버튼 |
-| 소리 | 8비트 효과음 `quest-done.mp3`(상승 아르페지오)와 `quest-blocked.mp3`(두 번 부르는 경고음) |
+| 소리 | 8비트 효과음 `quest-done.mp3`(상승 아르페지오)와 `quest-blocked.mp3`(두 번 부르는 경고음). 설정 · 알림에서 효과음 세트 7개 중 고름(Herdr 기본 · 8비트 퀘스트 · 오르골 500 G · 아케이드 800 G · 슬라임 1,200 G · 용사의 나팔(훈장 "기사 서임") · 보물 상자(전리품 도감 35종)), 세트마다 미리 듣기 |
+| 전리품 | 퀘스트 하나마다 25%로 지금 구역의 전리품(구역마다 5종, 흔함 60 · 희귀 30 · 전설 10)이 떨어져 완료 배너에 나옴. 흔함·희귀는 쌓여 그 구역 장비의 재료(투구 흔함 3 · 무기 흔함 4+희귀 1 · 갑옷 흔함 5+희귀 2), 전설은 또 얻으면 +100 G, 구역 5종을 다 모으면 +300 G와 칭호 "<구역> 수집가". 캐릭터 창 **전리품** 탭에 도감 35칸 |
+| 초상화 크게 보기 | 사이드바 크게 보기는 폭이 2배(262)·3배(382)에 들어갈 때만 정수 배율로 커짐(그보다 좁으면 확대 아이콘 없음), 캐릭터 창 초상화 모서리 돋보기는 3배. 2·3배는 따로 확대해 둔 그림(`art/hero/x2`·`x3`)을 써서 흐리지 않음 |
 
 ### 화면
 
@@ -185,14 +187,16 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `install.sh` | macOS · Linux 설치 스크립트(`--sounds`, `--light`) |
-| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.1.2`) |
+| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.1.3`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
 | `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
-| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `hero` `character`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)과 조사 고르기(`josa`)를, `gear.js`가 장비 세트·값·구매(함께 구매)·착용·인벤토리 배치·초상화 층(`pq.eco.hero`)을, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
+| `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `hero` `character`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)과 조사 고르기(`josa`)를, `gear.js`가 장비 세트·값·구매(함께 구매)·착용·인벤토리 배치·초상화 층(`pq.eco.hero`)을, `loot.js`가 전리품·드롭·재료(`pq.eco.loot`)를, `sounds.js`가 효과음 세트(`pq.eco.sounds`)를, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
 | `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 장비·초상화 층, 구역, 사용량 병합, 단축키·이름 바꾸기 글, 버전 비교·업데이트 판정), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
 | `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
 | `art-src/gen_pets.py` | 펫 12종(3단계 × 깬·쭈그린 × 좌우), 동전, 훈장 17개, 느낌표·Z·배터리 생성기. `python3 art-src/gen_pets.py mods/pixel-quest/art` |
 | `art-src/gen_hero.py` · `art-src/gen_hero_icons.py` | 캐릭터 초상화 층(바탕 · 무기 · 머리 · 갑옷 · 투구, 남녀 × 등급 × 세트)과 인벤토리·상점 아이콘 생성기 → `mods/pixel-quest/art/hero/`. 입력은 확정 도트 시안(저장소 밖) |
+| `art-src/gen_hero_scaled.py` | 초상화 층의 2·3배 그림(최근접 확대) → `mods/pixel-quest/art/hero/x2`·`x3`. Herdr는 그림을 부드럽게 늘리므로 크게 보기용으로 따로 둠 |
+| `art-src/gen_loot.py` · `art-src/gen_sounds.py` | 전리품 35종 아이콘(+못 찾은 그림자) → `art/loot/`, 효과음 세트 5개(WAV → ffmpeg mp3) → `sounds/` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
 | `art-src/gen_dungeon.py` | 던전 디테일 텍스처(석판, 벽돌 띠, 문턱, 횃불빛, 촛대, 사슬, 거미줄, 이끼) 생성기. `python3 art-src/gen_dungeon.py mods/pixel-quest/art` |
 | `art-src/gen_tablet.py` | 터미널 뒤 통짜 석판(다크·라이트) 생성기(numpy). `slab()`은 이끼를 뺀 석판도 만듦 |

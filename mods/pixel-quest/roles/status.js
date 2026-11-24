@@ -35,10 +35,11 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex, Popup } from "gpui-base";
 import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify, exec, checking } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, openHero, coin, announce, openUpdate, updateState } from "../kit.js";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, openHero, coin, announce, openUpdate, updateState, zoneNow } from "../kit.js";
 import * as U from "../update.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick, equipables } from "../progress.js";
 import * as E from "../economy.js";
+import { drop } from "../loot.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 const MOOD_KO = { sleep: "모두 쉼", walk: "작업 중", alert: "입력 대기", tired: "사용량 80% 넘음", hop: "퀘스트 완료" };
@@ -283,7 +284,7 @@ export default class Status {
     const before = lvInfo().lv;
     const n = (Number(shared("pq.quests")) || 0) + (count ? 1 : 0);
     const title = a.space_name || a.program?.name || "agent";
-    let gold = 0;
+    let gold = 0, loot = null;
     if (count) {
       setShared("pq.quests", n);
       setShared("pq.log", pushLog(shared("pq.log"), { name: title, at: Date.now() }));
@@ -291,8 +292,11 @@ export default class Status {
       // Gold, the day's count, the pet's bond, new medals (level gold follows pq.best).
       const working = agents().filter((x) => x.status === "working").length;
       const r = E.onQuest(eco(), { now: new Date(), best: best(), working });
-      setEco(r.eco);
-      gold = r.gained;
+      // The shown zone's loot may drop (loot.js): a legendary again or a zone's five pay gold.
+      const d = drop(r.eco, zoneNow());
+      setEco(d.eco);
+      gold = r.gained + (d.got?.gold ?? 0);
+      loot = d.got;
       this.medalQueue.push(...r.got);
       this.hopUntil = Date.now() + 3000;
     }
@@ -304,8 +308,8 @@ export default class Status {
     if (prev) closeOverlay(prev);
     const style = pick("banner", shared("pq.bannerStyle"), best());
     const id = openOverlay({
-      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: (wear.length ? 142 : 112) + (gold ? 16 : 0),
-      props: { role: "quest", title, agent: a.address, pane: a.pane, quests: n, style, levelUp: up ? after : null, gold },
+      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: (wear.length ? 142 : 112) + (gold ? 16 : 0) + (loot ? 34 : 0),
+      props: { role: "quest", title, agent: a.address, pane: a.pane, quests: n, style, levelUp: up ? after : null, gold, loot },
     });
     setShared("pq.banner.open", id);
   }

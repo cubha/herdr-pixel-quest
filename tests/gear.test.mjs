@@ -165,3 +165,17 @@ test("equipMany: puts on every owned pick not worn yet", () => {
   assert.equal(none.ok, false);
   assert.equal(none.eco, eco);
 });
+
+test("every portrait layer has its 2x and 3x file (Herdr stretches images smoothly; art-src/gen_hero_scaled.py)", async () => {
+  const { existsSync } = await import("node:fs");
+  const art = new URL("../mods/pixel-quest/art/", import.meta.url);
+  const eqs = [{}];
+  for (const s of G.SETS) eqs.push({ h: s }, { t: s }, { w: s }, { h: s, t: s, w: s });
+  const names = new Set();
+  for (const sex of ["m", "f"]) for (const r of G.RANKS.map((x) => x.key ?? x)) for (const eq of eqs) for (const n of G.layers(sex, r, eq)) names.add(n);
+  for (const n of names) for (const d of ["", "x2/", "x3/"]) {
+    const f = new URL(`${n.replace("hero/", `hero/${d}`)}.png`, art);
+    assert.ok(existsSync(f), `missing ${f.pathname}`);
+  }
+  assert.ok(names.size > 200);
+});

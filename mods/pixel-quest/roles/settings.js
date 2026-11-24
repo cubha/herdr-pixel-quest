@@ -4,7 +4,8 @@
 //               a locked one says how it opens), screen zoom
 //               (app.zoom_in/out), the terminal font size (the layout's, kit setTermFont), the time
 //               and season effects, and the season: 자동 (the calendar) or one pinned (pq.season)
-//   알림        alert sounds on/off, 8-bit or Herdr's own, try each
+//   알림        alert sounds on/off; the sound sets (sounds.js): try each, open a gold
+//               one, pick an open one (settings.json sounds.done / blocked)
 //   퀘스트·파티  the quest banner, the quest count reset, the party effects,
 //               the usage gauges, the pet (shown, walking), portraits back to automatic
 // Herdr's own settings (machines, updates, keys) open from the bottom button.
@@ -14,13 +15,14 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco, updateState, openUpdate } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco, setEco, coin, updateState, openUpdate } from "../kit.js";
+import { SOUND_SETS, soundNow, soundOpen, soundFile, howOpenSound, buySound, pickSound } from "../sounds.js";
+import { fmt } from "../economy.js";
 import { VERSION } from "../update.js";
 import { ZONES, layoutOf, isOpen, howOpen } from "../zones.js";
 import { titleOf } from "../progress.js";
 import { PINNED } from "../look.js";
 
-const SOUNDS = { done: "mods/pixel-quest/sounds/quest-done.mp3", blocked: "mods/pixel-quest/sounds/quest-blocked.mp3" };
 // The settings card's picture: the dark and light looks' own, else the zone's.
 const CARD = { dungeon: "look-dark-l", sunlit: "look-light-l" };
 const TABS = [["look", "모양", "ico-crystal"], ["sound", "알림", "ico-potion"], ["quest", "퀘스트·파티", "ico-key"]];
@@ -191,28 +193,45 @@ export default class Settings {
         .child(this.toggle(u, "upd-on", on, () => { setShared("pq.updateCheck", !on); if (!on) run("pixel-quest.update_check"); })));
   }
 
+  // Sound sets (sounds.js): each can be tried, locked or not; a gold one opens on its
+  // row, an open one is picked into settings.json.
   sound(u) {
     const data = this.json() ?? {};
-    const s = data.sounds ?? {};
-    const on = s.enabled !== false;
-    const ours = s.done === SOUNDS.done;
-    const pickKind = (cx, eight) => this.edit(cx, (d) => {
-      d.sounds = { ...(d.sounds ?? {}), enabled: d.sounds?.enabled ?? true };
-      if (eight) Object.assign(d.sounds, SOUNDS);
-      else { delete d.sounds.done; delete d.sounds.blocked; }
-    }, eight ? "8비트 퀘스트 소리로 바꿨습니다" : "Herdr 기본 소리로 바꿨습니다");
-    const seg = (id, label, active, act) => button(u, id, small(u, label, active ? P.g3 : P.text), act, { on: active, pad: [1, 8] });
-    const tryIt = (id, kind) => button(u, id, small(u, "▶ 들어보기", P.text), () => playSound(ours ? SOUNDS[kind] : kind), { pad: [1, 8] });
+    const on = data.sounds?.enabled !== false;
+    const now = soundNow(data);
+    const e = eco();
+    const rows = SOUND_SETS.map((st) => {
+      const open = soundOpen(e, st.key), cur = now === st.key;
+      const play = (kind, label) => button(u, `snd-${st.key}-${kind}`, small(u, label, P.text),
+        () => playSound(soundFile(st.key, kind)), { pad: [1, 6] });
+      let act;
+      if (cur) act = small(u, "✓ 사용 중", P.done);
+      else if (open) act = button(u, `snd-${st.key}-use`, small(u, "고르기", P.g3), (_e, cx) => {
+        this.edit(cx, (d) => { d.sounds = pickSound(d, eco(), st.key).data.sounds; }, `${st.name} 소리로 바꿨습니다`);
+      }, { on: true, pad: [1, 8] });
+      else if (st.open.gold) act = button(u, `snd-${st.key}-buy`, h_flex().gap(u(3)).items_center().child(coin(u))
+        .child(small(u, `${howOpenSound(st.key)}로 열기`, e.gold >= st.open.gold ? P.text : P.dim)), (_e, cx) => {
+        const r = buySound(eco(), st.key);
+        if (r.ok) setEco(r.eco);
+        this.note = r.msg; cx.notify();
+      }, { pad: [1, 8] }).when(e.gold < st.open.gold, (el) => el.opacity(0.55));
+      else act = small(u, `잠김 · ${howOpenSound(st.key)}`, P.dim);
+      return h_flex().id(`snd-row-${st.key}`).flex_none().gap(u(6)).items_center().px(u(8)).py(u(3)).bg(cur ? P.b1 : P.raised)
+        .border(u(2)).border_color(cur ? P.g2 : P.ink)
+        .child(v_flex().w(u(120)).flex_none().min_w(0)
+          .child(div().truncate().text_color(open ? P.text : P.muted).child(st.name))
+          .child(div().truncate().child(small(u, st.desc, P.dim))))
+        // Herdr's own can't be tried here: playSound("done") plays the files settings.json names.
+        .children(st.key === "herdr" ? [small(u, "Herdr에서 정한 소리", P.dim)] : [play("done", "▶ 완료"), play("blocked", "▶ 입력 필요")])
+        .child(div().flex_1())
+        .child(act);
+    });
     return v_flex().gap(u(14))
       .child(this.sect(u, "알림음",
         this.row(u, "알림음 켜기", "에이전트가 끝나거나 입력이 필요할 때",
           this.toggle(u, "snd-on", on, (cx) => this.edit(cx, (d) => { d.sounds = { ...(d.sounds ?? {}), enabled: !on }; }, on ? "알림음을 껐습니다" : "알림음을 켰습니다")))))
-      .child(this.sect(u, "소리 종류",
-        h_flex().gap(u(4))
-          .child(seg("snd-8bit", "8비트 퀘스트", ours, (_e, cx) => pickKind(cx, true)))
-          .child(seg("snd-herdr", "Herdr 기본", !ours, (_e, cx) => pickKind(cx, false))),
-        this.row(u, "완료", ours ? "상승 아르페지오" : "Herdr 기본 완료음", tryIt("try-done", "done")),
-        this.row(u, "입력 필요", ours ? "두 번 부르는 경고음" : "Herdr 기본 경고음", tryIt("try-blocked", "blocked"))));
+      .child(this.sect(u, `소리 세트 · ${fmt(e.gold)} G`, ...rows,
+        small(u, now ? "잠긴 세트도 들어 볼 수 있습니다" : "지금은 직접 정한 소리 파일을 씁니다 · 세트를 고르면 바뀝니다", P.dim)));
   }
 
   quest(u) {
