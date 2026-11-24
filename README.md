@@ -187,14 +187,15 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `install.sh` | macOS · Linux 설치 스크립트(`--sounds`, `--light`) |
-| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.1.3`) |
+| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.1.4`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
 | `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
 | `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `hero` `character`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)과 조사 고르기(`josa`)를, `gear.js`가 장비 세트·값·구매(함께 구매)·착용·인벤토리 배치·초상화 층(`pq.eco.hero`)을, `loot.js`가 전리품·드롭·재료(`pq.eco.loot`)를, `sounds.js`가 효과음 세트(`pq.eco.sounds`)를, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |
 | `tests/` · `verify.sh` | `node --test tests/*.test.mjs`(레벨·해금 계산, 골드·훈장·펫, 장비·초상화 층, 구역, 사용량 병합, 단축키·이름 바꾸기 글, 버전 비교·업데이트 판정), `bash verify.sh`(테스트 + JSON + 역할마다 `herdr-app check`) |
-| `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py art/v3` |
+| `art-src/gen_v3.py` | 도트 에셋 생성기(PIL). `python3 art-src/gen_v3.py mods/pixel-quest/art` |
 | `art-src/gen_pets.py` | 펫 12종(3단계 × 깬·쭈그린 × 좌우), 동전, 훈장 17개, 느낌표·Z·배터리 생성기. `python3 art-src/gen_pets.py mods/pixel-quest/art` |
 | `art-src/gen_hero.py` · `art-src/gen_hero_icons.py` | 캐릭터 초상화 층(바탕 · 무기 · 머리 · 갑옷 · 투구, 남녀 × 등급 × 세트)과 인벤토리·상점 아이콘 생성기 → `mods/pixel-quest/art/hero/`. 입력은 확정 도트 시안(저장소 밖) |
+| `tools/lighten.py` | 그림(PNG)·글꼴(TTF)을 픽셀·글자 모양 그대로 더 작게 다시 저장(정확한 팔레트·fontTools). 그림 생성기를 돌린 뒤 `python3 tools/lighten.py` |
 | `art-src/gen_hero_scaled.py` | 초상화 층의 2·3배 그림(최근접 확대) → `mods/pixel-quest/art/hero/x2`·`x3`. Herdr는 그림을 부드럽게 늘리므로 크게 보기용으로 따로 둠 |
 | `art-src/gen_loot.py` · `art-src/gen_sounds.py` | 전리품 35종 아이콘(+못 찾은 그림자) → `art/loot/`, 효과음 세트 5개(WAV → ffmpeg mp3) → `sounds/` |
 | `art-src/gen_extras.py` | 미리보기 그림과 8비트 효과음 생성기(PIL, ffmpeg) |
@@ -206,8 +207,6 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `art-src/gen_faces.py` | 파티 초상 48종(+잠긴 초상 실루엣) 생성기. `python3 art-src/gen_faces.py mods/pixel-quest/art` |
 | `art-src/gen_rewards.py` · `gen_battle.py` · `gen_rest.py` · `gen_thumbs.py` | 액자 6종·깃발·왕관, 칼·불꽃, 모닥불·보상상자·말풍선, 설정 창 레이아웃 미리보기 생성기(같은 방식으로 실행) |
 | `art-src/gen_party_gif.py` | README의 파티 연출 GIF. `python3 art-src/gen_party_gif.py mods/pixel-quest docs/screens/party-effects.gif` |
-| `art/` | 생성된 에셋(v3 최종, v2 이력, extras) |
-| `mockups/render-v3/` | 최종 디자인 시안(v3). 브라우저로 바로 열림 |
 | `docs/screens/` | README 화면. 캡처는 데모 스페이스에서 찍고 실제 이름은 데모 이름으로 바꿈 |
 | `tools/` | `demo.ps1`(미리보기용 데모 화면), `redact.py`(캡처 속 이름을 데모 이름으로 바꾸기), `pq-usage.js`(사용량 게이지 연결) |
 
