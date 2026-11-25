@@ -7,7 +7,7 @@
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, openRename, battle, thin, texture, FLOOR, web, bandHead } from "../kit.js";
+import { P, unit, root, pic, panel, gem, cursor, selected, small, button, chain, faceMap, agentFace, portrait, openPicker, openRename, openAgentMenu, battle, thin, texture, FLOOR, web, bandHead } from "../kit.js";
 import { agentNames, partyLines } from "../dialogs.js";
 import { agents, terminals, panes, focused, spaces, run, theme, shared, setShared, setAgentOrder, openOverlay, closeOverlay, props, window, layout } from "herdr";
 
@@ -346,7 +346,9 @@ export default class Agents {
           else if (this.hovered === a.address) this.hovered = null;
           cx.notify();
         })
-        // A double-click names the member (its tab), in the theme's rename window.
+        // Right-click opens its menu (rename · close) as a tab or space does; a double-click
+        // still names it (its tab), as on the tab bar.
+        .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openAgentMenu(a, name, names.alone(a)); })
         .on_click((e) => (e?.click_count === 2 && names.alone(a) ? openRename("agent", a.tab, name) : run("pane.focus", { pane: a.pane })))
         .child(div().id(`agent-fold-${a.address}`).relative().flex_none()
           .when(subs.length > 0, el => el.on_click((_e, cx) => {
@@ -364,7 +366,6 @@ export default class Agents {
         .child(v_flex().flex_1().min_w(0)
           .child(h_flex().min_w(0).gap(u(6)).items_center()
             .child(div().id(`agent-name-${a.address}`).min_w(0).truncate().text_color(a.focused ? P.gt : idle ? P.muted : P.text)
-              .when(names.alone(a), (el) => el.tooltip("더블클릭: 이름 바꾸기"))
               .child(name))
             .when(Boolean(machine), el => el.child(small(u, machine)))
             .child(div().flex_1())

@@ -3,7 +3,7 @@
 // the chosen item, pixel text.
 //
 // Context menus (Herdr's items). Opened as a popup with
-// props { tab: "pane" | "tab" | "space" | "global", target }.
+// props { tab: "pane" | "tab" | "space" | "agent" | "global", target }.
 // ↑/↓ move, Enter runs, Esc closes. An item is [label, command, args];
 // "worktree", renames and 단축키 open the theme's own windows instead.
 
@@ -74,6 +74,12 @@ function items(p, git) {
         ["New tab", "tab.new", { space: tg.space }],
         ["Close", "tab.close", { id: tg.id }],
       ];
+    case "agent":
+      // A party member: its tab names it only when it is alone there; close ends its pane.
+      return [
+        ...(tg.alone ? [["Rename", "agent.rename", { id: tg.tab, name: tg.name }]] : []),
+        ["Close", "agent.close", { tab: tg.tab, pane: tg.pane }],
+      ];
     case "space":
       return [
         ["Rename", "space.rename", { id: tg.id }],
@@ -135,6 +141,16 @@ export default class Menu {
     else if (it[1] === "worktree") openWorktree(it[2]);
     else if (it[1] === "tab.rename") openRename("tab", it[2].id);
     else if (it[1] === "space.rename") openRename("space", it[2].id);
+    else if (it[1] === "agent.rename") openRename("agent", it[2].id, it[2].name);
+    else if (it[1] === "agent.close") {
+      // Its tab's only pane: close the tab (the space's last tab asks first), else the pane.
+      // Nothing if it moved or ended since the menu opened.
+      const space = spaces().find((s) => s.tabs?.some((t) => t.id === it[2].tab));
+      const mine = panes().filter((pn) => pn.tab === it[2].tab);
+      if (!space || !mine.some((pn) => pn.pane === it[2].pane)) return;
+      if (mine.length === 1) closeTab(space, it[2].tab);
+      else run("pane.close", { pane: it[2].pane });
+    }
     else if (it[1] === "app.help") openHelp();
     else run(it[1], it[2]);
   }
@@ -186,7 +202,7 @@ export default class Menu {
     // Stone floor under the items, a brick band on top, a cobweb in a corner.
     const dungeon = v_flex().relative().overflow_hidden().w_full().bg(P.fill)
       .child(texture(u, ...FLOOR))
-      .child(bandHead(u, kind === "space" ? "스페이스" : kind === "tab" ? "탭" : "칸"))
+      .child(bandHead(u, kind === "space" ? "스페이스" : kind === "tab" ? "탭" : kind === "agent" ? "파티" : "칸"))
       .child(body)
       .child(web(u, "br"));
     return root(u, framed ? thin(u, "gold", dungeon).size_full() : dungeon);

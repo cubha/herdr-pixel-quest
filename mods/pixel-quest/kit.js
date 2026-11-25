@@ -537,6 +537,12 @@ export function openRename(kind, id, shown) {
   if (!spec) return run(kind !== "space" ? "tab.rename" : "space.rename", id ? { id } : {});
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 170, props: { role: "prompt", ...spec } });
 }
+/** A party member's right-click menu (role menu, tab "agent"), like the tab and space
+ *  menus: rename (when it is alone in its tab, so the tab's name is its name) and close. */
+export function openAgentMenu(a, name, alone, at) {
+  // at: where it was pressed (the party drawer floats, so Herdr's pointer may be stale there).
+  openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 200, ...(at ? { at } : {}), props: { role: "menu", frameless: true, tab: "agent", target: { tab: a.tab, pane: a.pane, name, alone } } });
+}
 /** The key list (role help), in place of Herdr's app.help. */
 export function openHelp() {
   openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 520, height: 480, props: { role: "help" } });

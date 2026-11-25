@@ -1,12 +1,13 @@
 // The party drawer: a floating block on the right edge (layout `floating`,
 // `peek`). Only the gems and portraits peek out; hover slides the names in.
-// Click a member to go to its pane, double-click to name it. Copyright (c) 2026 cubha. MIT.
+// Click a member to go to its pane, right-click for its menu (rename · close),
+// double-click to name it. Copyright (c) 2026 cubha. MIT.
 
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { agents, run, placement, panes, spaces } from "herdr";
 import { agentNames, partyLines } from "../dialogs.js";
-import { P, unit, root, gem, small, faceMap, agentFace, portrait, texture, FLOOR, openRename } from "../kit.js";
+import { P, unit, root, gem, small, faceMap, agentFace, portrait, texture, FLOOR, openRename, openAgentMenu } from "../kit.js";
 
 const WORD = { blocked: "입력 필요", done: "완료", working: "작업 중", idle: "대기" };
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
@@ -33,6 +34,7 @@ export default class Party {
       return h_flex().id(`party-${a.address}`).h(u(40)).px(u(6)).gap(u(8)).items_center().cursor_pointer()
         .hover((s) => s.bg(P.hover))
         .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .on_mouse_down("right", (e, cx) => { cx.stop_propagation(); openAgentMenu(a, name, names.alone(a), e?.position ? { x: e.position.x, y: e.position.y } : undefined); })
         .on_click((e) => (e?.click_count === 2 && names.alone(a) ? openRename("agent", a.tab, name) : run("pane.focus", { pane: a.pane })))
         .children(right ? [text, pic] : [pic, text]);
     };
