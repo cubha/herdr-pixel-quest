@@ -3,13 +3,13 @@
 // the chosen item, pixel text.
 //
 // Context menus (Herdr's items). Opened as a popup with
-// props { tab: "pane" | "tab" | "space" | "agent" | "global", target }.
+// props { tab: "pane" | "tab" | "space" | "agent" | "machine" | "global", target }.
 // ↑/↓ move, Enter runs, Esc closes. An item is [label, command, args];
 // "worktree", renames and 단축키 open the theme's own windows instead.
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { P, unit, root, thin, cursor, texture, FLOOR, web, bandHead, closeSpace, closeTab, openRename, openHelp, openWorktree } from "../kit.js";
+import { P, unit, root, thin, cursor, texture, FLOOR, web, bandHead, closeSpace, closeTab, removeMachine, openRename, openHelp, openWorktree } from "../kit.js";
 import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
@@ -29,7 +29,7 @@ async function checkout(folder, on) {
 // Herdr's item names, in the layout's language; anything unlisted stays as Herdr wrote it.
 const KO = {
   "Close pane": "칸 닫기", "Close": "닫기", "Keybinds": "단축키", "New space": "새 스페이스", "New tab": "새 탭",
-  "New worktree": "새 워크트리", "Open worktree": "워크트리 열기", "Remove worktree": "워크트리 지우기", "Rename": "이름 바꾸기",
+  "New worktree": "새 워크트리", "Open worktree": "워크트리 열기", "Remove worktree": "워크트리 지우기", "Rename": "이름 바꾸기", "Remove machine": "머신 제거",
   "Send right-clicks to pane": "우클릭을 프로그램에 보내기", "Split down": "아래로 나누기", "Split right": "오른쪽으로 나누기",
   "Use Herdr right-click menu": "Herdr 우클릭 메뉴 쓰기", "Zoom": "크게 보기",
 };
@@ -80,6 +80,9 @@ function items(p, git) {
         ...(tg.alone ? [["Rename", "agent.rename", { id: tg.tab, name: tg.name }]] : []),
         ["Close", "agent.close", { tab: tg.tab, pane: tg.pane }],
       ];
+    case "machine":
+      // Another machine (its header in the spaces list): forget it here.
+      return [["Remove machine", "machine.rm", { name: tg.name }]];
     case "space":
       return [
         ["Rename", "space.rename", { id: tg.id }],
@@ -100,7 +103,7 @@ function items(p, git) {
 }
 
 function menuIcon(command) {
-  const name = command.endsWith(".close") ? "x" : command.endsWith(".rename") ? "square-pen" : command.endsWith(".new") ? "plus" : command === "worktree" ? "git-branch" : command === "app.help" ? "terminal" : command === "app.theme" ? "settings" : command === "pane.split" ? "panel-right" : command === "pane.zoom" ? "square" : "terminal";
+  const name = command.endsWith(".close") || command === "machine.rm" ? "x" : command.endsWith(".rename") ? "square-pen" : command.endsWith(".new") ? "plus" : command === "worktree" ? "git-branch" : command === "app.help" ? "terminal" : command === "app.theme" ? "settings" : command === "pane.split" ? "panel-right" : command === "pane.zoom" ? "square" : "terminal";
   return `mods/pixel-quest/icons/${name}.svg`;
 }
 
@@ -141,6 +144,7 @@ export default class Menu {
     else if (it[1] === "worktree") openWorktree(it[2]);
     else if (it[1] === "tab.rename") openRename("tab", it[2].id);
     else if (it[1] === "space.rename") openRename("space", it[2].id);
+    else if (it[1] === "machine.rm") removeMachine(it[2].name);
     else if (it[1] === "agent.rename") openRename("agent", it[2].id, it[2].name);
     else if (it[1] === "agent.close") {
       // Its tab's only pane: close the tab (the space's last tab asks first), else the pane.
@@ -202,7 +206,7 @@ export default class Menu {
     // Stone floor under the items, a brick band on top, a cobweb in a corner.
     const dungeon = v_flex().relative().overflow_hidden().w_full().bg(P.fill)
       .child(texture(u, ...FLOOR))
-      .child(bandHead(u, kind === "space" ? "스페이스" : kind === "tab" ? "탭" : kind === "agent" ? "파티" : "칸"))
+      .child(bandHead(u, kind === "space" ? "스페이스" : kind === "tab" ? "탭" : kind === "agent" ? "파티" : kind === "machine" ? "머신" : "칸"))
       .child(body)
       .child(web(u, "br"));
     return root(u, framed ? thin(u, "gold", dungeon).size_full() : dungeon);

@@ -187,7 +187,7 @@ Herdr에서 다른 레이아웃을 고르면 테마가 빠집니다. 완전히 �
 | `themes/pixel-quest-light.json` | 라이트 테마 |
 | `install.ps1` | Windows 설치 스크립트(`-Sounds`, `-Light`, `-Palette`) |
 | `install.sh` | macOS · Linux 설치 스크립트(`--sounds`, `--light`) |
-| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.2.0`) |
+| `mods/pixel-quest/update.js` · `roles/update.js` · `update.ps1` · `update.sh` | 앱 안 업데이트: 버전 비교·확인 주기·패치 노트(단위 테스트 `tests/update.test.mjs`), 업데이트 창, 새 버전을 받아 검사한 뒤 설치 스크립트를 부르는 스크립트. 버전은 `mod.json`의 `version`과 Release 태그(`v1.2.1`) |
 | `themes/pixel-quest.json` | 테마. 터미널 ANSI 16색과 패널 색 |
 | `themes/pixel-quest-<구역>.json` · `mods/pixel-quest/zones/` | 새 구역 다섯 곳의 테마와 레이아웃(레이아웃은 설정 창에서 처음 고를 때 `layouts/`에 설치). `mods/pixel-quest/zones.js`가 구역 목록·여는 조건·색을 담당. `node tools/gen-zone-files.mjs`로 다시 만듦 |
 | `mods/pixel-quest/` | 모드 하나를 역할(role)별로 나눔: `chrome` `spaces` `agents` `tabs` `pane` `status` `menu` `newmenu` `quest` `party` `sill` `usage` `files` `picker` `journal` `changes` `settings` `palette` `confirm` `goto` `prompt` `help` `worktree` `machine` `hero` `character`. `kit.js`가 팔레트, 픽셀 단위, 프레임, 보석, 버튼을, `progress.js`가 레벨 곡선과 해금표를, `economy.js`가 골드·훈장·펫(공유 상태 `pq.eco`)과 조사 고르기(`josa`)를, `gear.js`가 장비 세트·값·구매(함께 구매)·착용·인벤토리 배치·초상화 층(`pq.eco.hero`)을, `loot.js`가 전리품·드롭·재료(`pq.eco.loot`)를, `sounds.js`가 효과음 세트(`pq.eco.sounds`)를, `dialogs.js`가 이름 바꾸기·단축키 목록의 글과 무리를 담당 |

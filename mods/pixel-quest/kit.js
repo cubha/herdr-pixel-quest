@@ -621,6 +621,14 @@ export function closeSpace(space) {
     role: "confirm", title: "스페이스를 닫을까요?", detail: `"${space.name}"의 탭과 터미널이 모두 끝납니다.`,
     command: { name: "space.close", args: { id: space.id, confirmed: true } } } });
 }
+/** Forgets another machine (`hc machine rm`), after asking: its spaces leave the list and its
+ *  terminals keep running there; adding it again brings them back. */
+export function removeMachine(name) {
+  if (!name) return;
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 340, height: 150, props: {
+    role: "confirm", title: "머신을 제거할까요?", detail: `"${name}"의 스페이스가 목록에서 빠집니다. 그쪽 터미널은 계속 돌고, 다시 추가하면 돌아옵니다.`,
+    yes: "제거", done: `${name} 제거됨`, hc: ["machine", "rm", name] } });
+}
 /** Closes a tab; its space's last tab closes the space, so that one asks first. */
 export function closeTab(space, tabId) {
   if (space && space.tabs?.length === 1) {

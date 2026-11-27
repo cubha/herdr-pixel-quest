@@ -327,6 +327,8 @@ export default class Spaces {
       const head = h_flex().id(`machine-${m ?? "local"}`).h(26).flex_none().px(collapsed ? 0 : 8).gap(7).items_center().font_family("Galmuri9").text_size(10).text_color(t.dim)
         .when(collapsed, el => el.mt(4).w(RAIL_CELL).justify_center().rounded(0).tooltip(m ? `${m} · ${connected ? "connected" : (machine?.state ?? "asleep").replace(/_/g, " ")}` : "This computer"))
         .cursor_pointer().hover(s => s.bg(t.hover))
+        // Another machine's header: right-click to remove it, as a space's row opens its menu.
+        .when(Boolean(m), el => el.on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "pixel-quest", kind: "popup", frame: "none", width: 200, props: { role: "menu", frameless: true, tab: "machine", target: { name: m } } }); }))
         .on_click((_e, cx) => {
           folded ? this.folded.delete(m) : this.folded.add(m);
           localStorage.setItem("machines.folded", JSON.stringify([...this.folded]));
