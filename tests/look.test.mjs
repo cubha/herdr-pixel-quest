@@ -200,3 +200,36 @@ test("the big panel: the portrait at a whole multiple that fits the sidebar, the
   assert.equal(L.heroPx(true, 268), L.HERO_PX.open);
   assert.equal(L.heroPx(undefined, 268), L.HERO_PX.open);
 });
+
+test("the sanctum of stars is outside the clock and the calendar: one scene per stage and box shape", () => {
+  for (const t of ["astral1", "astral3", "astral5"]) assert.equal(L.timeless(t), true, t);
+  for (const t of ["dark", "light", "ice", "moss", "astral", "astral0", "astral6", undefined]) assert.equal(L.timeless(t), false, String(t));
+  const a = L.lookArt({ theme: "astral3", phase: "night", season: "xmas", bucket: 170 });
+  assert.deepEqual(a, {
+    tablet: "mods/pixel-quest/art/look/tablet-astral-none.png",
+    deco: "mods/pixel-quest/art/look/deco-astral3-none-170.png",
+    wall: "mods/pixel-quest/art/zone/astral3/bg-work.png",
+  });
+  // The other zones still follow the phase and the season, and have no wall of their own.
+  assert.deepEqual(L.lookArt({ theme: "ice", phase: "night", season: "xmas", bucket: 170 }), {
+    tablet: "mods/pixel-quest/art/look/tablet-ice-night.png", deco: "mods/pixel-quest/art/look/deco-ice-xmas-170.png", wall: null,
+  });
+});
+
+test("the sanctum's layout text: the stage's scene, outer night and focused pane's gold; the same text when the stage stays", () => {
+  const file = JSON.stringify({ id: "root", type: "row", background: { image: "mods/pixel-quest/art/zone/astral1/bg-work.png", fit: "cover" }, children: [
+    { id: "work", type: "column", children: [{ id: "work-body", type: "row", children: [{ id: "main-wrap", type: "column", children: [
+      { id: "main", type: "block", content: { tab: "active", pane: { border: { width: 2, color: "#06070b" }, focus: { width: 2, color: "#d8ac4e" } } } }] }] }] }] });
+  const at = (theme, focus) => L.layoutWith(file, { art: L.lookArt({ theme, phase: "none", season: "none", bucket: 136 }), focus });
+  const one = JSON.parse(at("astral4", "#e1b351"));
+  const find = (n, id) => (n.id === id ? n : (n.children ?? []).map((c) => find(c, id)).find(Boolean));
+  assert.equal(one.background.image, "mods/pixel-quest/art/zone/astral4/bg-work.png");
+  assert.equal(find(one, "main-wrap").background.image, "mods/pixel-quest/art/look/tablet-astral-none.png");
+  assert.equal(find(one, "main").background.image, "mods/pixel-quest/art/look/deco-astral4-none-136.png");
+  assert.equal(find(one, "main").content.pane.focus.color, "#e1b351");
+  assert.equal(find(one, "main").content.pane.border.color, "#06070b");
+  const text = at("astral4", "#e1b351");
+  assert.equal(L.layoutWith(text, { art: L.lookArt({ theme: "astral4", phase: "none", season: "none", bucket: 136 }), focus: "#e1b351" }), text);
+  // Without a focus color (every other zone) the pane's border is left as written.
+  assert.equal(find(JSON.parse(L.layoutWith(file, { art: L.lookArt({ theme: "ice", phase: "none", season: "none", bucket: 136 }) })), "main").content.pane.focus.color, "#d8ac4e");
+});

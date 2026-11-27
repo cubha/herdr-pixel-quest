@@ -15,11 +15,11 @@
 import { div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, run, shared, setShared, closeOverlay, settings, layouts, readTextFile, writeTextFile, appHome, playSound } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco, setEco, coin, updateState, openUpdate } from "../kit.js";
+import { P, unit, root, pic, frame, plaque, small, button, texture, lvInfo, PICKS, setTermFont, applyLook, best, eco, setEco, coin, updateState, openUpdate, reb, expText } from "../kit.js";
 import { SOUND_SETS, soundNow, soundOpen, soundFile, howOpenSound, buySound, pickSound } from "../sounds.js";
 import { fmt } from "../economy.js";
 import { VERSION } from "../update.js";
-import { ZONES, layoutOf, isOpen, howOpen } from "../zones.js";
+import { ZONES, layoutOf, isOpen, howOpen, artOf } from "../zones.js";
 import { titleOf } from "../progress.js";
 import { PINNED } from "../look.js";
 
@@ -146,7 +146,7 @@ export default class Settings {
     const shown = shared("layout");
     const names = layouts();
     const e = eco();
-    const at = { best: best(), medals: e.medals, zones: e.zones };
+    const at = { best: best(), medals: e.medals, zones: e.zones, stars: reb().stars };
     const card = (z) => {
       const name = layoutOf(z.key), on = shown === name;
       const open = isOpen(z.key, at), drawn = !CARD[z.key];
@@ -155,7 +155,7 @@ export default class Settings {
         .when(can, (el) => el.cursor_pointer().hover((s) => s.border_color(P.g2)).on_click((_e, cx) => this.pickZone(cx, z)))
         .when(!open, (el) => el.on_click((_e, cx) => { this.note = `${z.name}: ${howOpen(z.key)}에 열립니다`; cx.notify(); }))
         .child(div().relative().w(u(192)).h(u(120))
-          .child(pic(u, CARD[z.key] ?? `zone/${z.key}/card-l`, 192, 120).when(!open, (el) => el.opacity(0.3)))
+          .child(pic(u, CARD[z.key] ?? `zone/${artOf(z.key, at.stars)}/card-l`, 192, 120).when(!open, (el) => el.opacity(0.3)))
           .when(!open, (el) => el.child(div().absolute().bottom(u(4)).left(u(4)).right(u(4)).flex().justify_center()
             .child(div().bg(P.ink).border(u(2)).border_color(P.stone).px(u(4)).child(small(u, `잠김 · ${howOpen(z.key)}`, P.muted))))))
         .child(h_flex().items_center().child(div().flex_1().text_color(on ? P.gt : open ? P.text : P.dim).child(z.name)).when(on, (el) => el.child(div().text_color(P.gt).child("✓"))));
@@ -241,7 +241,7 @@ export default class Settings {
     return v_flex().gap(u(14))
       .child(this.sect(u, "퀘스트",
         this.row(u, "퀘스트 완료 배너", "작업이 끝나면 4.5초 동안", this.toggle(u, "q-banner", flag("pq.banner"), () => setShared("pq.banner", !flag("pq.banner")))),
-        this.row(u, `완료한 퀘스트 ${info.q} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너와 골드·훈장·펫은 남습니다",
+        this.row(u, `${reb().stars ? `★${reb().stars} · 이번 회차 경험치` : "완료한 퀘스트"} ${expText(info.q)} · Lv.${info.lv} ${titleOf(info.lv)}`, "초기화해도 이미 얻은 초상·액자·배너와 골드·훈장·펫은 남습니다",
           this.twice(u, "q-reset", "초기화", () => { setShared("pq.quests", 0); setShared("pq.floor", null); this.note = "퀘스트 수를 0으로 되돌렸습니다"; }))))
       .child(this.sect(u, "파티",
         this.row(u, "파티 연출", "초상 옆: 작업 중 칼날 · 대기 모닥불 · 완료 보상상자 · 입력 필요 말풍선", this.toggle(u, "q-battle", flag("pq.battle"), () => setShared("pq.battle", !flag("pq.battle")))),

@@ -1,4 +1,6 @@
-// The five new zones' layout and theme files, from the dark ones (roadmap stage 3).
+// The new zones' layout and theme files, from the dark ones (roadmap stage 3's five, and
+// the sanctum of stars: one layout and one theme, written with its first stage's art —
+// the look follows the stars from there, kit.js applyLook).
 //   node tools/gen-zone-files.mjs
 // layouts/pixel-quest.json  -> mods/pixel-quest/zones/pixel-quest-<zone>.json (the settings
 //   window copies it into layouts/ the first time the zone is picked, open)
@@ -10,7 +12,8 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DRAWN, paletteOf, layoutOf } from "../mods/pixel-quest/zones.js";
+import { DRAWN, paletteOf, layoutOf, artOf, lookTheme } from "../mods/pixel-quest/zones.js";
+import { lookArt } from "../mods/pixel-quest/look.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const hex = (c) => "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
@@ -20,6 +23,7 @@ const TERM = {
   crystal: { fg: [234, 226, 246], cursor: [228, 192, 255], dim: [140, 128, 170], base: [34, 27, 58] },
   throne: { fg: [244, 232, 208], cursor: [255, 226, 122], dim: [160, 132, 128], base: [50, 21, 31] },
   moss: { fg: [226, 232, 208], cursor: [216, 214, 128], dim: [128, 144, 126], base: [27, 37, 34] },
+  astral: { fg: [226, 234, 246], cursor: [255, 226, 140], dim: [124, 138, 170], base: [12, 15, 34] },   // art-src/astral/astral.py
 };
 // The UI colors the dark theme has beyond the palette, in each zone's hue (chrome4 rest).
 const MORE = {
@@ -28,6 +32,7 @@ const MORE = {
   crystal: { selected: "#402f54", popover: "#2c1d3d", input: "#584f63" },
   throne: { selected: "#50333d", popover: "#3a212a", input: "#5e4f54" },
   moss: { selected: "#395044", popover: "#263a30", input: "#525e58" },
+  astral: { selected: "#2a3148", popover: "#1a2034", input: "#454855" },
 };
 
 const darkLayout = JSON.parse(readFileSync(join(ROOT, "layouts/pixel-quest.json"), "utf8"));
@@ -39,17 +44,18 @@ const ZONE_FILES = 1;   // bump when the layout files change
 mkdirSync(join(ROOT, "mods/pixel-quest/zones"), { recursive: true });
 for (const z of DRAWN) {
   const p = paletteOf(z), t = TERM[z], name = layoutOf(z);
+  const art = lookArt({ theme: lookTheme(name, 1), phase: "none", season: "none", bucket: 136 });
   const L = structuredClone(darkLayout);
   delete L.cloned_from;
   // The settings window replaces an installed copy whose version differs (art paths changed).
   L.pq_zone = ZONE_FILES;
   L.theme = name;
   L.preview = `${ART}/zone/${z}/card.png`;
-  L.background = { image: `${ART}/zone/${z}/bg-work.png`, fit: "cover" };
+  L.background = { image: `${ART}/zone/${artOf(z, 1)}/bg-work.png`, fit: "cover" };
   L.divider = { ...L.divider, color: p.ink };
-  find(L, "main-wrap").background = { image: `${ART}/look/tablet-${z}-none.png`, fit: "cover" };
+  find(L, "main-wrap").background = { image: art.tablet, fit: "cover" };
   const main = find(L, "main");
-  main.background = { image: `${ART}/look/deco-${z}-none-136.png`, fit: "cover" };
+  main.background = { image: art.deco, fit: "cover" };
   main.content.pane.border = { ...main.content.pane.border, color: p.ink };
   main.content.pane.focus = { ...main.content.pane.focus, color: p.g2 };
   const panel = find(L, "panel");

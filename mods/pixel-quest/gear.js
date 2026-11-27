@@ -7,18 +7,24 @@
 // Copyright (c) 2026 cubha. MIT License.
 
 import { ZONES, isOpen, howOpen, zoneBy } from "./zones.js";
-import { fmt, josa } from "./economy.js";
+import { fmt, josa, short, pay } from "./economy.js";
 
 export const SETS = ZONES.map((z) => z.key);
 /** A set's short name (the piece's name: "던전 투구"). */
-export const SET_KO = { dungeon: "던전", sunlit: "햇살", ice: "얼음", moss: "이끼", lava: "용암", crystal: "수정", throne: "왕좌" };
+export const SET_KO = { dungeon: "던전", sunlit: "햇살", ice: "얼음", moss: "이끼", lava: "용암", crystal: "수정", throne: "왕좌", astral: "성소" };
 export const SLOTS = ["h", "t", "w"];
 export const SLOT_KO = { h: "투구", t: "갑옷", w: "무기" };
 /** Each zone's color: the strip under a piece and its name. */
-export const SET_COLOR = { dungeon: "#9aa3b8", sunlit: "#e6cf8e", ice: "#8fd0ee", moss: "#6fbf7a", lava: "#ff8a3a", crystal: "#b48cf0", throne: "#e0b040" };
-const BASE = { dungeon: 300, sunlit: 300, ice: 500, moss: 600, lava: 800, crystal: 1000, throne: 1500 };
+export const SET_COLOR = { dungeon: "#9aa3b8", sunlit: "#e6cf8e", ice: "#8fd0ee", moss: "#6fbf7a", lava: "#ff8a3a", crystal: "#b48cf0", throne: "#e0b040", astral: "#7ae0c8" };
+const BASE = { dungeon: 300, sunlit: 300, ice: 500, moss: 600, lava: 800, crystal: 1000, throne: 1500, astral: 800 };
 const MUL = { h: 1, w: 1.5, t: 2 };
 export const price = (set, slot) => Math.round(BASE[set] * MUL[slot]);
+// The sanctum set (the rebirth's): star shards on top of the gold, no loot, and each piece
+// upgrades twice (hero.up[slot]: 0..2) into a more splendid look.
+const SHARD = { astral: { h: 6, w: 9, t: 12 } };
+export const shardPrice = (set, slot) => SHARD[set]?.[slot] ?? 0;
+export const GEAR_UP = [{ h: 6, w: 8, t: 10, gold: 500 }, { h: 8, w: 10, t: 12, gold: 800 }];
+export const UP_SET = "astral";
 export const pieceName = (set, slot) => `${SET_KO[set]} ${SLOT_KO[slot]}`;
 const valid = (set, slot) => SETS.includes(set) && SLOTS.includes(slot);
 
@@ -31,7 +37,7 @@ export const rankOpen = (key, best) => { const r = RANKS.find((x) => x.key === k
 /** The highest rank open at a level. */
 export const topRank = (best) => RANKS.filter((r) => Math.max(1, Number(best) || 1) >= r.lv).pop().key;
 
-export const emptyHero = () => ({ sex: "m", rank: null, own: {}, eq: { h: null, t: null, w: null } });
+export const emptyHero = () => ({ sex: "m", rank: null, own: {}, eq: { h: null, t: null, w: null }, up: { h: 0, t: 0, w: 0 } });
 /** eco.hero as stored, filled in (an old or broken value never throws; a worn piece that isn't owned comes off). */
 export function readHero(eco) {
   const v = eco?.hero && typeof eco.hero === "object" ? eco.hero : {};
@@ -39,7 +45,9 @@ export function readHero(eco) {
   if (v.own && typeof v.own === "object") for (const k of Object.keys(v.own)) { const [s, l] = k.split("-"); if (v.own[k] && valid(s, l)) own[k] = 1; }
   const eq = {};
   for (const l of SLOTS) { const s = v.eq?.[l]; eq[l] = s && own[`${s}-${l}`] ? s : null; }
-  return { sex: v.sex === "f" ? "f" : "m", rank: RANKS.some((r) => r.key === v.rank) ? v.rank : null, own, eq };
+  const up = {};
+  for (const l of SLOTS) up[l] = own[`${UP_SET}-${l}`] ? Math.max(0, Math.min(GEAR_UP.length, Math.floor(Number(v.up?.[l]) || 0))) : 0;
+  return { sex: v.sex === "f" ? "f" : "m", rank: RANKS.some((r) => r.key === v.rank) ? v.rank : null, own, eq, up };
 }
 const put = (eco, hero) => ({ ...eco, hero });
 
@@ -77,8 +85,22 @@ export function buyGear(eco, set, slot, at = {}) {
   const h = readHero(eco), name = pieceName(set, slot), p = price(set, slot);
   if (!setOpen(set, at)) return { eco, ok: false, msg: `먼저 구역을 열어야 합니다 · ${zoneName(set)}: ${setHow(set)}` };
   if (h.own[`${set}-${slot}`]) return { eco, ok: false, msg: `${name}: 이미 보유한 장비입니다` };
+  const sh = shardPrice(set, slot);
+  if (sh) { const s = short(eco, { shard: sh, gold: p }); if (s) return { eco, ok: false, msg: `${name}: ${s}` }; }
   if ((eco.gold ?? 0) < p) return { eco, ok: false, msg: `${name}: 골드가 ${fmt(p - (eco.gold ?? 0))} G 부족합니다` };
-  return { eco: { ...eco, gold: eco.gold - p, hero: { ...h, own: { ...h.own, [`${set}-${slot}`]: 1 } } }, ok: true, msg: `${josa(name, "을/를")} 구매했습니다 · 인벤토리에 넣었습니다` };
+  return { eco: { ...pay(eco, { shard: sh, gold: p }), hero: { ...h, own: { ...h.own, [`${set}-${slot}`]: 1 } } }, ok: true, msg: `${josa(name, "을/를")} 구매했습니다 · 인벤토리에 넣었습니다` };
+}
+
+/** A sanctum piece's next upgrade (two in all): shards and gold. */
+export function upgradeGear(eco, slot) {
+  const h = readHero(eco);
+  if (!SLOTS.includes(slot) || !h.own[`${UP_SET}-${slot}`]) return { eco, ok: false, msg: "보유하지 않은 장비입니다" };
+  const name = pieceName(UP_SET, slot), up = h.up[slot];
+  if (up >= GEAR_UP.length) return { eco, ok: false, msg: `${name}: 더 승급할 수 없습니다` };
+  const c = { shard: GEAR_UP[up][slot], gold: GEAR_UP[up].gold };
+  const s = short(eco, c);
+  if (s) return { eco, ok: false, msg: `${name} 승급: ${s}` };
+  return { eco: { ...pay(eco, c), hero: { ...h, up: { ...h.up, [slot]: up + 1 } } }, ok: true, msg: `${josa(name, "이/가")} ${up + 2}단계로 승급했습니다` };
 }
 
 /** Puts an owned piece on (whatever was in that slot goes back to the bag). */
@@ -113,21 +135,21 @@ export function quote(eco, picks = {}, at = {}) {
   const rows = SLOTS.filter((l) => valid(picks?.[l], l)).map((slot) => {
     const set = picks[slot], own = Boolean(h.own[`${set}-${slot}`]);
     const state = own ? (h.eq[slot] === set ? "worn" : "own") : setOpen(set, at) ? "buy" : "lock";
-    return { slot, set, name: pieceName(set, slot), price: price(set, slot), state };
+    return { slot, set, name: pieceName(set, slot), price: price(set, slot), shard: shardPrice(set, slot), state };
   });
   const buy = rows.filter((r) => r.state === "buy");
-  const total = buy.reduce((a, r) => a + r.price, 0);
-  return { rows, buy, total, short: Math.max(0, total - (eco.gold ?? 0)), wear: rows.filter((r) => r.state === "own") };
+  const total = buy.reduce((a, r) => a + r.price, 0), shards = buy.reduce((a, r) => a + r.shard, 0);
+  return { rows, buy, total, shards, short: Math.max(0, total - (eco.gold ?? 0)), shardShort: Math.max(0, shards - (Number(eco.shards) || 0)), wear: rows.filter((r) => r.state === "own") };
 }
 /** Buys every buyable pick at once, or none of them (short of gold). They go into the bag. */
 export function buyMany(eco, picks, at = {}) {
   const q = quote(eco, picks, at);
   if (!q.buy.length) return { eco, ok: false, msg: "구매할 장비가 없습니다" };
-  if (q.short > 0) return { eco, ok: false, msg: `골드가 ${fmt(q.short)} G 부족합니다` };
+  if (q.short > 0 || q.shardShort > 0) return { eco, ok: false, msg: short(eco, { shard: q.shards, gold: q.total }) };
   const h = readHero(eco), own = { ...h.own };
   for (const r of q.buy) own[`${r.set}-${r.slot}`] = 1;
   const what = q.buy.length === 1 ? josa(q.buy[0].name, "을/를") : `${q.buy.length}개를`;
-  return { eco: { ...eco, gold: eco.gold - q.total, hero: { ...h, own } }, ok: true, msg: `${what} 구매했습니다 · 인벤토리에 넣었습니다` };
+  return { eco: { ...pay(eco, { shard: q.shards, gold: q.total }), hero: { ...h, own } }, ok: true, msg: `${what} 구매했습니다 · 인벤토리에 넣었습니다` };
 }
 /** Puts on every owned pick not worn yet (the picks tried on, kept). */
 export function equipMany(eco, picks) {
@@ -173,15 +195,20 @@ export function pack(eco) {
  *  goes over it). With armor: the rank's head and bare neck as the helmet leaves them, the
  *  armor, the hair that lies over armor, the helmet. Without armor: the figure in the rank's
  *  own clothes, with that helmet on. */
-export function layers(sex, rank, eq = {}) {
+export function layers(sex, rank, eq = {}, up = {}) {
   const ok = (l) => (eq[l] && SETS.includes(eq[l]) ? eq[l] : null);
   const h = ok("h"), t = ok("t"), w = ok("w");
+  // The sanctum set: a drawing per upgrade; its helmet leaves the head as the dungeon's does.
+  const g = (l, set) => (set === UP_SET ? `${set}${1 + Math.max(0, Math.min(GEAR_UP.length, Math.floor(Number(up?.[l]) || 0)))}` : set);
+  const head = h === UP_SET ? "dungeon" : h || "x";
   const out = [`hero/bg-${sex}-${rank}`];
-  if (w) out.push(`hero/gw-${sex}-${w}`);
-  if (!t) return [...out, `hero/fg-${sex}-${rank}-${h || "x"}`];
-  out.push(`hero/hd-${sex}-${rank}-${h || "x"}`, `hero/ga-${sex}-${t}`, `hero/ho-${sex}-${rank}-${h || "x"}`);
-  if (h) out.push(`hero/gh-${sex}-${h}`);
+  if (w) out.push(`hero/gw-${sex}-${g("w", w)}`);
+  if (!t) return h === UP_SET ? [...out, `hero/fg-${sex}-${rank}-${head}`, `hero/gh-${sex}-${g("h", h)}`] : [...out, `hero/fg-${sex}-${rank}-${head}`];
+  out.push(`hero/hd-${sex}-${rank}-${head}`, `hero/ga-${sex}-${g("t", t)}`, `hero/ho-${sex}-${rank}-${head}`);
+  if (h) out.push(`hero/gh-${sex}-${g("h", h)}`);
   return out;
 }
+/** A piece's icon (the bag, the slots, the shop): the sanctum set's by its upgrade. */
+export const icon = (set, slot, up = {}, k = slot) => `hero/it-${set === UP_SET ? `${set}${1 + Math.max(0, Math.min(GEAR_UP.length, Math.floor(Number(up?.[slot]) || 0)))}` : set}-${k}`;
 /** The portrait's size (120 x 131 cells, one px each, as the confirmed mockup has it). */
 export const PORTRAIT = [120, 131];

@@ -3,7 +3,8 @@
 // pixel buttons, "설정" / "머신 추가" as bronze buttons.
 
 import { View, div, image, svg } from "gpui-kit";
-import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto, openMachine, openUpdate, updateState } from "../kit.js";
+import { P, unit, root, pic, button, small, lvInfo, best, openJournal, openSettings, openGoto, openMachine, openUpdate, updateState, eco, reb } from "../kit.js";
+import { canReborn } from "../reborn.js";
 import { titleOf, goldBadge } from "../progress.js";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, run, props, window, shared, setShared, updates, layout, spaces, agents } from "herdr";
@@ -33,12 +34,20 @@ function toggleSidebar() {
 export default class WorkspaceChrome {
   // The level and title (progress.js); gold from Lv.19. Click: the adventure log.
   badge(u) {
-    const lv = lvInfo().lv, gold = goldBadge(best());
+    const lv = lvInfo().lv, gold = goldBadge(best()), stars = reb().stars;
+    // A rebirth is open: the badge says so and blinks until it is done (the log opens on 환생).
+    if (canReborn(eco(), lv)) {
+      return div().id("lv-badge").flex_none().border(u(2)).border_color("#bff5ea").bg(P.ink).px(u(4)).cursor_pointer()
+        .hover((s) => s.border_color(P.g3))
+        .tooltip(`Lv.${lv} ${titleOf(lv)} · 환생할 수 있습니다.`)
+        .on_click(() => openJournal("reborn"))
+        .child(small(u, "★ 환생 가능", "#bff5ea").loop("opacity", { from: 0.4, to: 1, period: 1000 }));
+    }
     return div().id("lv-badge").flex_none().border(u(2)).border_color(gold ? P.g3 : P.b1).bg(gold ? P.g0 : P.chrome).px(u(4)).cursor_pointer()
       .hover((s) => s.border_color(P.g2))
       .tooltip("모험 일지")
       .on_click(() => openJournal())
-      .child(small(u, `Lv.${lv} ${titleOf(lv)}`, gold ? P.g3 : P.gt).when(gold, (el) => el.loop("opacity", { from: 0.6, to: 1, period: 1200 })));
+      .child(small(u, `${stars ? `★${stars} ` : ""}Lv.${lv} ${titleOf(lv)}`, gold ? P.g3 : P.gt).when(gold, (el) => el.loop("opacity", { from: 0.6, to: 1, period: 1200 })));
   }
 
   render() {

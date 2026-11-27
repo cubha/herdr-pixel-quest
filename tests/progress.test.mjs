@@ -18,7 +18,8 @@ test("level from quest count; today's 17 stays Lv.4", () => {
   assert.equal(G.levelOf(5), 2);
   assert.equal(G.levelOf(17), 4);
   assert.equal(G.levelOf(620), 20);
-  assert.equal(G.levelOf(10000) > 20, true);
+  assert.equal(G.levelOf(10000) > 20, true); // levels never stop
+  assert.equal(G.levelOf(715), 21);
 });
 
 test("progress inside a level", () => {
@@ -55,7 +56,8 @@ test("portrait unlock levels follow the table", () => {
 });
 
 test("frames, banners, titles and the badge unlock by level", () => {
-  assert.deepEqual(G.FRAMES.map((f) => [f.key, f.lv]), [["wood", 1], ["bronze", 2], ["silver", 6], ["gold", 10], ["rune", 14], ["crown", 18]]);
+  assert.deepEqual(G.FRAMES.filter((f) => !f.shop).map((f) => [f.key, f.lv]), [["wood", 1], ["bronze", 2], ["silver", 6], ["gold", 10], ["rune", 14], ["crown", 18]]);
+  assert.deepEqual(G.FRAMES.filter((f) => f.shop).map((f) => f.key), ["star"]);   // the star shop's (tests/reborn.test.mjs)
   assert.deepEqual(G.BANNERS.map((b) => [b.key, b.lv]), [["basic", 1], ["flag", 4], ["torch", 8], ["gems", 12], ["crown", 16], ["legend", 20]]);
   assert.equal(G.unlocked("frame", "bronze", 1), false);
   assert.equal(G.unlocked("frame", "bronze", 2), true);

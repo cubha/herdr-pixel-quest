@@ -89,7 +89,7 @@ export default class Quest {
     } else {
       lines = [
         div().max_w(u(300)).truncate().text_color(P.text).child(p.title ?? ""),
-        small(u, `보상: 경험치 +1 · 누적 퀘스트 ${p.quests ?? 1}`, P.done),
+        small(u, `보상: 경험치 +${p.exp ?? 1} · 누적 ${p.exp > 1 ? "경험치" : "퀘스트"} ${p.quests ?? 1}`, P.done),
       ];
     }
     const L = p.loot;
@@ -101,6 +101,10 @@ export default class Quest {
           .child(h_flex().gap(u(4)).items_center().child(small(u, "전리품", P.muted)).child(div().text_color(RAR_COLOR[L.rar]).child(L.name)).child(small(u, RAR_KO[L.rar], RAR_COLOR[L.rar])))
           .child(small(u, note, L.title ? P.gt : P.done))));
     }
+    // Lv.20 of a run: a rebirth is open. Before the first one the guide is a press away.
+    if (p.reborn) lines.push(h_flex().gap(u(6)).items_center().justify_center()
+      .child(pic(u, "shard", 16)).child(div().text_color("#bff5ea").child("이제 환생할 수 있습니다."))
+      .when(p.reborn === "first", (el) => el.child(button(u, "quest-guide", small(u, "환생 안내", P.g3), (_e, cx) => { cx.stop_propagation(); openJournal("reborn", true); close(); }, { on: true, pad: [1, 6] }))));
     if (p.gold) lines.push(h_flex().gap(u(4)).items_center().justify_center().child(coin(u)).child(small(u, `+${fmt(p.gold)} G`, P.gt2)));
     const body = v_flex().relative().size_full().overflow_hidden().items_center().justify_center().gap(u(4))
       .children(deco)

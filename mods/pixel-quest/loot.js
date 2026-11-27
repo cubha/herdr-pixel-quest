@@ -64,6 +64,14 @@ export function stockOf(eco, zone, rar) {
 /** The latest title, or null. */
 export const titleNow = (eco) => { const t = readLoot(eco).titles; return t.length ? t[t.length - 1] : null; };
 
+/** The zone a quest's loot comes from: the shown one, or (a zone with no loot of its own: the
+ *  sanctum) any of the others at random. */
+export function lootZone(zone, rand = Math.random) {
+  if (LOOT[zone]) return zone;
+  const all = Object.keys(LOOT);
+  return all[Math.min(all.length - 1, Math.floor(rand() * all.length))];
+}
+
 /** A finished quest's drop from zone. rand: three draws (drop, rarity, which one).
  *  got: null, or { id, zone, key, name, rar, first, count (in stock now), gold, title }. */
 export function drop(eco, zone, rand = Math.random) {
@@ -93,6 +101,7 @@ export function mats(eco, picks, at = {}) {
   const q = quote(eco, picks, at);
   const need = {};
   for (const r of q.buy) {
+    if (!LOOT[r.set]) continue;   // the sanctum set takes star shards, not loot
     if (!need[r.set]) need[r.set] = { c: 0, r: 0 };
     const n = need[r.set];
     n.c += RECIPE[r.slot].c; n.r += RECIPE[r.slot].r;

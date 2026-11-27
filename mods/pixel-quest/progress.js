@@ -18,18 +18,22 @@ export function total(n) {
   return t;
 }
 
-/** The level a quest count reaches. */
+/** The level a quest count reaches. It never stops: past Lv.20 (MAX_LV: the last reward,
+ *  and where a rebirth opens) levels go on, and that EXP also earns star shards (reborn.js). */
 export function levelOf(q) {
   let l = 1;
   while (total(l + 1) <= (q ?? 0)) l++;
   return l;
 }
+const span = (lv, q) => {
+  const from = total(lv), to = total(lv + 1);
+  return { lv, q, from, to, left: to - q, frac: Math.max(0, Math.min(1, (q - from) / (to - from))) };
+};
 
 /** Where q sits inside its level: { lv, q, from, to, left, frac }. */
 export function progress(q) {
   q = Math.max(0, q ?? 0);
-  const lv = levelOf(q), from = total(lv), to = total(lv + 1);
-  return { lv, q, from, to, left: to - q, frac: (q - from) / (to - from) };
+  return span(levelOf(q), q);
 }
 
 /** The level the first release showed: one up every five quests. */
@@ -39,9 +43,7 @@ export const oldLevel = (q) => 1 + Math.floor((q ?? 0) / 5);
  *  day, so nobody's level drops; the curve takes over once it gets there). */
 export function progressAt(q, floor) {
   q = Math.max(0, q ?? 0);
-  const lv = Math.max(levelOf(q), Number(floor) || 1);
-  const from = total(lv), to = total(lv + 1);
-  return { lv, q, from, to, left: to - q, frac: Math.max(0, Math.min(1, (q - from) / (to - from))) };
+  return span(Math.max(levelOf(q), Number(floor) || 1), q);
 }
 
 /** The highest level reached: never lower than before. */
@@ -86,7 +88,11 @@ export function faceName(face) {
 export const FRAMES = [
   { key: "wood", name: "나무", lv: 1 }, { key: "bronze", name: "청동", lv: 2 }, { key: "silver", name: "은", lv: 6 },
   { key: "gold", name: "금", lv: 10 }, { key: "rune", name: "룬", lv: 14 }, { key: "crown", name: "왕관", lv: 18 },
+  // bought in the star shop (reborn.js buyFrame): open while it is among the bought ones.
+  { key: "star", name: "별", shop: true },
 ];
+/** Frames with an ornament over the top edge (drawn 36 x 44, the rest 36 x 36). */
+export const TALL_FRAMES = ["crown", "star"];
 export const BANNERS = [
   { key: "basic", name: "기본", lv: 1 }, { key: "flag", name: "깃발", lv: 4 }, { key: "torch", name: "횃불", lv: 8 },
   { key: "gems", name: "보석 비", lv: 12 }, { key: "crown", name: "왕관", lv: 16 }, { key: "legend", name: "전설", lv: 20 },
@@ -143,13 +149,14 @@ export const unlockedFaces = (lv) => FACES.filter((f) => faceLevel(f) <= lv);
 export const autoPool = (lv) => [...BASE, ...FACES.filter((f) => !BASE.includes(f) && faceLevel(f) <= lv)];
 
 const LOOKS = { frame: FRAMES, banner: BANNERS };
-/** Whether a frame or banner is open at lv. */
-export function unlocked(kind, key, lv) {
+/** Whether a frame or banner is open at lv (own: the ones bought, pq.eco.frames). */
+export function unlocked(kind, key, lv, own = []) {
   const it = LOOKS[kind]?.find((x) => x.key === key);
-  return Boolean(it) && it.lv <= lv;
+  if (!it) return false;
+  return it.shop ? Array.isArray(own) && own.includes(key) : it.lv <= lv;
 }
 /** The chosen frame/banner if open at lv, else the first one. */
-export const pick = (kind, key, lv) => (unlocked(kind, key, lv) ? key : LOOKS[kind][0].key);
+export const pick = (kind, key, lv, own = []) => (unlocked(kind, key, lv, own) ? key : LOOKS[kind][0].key);
 
 /** Adds a finished quest ({ name, at }) on top of the log, keeping 30. */
 export const pushLog = (log, entry, max = 30) => [entry, ...(Array.isArray(log) ? log : [])].slice(0, max);

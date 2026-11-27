@@ -2,6 +2,7 @@
 // Plain data and arithmetic (no Herdr imports) so tests/economy.test.mjs can run it
 // under node. Everything lives in one shared value, `pq.eco`:
 //   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones, hero }
+// (and the rebirth's own: stars, shards, shardLv, over, frames; reborn.js)
 // (hero: the player's portrait and gear, gear.js; every function here carries it along as it is)
 // total: quests ever (a quest reset leaves it), lvPaid: the best level already paid
 // for (level-up gold follows pq.best, so a reset never pays twice), days: quests per
@@ -44,7 +45,22 @@ export const PETS = [
   { key: "rooster", name: "수탉", price: 0, medal: "rooster" },
   { key: "crownkit", name: "왕관 고양이", price: 0, medal: "legend" },
 ];
-export const petOf = (key) => PETS.find((p) => p.key === key);
+/** The reborn's pet (shards and gold, after the first rebirth). It grows by upgrades, not by
+ *  bond, and stands apart from the twelve of the dex. */
+export const PETS_STAR = { key: "star", name: "달 망토 정령", price: 1500, shard: 8 };
+/** Its two upgrades. */
+export const PET_UP = [{ shard: 10, gold: 800 }, { shard: 15, gold: 1200 }];
+export const petOf = (key) => (key === PETS_STAR.key ? PETS_STAR : PETS.find((p) => p.key === key));
+
+// ---- a price in shards and gold (the star shop) ----
+export const costText = (c) => [c.shard ? `별조각 ${c.shard}개` : "", c.gold ? `${fmt(c.gold)} G` : ""].filter(Boolean).join(" · ");
+/** What is missing for a price, as words, or null when it can be paid. */
+export function short(eco, c) {
+  const s = Math.max(0, (c.shard ?? 0) - (Number(eco?.shards) || 0)), g = Math.max(0, (c.gold ?? 0) - (Number(eco?.gold) || 0));
+  if (!s && !g) return null;
+  return [s ? `별조각이 ${s}개` : "", g ? `골드가 ${fmt(g)} G` : ""].filter(Boolean).join(", ") + " 부족합니다";
+}
+export const pay = (eco, c) => ({ ...eco, gold: (Number(eco.gold) || 0) - (c.gold ?? 0), shards: (Number(eco.shards) || 0) - (c.shard ?? 0) });
 
 // unit: what the remaining count is in (개 = quests, for the bubble's nearest medal).
 export const MEDALS = [
@@ -109,7 +125,7 @@ export function read(v) {
   if (!Array.isArray(e.zones)) e.zones = [];
   return e;
 }
-const owned = (eco) => Object.keys(eco.pets).length;
+const owned = (eco) => Object.keys(eco.pets).filter((k) => k !== PETS_STAR.key).length;
 const today = (eco, now) => eco.days[dayKey(now)] ?? 0;
 
 // have / need for the counted medals; hour medals are met at the quest's moment.
@@ -186,13 +202,14 @@ export function start(quests, best, now) {
 /** A finished quest. ctx: { now, best (after this quest), working }. Returns the new
  *  state, the medals it brought and all the gold it made. */
 export function onQuest(eco, ctx) {
-  const now = ctx.now, best = Math.max(1, ctx.best ?? 1);
-  const lv = Math.max(0, best - eco.lvPaid);
+  // lv: the run's level (level gold is paid again in each run; reborn.js sets lvPaid back to 1).
+  const now = ctx.now, best = Math.max(1, ctx.best ?? 1), run = Math.max(1, ctx.lv ?? best);
+  const lv = Math.max(0, run - eco.lvPaid);
   const g = GOLD.quest + lv * GOLD.level;
   const season = seasonOf(now.getMonth() + 1);
   let e = {
     ...eco,
-    gold: eco.gold + g, earned: eco.earned + g, total: eco.total + 1, lvPaid: Math.max(eco.lvPaid, best),
+    gold: eco.gold + g, earned: eco.earned + g, total: eco.total + 1, lvPaid: Math.max(eco.lvPaid, run),
     days: addDay(eco.days, dayKey(now)),
     qseasons: eco.qseasons.includes(season) ? eco.qseasons : [...eco.qseasons, season],
     partyMax: Math.max(eco.partyMax, ctx.working ?? 0),
@@ -213,10 +230,15 @@ export function buy(eco, key, ctx = { now: new Date() }) {
   const p = petOf(key);
   if (!p || !p.price) return { eco, ok: false, got: [], msg: p ? `${p.name}: 상점에서 판매하지 않습니다` : "없는 펫입니다" };
   if (eco.pets[key]) return { eco, ok: false, got: [], msg: `${p.name}: 이미 보유한 펫입니다` };
+  if (p.shard) {
+    if (!(Number(eco.stars) > 0)) return { eco, ok: false, got: [], msg: `${p.name}: 첫 환생 뒤에 구매할 수 있습니다` };
+    const s = short(eco, { shard: p.shard, gold: p.price });
+    if (s) return { eco, ok: false, got: [], msg: `${p.name}: ${s}` };
+  }
   if (eco.gold < p.price) return { eco, ok: false, got: [], msg: `${p.name}: 골드가 ${fmt(p.price - eco.gold)} G 부족합니다` };
-  const e = { ...eco, gold: eco.gold - p.price, pets: { ...eco.pets, [key]: { bond: 0 } }, pet: eco.pet ?? key };
+  const e = { ...pay(eco, { shard: p.shard, gold: p.price }), pets: { ...eco.pets, [key]: { bond: 0 } }, pet: eco.pet ?? key };
   const r = award(e, { best: 1, ...ctx });
-  return { eco: r.eco, ok: true, got: r.got, msg: `${josa(p.name, "을/를")} 구매했습니다 · 펫 탭에서 데려갈 수 있습니다` };
+  return { eco: r.eco, ok: true, got: r.got, msg: `${josa(p.name, "을/를")} 구매했습니다${p.shard ? ". [데려가기]를 누르면 함께 다닙니다." : " · 펫 탭에서 데려갈 수 있습니다"}` };
 }
 
 // Zones for sale (the rest open by level or medal): price and name from zones.js, one place.
@@ -233,8 +255,19 @@ export function buyZone(eco, key) {
   return { eco: { ...eco, gold: eco.gold - price, zones: [...have, key] }, ok: true, msg: `${josa(name, "이/가")} 열렸습니다 · 설정 · 모양에서 고를 수 있습니다` };
 }
 
+/** The spirit's next upgrade (it has two): shards and gold. */
+export function upgradePet(eco) {
+  const p = PETS_STAR, own = eco.pets?.[p.key];
+  if (!own) return { eco, ok: false, msg: `${p.name}: 보유하지 않은 펫입니다` };
+  const up = Math.max(0, Math.min(PET_UP.length, Math.floor(Number(own.up) || 0)));
+  if (up >= PET_UP.length) return { eco, ok: false, msg: `${p.name}: 더 승급할 수 없습니다` };
+  const s = short(eco, PET_UP[up]);
+  if (s) return { eco, ok: false, msg: `${p.name} 승급: ${s}` };
+  return { eco: { ...pay(eco, PET_UP[up]), pets: { ...eco.pets, [p.key]: { ...own, up: up + 1 } } }, ok: true, msg: `${josa(p.name, "이/가")} ${up + 2}단계로 승급했습니다` };
+}
+
 /** How to get a pet, as the dex says it. */
-export const howTo = (p) => (p.price ? `상점에서 ${fmt(p.price)} G` : `훈장 "${medalOf(p.medal).name}"`);
+export const howTo = (p) => (p.shard ? `별조각 상점에서 ${costText({ shard: p.shard, gold: p.price })}` : p.price ? `상점에서 ${fmt(p.price)} G` : `훈장 "${medalOf(p.medal).name}"`);
 
 /** The pet along (an owned one), or none (null). */
 export function choose(eco, key) {
@@ -249,10 +282,19 @@ export function choose(eco, key) {
 export const GROW = [50, 200];
 export const stageOf = (bond) => ((bond ?? 0) >= GROW[1] ? 3 : (bond ?? 0) >= GROW[0] ? 2 : 1);
 export const SIZE = { 1: [24, 20], 2: [28, 24], 3: [32, 28] };
-/** The picture for a pet: stage by bond, crouched (asleep, drained) or up, facing right. */
-export function petArt(key, bond, crouch, right) {
-  const s = stageOf(bond);
-  return { name: `pet-${key}-${s}-${crouch ? "s" : "a"}${right ? "-r" : ""}`, w: SIZE[s][0], h: SIZE[s][1] };
+/** A pet's stage: by bond (own: its record, or the bond alone); the spirit's by its upgrades. */
+export function petStage(key, own) {
+  const o = own && typeof own === "object" ? own : { bond: own };
+  return key === PETS_STAR.key ? 1 + Math.max(0, Math.min(PET_UP.length, Math.floor(Number(o.up) || 0))) : stageOf(o.bond);
+}
+// The spirit's pictures have sizes of their own (art-src/gen_star.py): asleep its cape spreads
+// on the ground, and the third stage carries ribbons of light.
+const STAR_SIZE = { "1-a": [24, 20], "1-s": [32, 22], "2-a": [28, 24], "2-s": [36, 28], "3-a": [40, 28], "3-s": [42, 36] };
+/** The picture for a pet: its stage, crouched (asleep, drained) or up, facing right. */
+export function petArt(key, own, crouch, right) {
+  const s = petStage(key, own), kind = crouch ? "s" : "a";
+  const [w, h] = key === PETS_STAR.key ? STAR_SIZE[`${s}-${kind}`] : SIZE[s];
+  return { name: `pet-${key}-${s}-${kind}${right ? "-r" : ""}`, w, h };
 }
 
 /** One mood at a time: waiting > a quest just done > drained > working > rest. */

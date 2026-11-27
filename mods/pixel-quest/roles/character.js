@@ -11,6 +11,10 @@
 // unfound ones as a shape; a click names it on the strip.
 // 상점: 장비 (seven sets, piece by piece, once the set's zone is open), 펫 (the eight for
 // gold and the four medal ones; an owned one can come along) and 구역 (the zone for gold).
+// 별 (the star shop, reborn.js): the rebirth itself, then what star shards and gold buy: the
+// moon cape spirit and its two upgrades, the sanctum set's pieces and theirs, the star frame
+// and the star sounds. One pick; the right side shows it (an upgrade as it will look), its
+// price in shards and gold, and the button. A rebirth asks twice.
 // 장비: a pick per slot (another piece of that slot replaces it, the same one again drops
 // it), all tried on the portrait together; the right side lists the picks and buys every
 // buyable one at once ([구매], all or none, gold and the set's zone's loot together), wears the owned ones ([착용]) or drops them
@@ -22,10 +26,12 @@
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { props, closeOverlay } from "herdr";
-import { P, unit, root, pic, frame, plaque, small, button, eco, setEco, coin, announce, best, hero, heroPortrait, gearIcon, gearSlot, HERO_BG, lvInfo, zoneNow } from "../kit.js";
-import { PETS, GROW, buy, choose, howTo, fmt, petArt, stageOf, buyZone, ZONE_PRICE } from "../economy.js";
+import { P, unit, root, pic, frame, plaque, small, button, eco, setEco, coin, announce, best, hero, heroPortrait, gearIcon, gearSlot, HERO_BG, lvInfo, zoneNow, reb, shard, expText, doReborn, framePic } from "../kit.js";
+import { PETS, PETS_STAR, PET_UP, GROW, buy, choose, howTo, fmt, petArt, petStage, stageOf, buyZone, ZONE_PRICE, upgradePet, short } from "../economy.js";
+import { MAX_STARS, REBORN_SHARDS, FRAME_COST, mult, canReborn, hasFrame, buyFrame, overLeft } from "../reborn.js";
+import { soundBy, soundOpen, buySound } from "../sounds.js";
 import { zoneBy } from "../zones.js";
-import { SETS, SLOTS, SLOT_KO, SET_COLOR, RANKS, BAG, PORTRAIT, price, pieceName, rankOpen, rankName, setRank, setSex, setOpen, setHow, zoneName, equip, unequip, pack, quote, equipMany } from "../gear.js";
+import { UP_SET, GEAR_UP, shardPrice, buyGear, upgradeGear, SETS, SLOTS, SLOT_KO, SET_COLOR, RANKS, BAG, PORTRAIT, price, pieceName, rankOpen, rankName, setRank, setSex, setOpen, setHow, zoneName, equip, unequip, pack, quote, equipMany } from "../gear.js";
 import { LOOT, RAR_KO, RAR_COLOR, readLoot, foundIn, dexCount, titleNow, itemOf, mats, buyWithMats } from "../loot.js";
 
 const OWN = "#7fd66b";     // "보유" on bronze
@@ -35,7 +41,8 @@ export default class Character {
   init() {
     const p = props() ?? {};
     this.tab = ["shop", "loot"].includes(p.tab) ? p.tab : "bag";
-    this.sub = ["gear", "pet", "zone"].includes(p.sub) ? p.sub : "gear";
+    this.sub = ["gear", "pet", "zone", "star"].includes(p.sub) ? p.sub : "gear";
+    this.arm = false;   // the rebirth button, pressed once
     this.hint = null;
     this.info = null;   // the piece under the pointer: { set, slot, on (worn) }
     this.sel = null;    // the pet / zone tab's pick: { k: "pet", key } | { k: "zone", key }
@@ -46,7 +53,7 @@ export default class Character {
 
   close() { closeOverlay(props()?.overlay); }
 
-  at() { const e = eco(); return { best: best(), medals: e.medals, zones: e.zones }; }
+  at() { const e = eco(); return { best: best(), medals: e.medals, zones: e.zones, stars: reb().stars }; }
 
   hover(info) {
     return (on, cx) => {
@@ -226,7 +233,8 @@ export default class Character {
   shop(u, h) {
     const e = eco(), at = this.at(), s = this.sel;
     const sub = (k, label) => button(u, `ch-sub-${k}`, small(u, label, this.sub === k ? P.g3 : P.text),
-      (_e, cx) => { this.sub = k; this.sel = null; this.hint = null; cx.notify(); }, { on: this.sub === k, pad: [1, 8] });
+      (_e, cx) => { this.sub = k; this.sel = null; this.hint = null; this.arm = false; cx.notify(); }, { on: this.sub === k, pad: [1, 8] });
+    if (this.sub === "star") return this.star(u, h, e, sub);
     let list;
     if (this.sub === "gear") {
       list = v_flex().id("ch-gear-list").flex_1().min_h(0).gap(u(4)).overflow_y_scrollbar().children(SETS.map((set) => {
@@ -244,7 +252,7 @@ export default class Character {
     } else if (this.sub === "pet") {
       list = h_flex().id("ch-pet-list").flex_1().min_h(0).flex_wrap().content_start().gap(u(4)).overflow_y_scrollbar().children(PETS.map((p) => {
         const own = e.pets[p.key], on = s?.k === "pet" && s.key === p.key, along = e.pet === p.key;
-        const art = own ? petArt(p.key, own.bond ?? 0, false, false) : p.price ? petArt(p.key, 0, false, false) : { name: `pet-${p.key}-1-s-x`, w: 24, h: 20 };
+        const art = own ? petArt(p.key, own, false, false) : p.price ? petArt(p.key, 0, false, false) : { name: `pet-${p.key}-1-s-x`, w: 24, h: 20 };
         const tag = !own && !p.price ? small(u, "훈장", P.dim) : this.tag(u, Boolean(own), false, e.gold < p.price, p.price, along ? "동행" : "보유");
         return this.pick(u, `ch-pick-pet-${p.key}`, on, { own: Boolean(own), lock: !own && !p.price }, pic(u, art.name, art.w, art.h), tag,
           (cx) => { this.sel = { k: "pet", key: p.key }; this.hint = null; cx.notify(); });
@@ -263,7 +271,7 @@ export default class Character {
     let view;
     if (s?.k === "pet") {
       const own = e.pets[s.key];
-      const art = own ? petArt(s.key, own.bond ?? 0, false, false) : x.pet.price ? petArt(s.key, 0, false, false) : { name: `pet-${s.key}-1-s-x`, w: 24, h: 20 };
+      const art = own ? petArt(s.key, own, false, false) : x.pet.price ? petArt(s.key, 0, false, false) : { name: `pet-${s.key}-1-s-x`, w: 24, h: 20 };
       view = box(div().when(!own && !x.pet.price, (el) => el.opacity(0.4)).child(pic(u, art.name, art.w, art.h)));
     } else if (s?.k === "zone") view = box(pic(u, `zone/${s.key}/emblem`, 24, 28));
     else view = heroPortrait(u, h);
@@ -291,9 +299,101 @@ export default class Character {
     return this.shopFrame(u, e, sub, list, detail);
   }
 
+  // ---- 상점 · 별조각 ----
+  /** The star shop's items as they stand: { key, name, color, sub, art (the tile), view (the
+   *  detail's picture), cost ({ shard, gold } or null: nothing more to pay), label, off, tag, go }. */
+  starItems(u, h, e) {
+    const rb = reb(), open = rb.stars > 0;
+    const say = (r, cx) => { if (r.ok) setEco(r.eco); this.hint = r.msg; cx.notify(); };
+    const box = (child) => div().flex_none().border(u(2)).border_color(P.ink).child(div().border(u(1)).border_color(P.g2)
+      .child(div().w(u(PORTRAIT[0])).h(u(PORTRAIT[1])).bg(HERO_BG).flex().items_center().justify_center().child(child)));
+    const STAR = "#bff5ea";
+    const items = [];
+    // the moon cape spirit: bought, then upgraded twice
+    const pet = PETS_STAR, own = e.pets[pet.key], st = own ? petStage(pet.key, own) : 1, maxed = st > PET_UP.length;
+    const pa = (stage, k = 1) => { const a = petArt(pet.key, { up: stage - 1 }, false, false); return pic(u, k > 1 ? `${a.name}-x${k}` : a.name, a.w * k, a.h * k); };
+    items.push({
+      key: "pet", name: pet.name, color: STAR, art: pa(st), view: box(pa(own && !maxed ? st + 1 : st, 2)),
+      sub: !own ? "상태 줄에서 함께 다닙니다." : maxed ? "최고 단계입니다." : `${st + 1}단계로 승급합니다.\n(위 그림: 승급 뒤 모습)`,
+      note: own ? (e.pet === pet.key ? "함께 다니는 중입니다." : "") : "승급하면 모습이 바뀝니다.",
+      cost: !own ? { shard: pet.shard, gold: pet.price } : maxed ? null : PET_UP[st - 1], label: !own ? "구매" : maxed ? "최고 단계" : "승급", off: maxed,
+      tag: own ? small(u, `${st}단계`, OWN) : null, along: own && e.pet !== pet.key,
+      go: (cx) => { if (!own) { const r = buy(eco(), pet.key, { now: new Date(), best: best() }); if (r.ok) announce(r.got); say(r, cx); } else say(upgradePet(eco()), cx); },
+    });
+    // the sanctum set's pieces: bought (also from the 장비 tab, tried on), then upgraded twice
+    for (const l of ["h", "w", "t"]) {
+      const has = Boolean(h.own[`${UP_SET}-${l}`]), up = h.up[l], maxed = up >= GEAR_UP.length, next = has && !maxed ? up + 1 : up;
+      const tried = { ...h, up: { ...h.up, [l]: next } };
+      items.push({
+        key: `gear-${l}`, name: pieceName(UP_SET, l), color: SET_COLOR[UP_SET], art: gearIcon(u, UP_SET, l, { up: { [l]: up } }),
+        view: heroPortrait(u, tried, { ...h.eq, [l]: UP_SET }),
+        sub: !has ? `별의 성소 세트 ${SLOT_KO[l]}입니다.` : maxed ? "최고 단계입니다." : `${up + 2}단계로 승급합니다.\n(위 그림: 승급 뒤 모습)`,
+        note: has ? (h.eq[l] === UP_SET ? "착용 중입니다." : "인벤토리에 있습니다.") : "",
+        cost: !has ? { shard: shardPrice(UP_SET, l), gold: price(UP_SET, l) } : maxed ? null : { shard: GEAR_UP[up][l], gold: GEAR_UP[up].gold },
+        label: !has ? "구매" : maxed ? "최고 단계" : "승급", off: maxed, tag: has ? small(u, `${up + 1}단계`, OWN) : null, w: l === "t" ? 62 : l === "w" ? 50 : 48,
+        go: (cx) => say(has ? upgradeGear(eco(), l) : buyGear(eco(), UP_SET, l, this.at()), cx),
+      });
+    }
+    const fr = hasFrame(e);
+    items.push({
+      key: "frame", name: "별 액자", color: STAR, art: div().flex_none().child(pic(u, "pft-star", 18, 23)),
+      view: box(div().relative().w(u(36)).h(u(46)).child(framePic(u, "star").absolute().top(0).left(0)).child(pic(u, "face-helm-gold", 24).absolute().top(u(16)).left(u(6)))),
+      sub: "파티 전체의 초상 액자입니다.", note: fr ? "모험 일지의 꾸미기에서\n고를 수 있습니다." : "",
+      cost: fr ? null : FRAME_COST, label: fr ? "보유" : "구매", off: fr, tag: fr ? small(u, "보유", OWN) : null, go: (cx) => say(buyFrame(eco()), cx),
+    });
+    const snd = soundBy("star"), so = soundOpen(e, "star");
+    items.push({
+      key: "sound", name: `효과음 "${snd.name}"`, color: STAR, art: pic(u, "ico-scroll", 16), view: box(pic(u, "ico-scroll-x3", 48)),
+      sub: `알림 소리 세트입니다.\n(${snd.desc})`, note: so ? "설정의 알림에서\n고를 수 있습니다." : "",
+      cost: so ? null : { shard: snd.open.shard, gold: snd.open.gold }, label: so ? "보유" : "구매", off: so, tag: so ? small(u, "보유", OWN) : null, go: (cx) => say(buySound(eco(), "star"), cx),
+    });
+    // before the first rebirth everything but the rebirth is shut
+    return items.map((x) => (open ? x : { ...x, lock: true, off: true, label: "잠김", note: "첫 환생 뒤에 열립니다." }));
+  }
+
+  star(u, h, e, sub) {
+    const rb = reb(), items = this.starItems(u, h, e);
+    const cur = items.find((x) => x.key === this.sel?.key) ?? null;
+    const priceTag = (x) => h_flex().gap(u(2)).items_center().child(shard(u)).child(small(u, String(x.cost.shard), rb.shards < x.cost.shard ? P.poor : P.onb));
+    const tiles = items.map((x) => this.pick(u, `ch-pick-star-${x.key}`, cur?.key === x.key, { own: !x.cost, lock: x.lock }, x.art,
+      x.lock ? small(u, "잠김", P.dim) : x.tag ?? (x.cost ? priceTag(x) : small(u, "보유", OWN)),
+      (cx) => { this.sel = { k: "star", key: x.key }; this.hint = null; cx.notify(); }, x.w ?? 60));
+    const head = v_flex().id("ch-star-head").flex_none().px(u(6)).py(u(3)).gap(u(1)).bg(P.chrome).border(u(2)).border_color(P.ink)
+      .child(h_flex().gap(u(6)).items_center()
+        .child(div().text_color(P.g3).child(rb.stars ? "★".repeat(rb.stars) + "☆".repeat(MAX_STARS - rb.stars) : "☆".repeat(MAX_STARS)))
+        .child(div().flex_1())
+        .child(shard(u)).child(div().text_color(P.gt).child(`${fmt(rb.shards)}개`)))
+      .child(small(u, rb.stars ? `성급 ★${rb.stars}` : "환생하면 열립니다. (모험 일지의 환생 탭)", P.muted));
+    const list = v_flex().flex_1().min_h(0).gap(u(6))
+      .child(head)
+      .child(h_flex().id("ch-star-list").flex_1().min_h(0).flex_wrap().content_start().gap(u(4)).overflow_y_scrollbar().children(tiles));
+    const line = (el) => h_flex().w_full().justify_center().min_w(0).child(el);
+    // the detail column is narrow: a line per " · " part, none cut short
+    const rows = (text, color) => String(text).split("\n").filter(Boolean).map((t) => line(small(u, t, color)));
+    let detail = v_flex().flex_1().min_w(0).gap(u(4)).items_center().child(cur ? cur.view : heroPortrait(u, h));
+    if (!cur) detail = detail.child(line(small(u, "아이템을 누르면 여기에", P.dim))).child(line(small(u, "모습과 가격이 보입니다", P.dim)));
+    else {
+      const miss = cur.cost ? short(e, cur.cost) : null;
+      const off = cur.off || Boolean(miss);
+      const cost = cur.cost ? h_flex().gap(u(3)).items_center()
+        .child(shard(u)).child(small(u, `${cur.cost.shard}개`, rb.shards < cur.cost.shard ? P.poor : P.gt))
+        .child(div().w(u(4)))
+        .child(coin(u)).child(small(u, `${fmt(cur.cost.gold)} G`, e.gold < cur.cost.gold ? P.poor : P.gt)) : null;
+      detail = detail
+        .child(line(div().truncate().text_color(cur.color).child(cur.name)))
+        .children(rows(cur.sub, P.muted))
+        .children(rows(miss && !cur.off ? miss.replace(", ", ",\n") : cur.note, miss && !cur.off ? P.poor : P.dim))
+        .when(Boolean(cost), (el) => el.child(line(cost)))
+        .child(h_flex().gap(u(4)).justify_center()
+          .child(button(u, "ch-star-go", small(u, cur.label, off ? P.dim : P.g3), (_e, cx) => { if (off) { this.hint = miss ?? cur.note; cx.notify(); return; } cur.go(cx); }, { pad: [1, 12] }).when(off, (el) => el.opacity(0.55)))
+          .when(Boolean(cur.along), (el) => el.child(button(u, "ch-star-along", small(u, "데려가기", P.text), (_e, cx) => { const r = choose(eco(), PETS_STAR.key); if (r.ok) setEco(r.eco); this.hint = r.msg; cx.notify(); }, { pad: [1, 8] }))));
+    }
+    return this.shopFrame(u, e, sub, list, detail);
+  }
+
   shopFrame(u, e, sub, list, detail) {
     return v_flex().flex_1().min_h(0).gap(u(6))
-      .child(h_flex().gap(u(4)).items_center().child(sub("gear", "장비")).child(sub("pet", `펫 ${Object.keys(e.pets).length} / ${PETS.length}`)).child(sub("zone", "구역"))
+      .child(h_flex().gap(u(4)).items_center().child(sub("gear", "장비")).child(sub("pet", `펫 ${PETS.filter((p) => e.pets[p.key]).length} / ${PETS.length}`)).child(sub("zone", "구역")).child(sub("star", "별조각"))
         .when(this.sub === "gear", (el) => el.child(div().flex_1()).child(small(u, `고른 부위 ${SLOTS.filter((l) => this.picks[l]).length} / 3`, P.muted))))
       .child(h_flex().flex_1().min_h(0).gap(u(8)).items_start()
         .child(v_flex().w(u(256)).flex_none().h_full().min_h(0).child(list))
@@ -306,7 +406,7 @@ export default class Character {
     const tried = { ...h.eq };
     for (const r of q.rows) tried[r.slot] = r.set;
     const done = (r, cx) => { if (r.ok) setEco(r.eco); this.hint = r.msg; cx.notify(); };
-    const STATE = { buy: (r) => [`${fmt(r.price)} G`, q.short > 0 ? P.poor : P.gt], own: () => ["보유", OWN], worn: () => ["착용 중", OWN], lock: () => ["잠김", P.dim] };
+    const STATE = { buy: (r) => [`${r.shard ? `별조각 ${r.shard} · ` : ""}${fmt(r.price)} G`, q.short > 0 || (r.shard && q.shardShort > 0) ? P.poor : P.gt], own: () => ["보유", OWN], worn: () => ["착용 중", OWN], lock: () => ["잠김", P.dim] };
     const lines = SLOTS.map((l) => {
       const r = q.rows.find((x) => x.slot === l);
       const line = h_flex().id(`ch-line-${l}`).w_full().h(u(20)).px(u(4)).gap(u(4)).items_center().bg(P.chrome).border(u(1)).border_color(P.ink);
@@ -335,14 +435,17 @@ export default class Character {
     const gold = h_flex().id("ch-mats-gold").w_full().gap(u(6)).items_center()
       .child(div().flex_1().child(small(u, "골드", P.gt2)))
       .child(small(u, `${fmt(e.gold)}/${fmt(q.total)}`, q.short > 0 ? P.poor : OWN));
-    const need = v_flex().w_full().child(gold).children(m.sets.map((x) => {
+    const stars = h_flex().id("ch-mats-shard").w_full().gap(u(6)).items_center()
+      .child(div().flex_1().child(small(u, "별조각", P.gt2)))
+      .child(small(u, `${fmt(reb().shards)}/${fmt(q.shards)}`, q.shardShort > 0 ? P.poor : OWN));
+    const need = v_flex().w_full().child(gold).when(q.shards > 0, (el) => el.child(stars)).children(m.sets.map((x) => {
       const part = (rar, c) => c.need ? small(u, `${RAR_KO[rar]} ${c.have}/${c.need}`, c.have >= c.need ? OWN : P.poor) : null;
       return h_flex().id(`ch-mats-${x.set}`).w_full().gap(u(6)).items_center()
         .child(div().flex_1().min_w(0).truncate().child(small(u, zoneName(x.set), SET_COLOR[x.set])))
         .children([part("c", x.c), part("r", x.r)].filter(Boolean));
     }));
-    const buyOff = !q.buy.length || q.short > 0 || m.short;
-    const buyLabel = !q.buy.length ? "구매" : q.short > 0 ? `${fmt(q.short)} G 부족` : m.short ? "재료 부족" : `구매 · ${q.buy.length}개 · ${fmt(q.total)} G + 재료`;
+    const buyOff = !q.buy.length || q.short > 0 || q.shardShort > 0 || m.short;
+    const buyLabel = !q.buy.length ? "구매" : q.short > 0 ? `${fmt(q.short)} G 부족` : q.shardShort > 0 ? `별조각 ${q.shardShort}개 부족` : m.short ? "재료 부족" : `구매 · ${q.buy.length}개 · ${fmt(q.total)} G + 재료`;
     const btn = (id, label, off, go) => button(u, id, small(u, label, off ? P.dim : id === "ch-buy" ? P.g3 : P.text), go, { pad: [1, 8] }).when(off, (el) => el.opacity(0.55));
     return v_flex().flex_1().min_w(0).gap(u(4)).items_center()
       .child(this.lens(u, h, tried, "shop"))
@@ -365,7 +468,8 @@ export default class Character {
     if (this.zoom) return this.shell(u, this.zoomView(u, h), [4, 10]);
     const hint = this.hint ?? (this.tab === "bag" ? "인벤토리의 장비를 누르면 착용합니다 · 장비 칸을 누르면 해제합니다"
       : this.tab === "loot" ? `퀘스트를 끝내면 지금 구역(${zoneName(zoneNow())})의 전리품이 떨어집니다`
-      : this.sub === "gear" ? "장비 = 골드 + 그 세트 구역의 전리품"
+      : this.sub === "gear" ? "장비 = 골드 + 그 세트 구역의 전리품 (성소 세트 = 골드 + 별조각)"
+      : this.sub === "star" ? "별조각은 환생할 때와 Lv.20 이후 경험치 40마다 받습니다."
       : "아이템을 누르면 오른쪽에 정보와 가격이 보입니다");
     const body = v_flex().size_full().gap(u(6))
       .child(plaque(u, h_flex().gap(u(6)).items_center().child(pic(u, "ico-chest-open", 16)).child("캐릭터")))

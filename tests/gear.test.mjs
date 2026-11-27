@@ -8,12 +8,12 @@ import { empty } from "../mods/pixel-quest/economy.js";
 const rich = (gold = 100000) => ({ ...empty(), gold });
 const ALL = { best: 20, medals: { streak7: 1, legend: 1 }, zones: ["crystal"] };
 
-test("seven sets, three slots, prices by zone and piece (22,500 G in all)", () => {
-  assert.deepEqual(G.SETS, ["dungeon", "sunlit", "ice", "moss", "lava", "crystal", "throne"]);
+test("seven zone sets and the sanctum set, three slots, prices by zone and piece (22,500 G for the seven)", () => {
+  assert.deepEqual(G.SETS, ["dungeon", "sunlit", "ice", "moss", "lava", "crystal", "throne", "astral"]);
   assert.deepEqual([G.price("dungeon", "h"), G.price("dungeon", "w"), G.price("dungeon", "t")], [300, 450, 600]);
   assert.deepEqual([G.price("throne", "h"), G.price("throne", "w"), G.price("throne", "t")], [1500, 2250, 3000]);
   let sum = 0;
-  for (const s of G.SETS) for (const l of G.SLOTS) sum += G.price(s, l);
+  for (const s of G.SETS.filter((x) => x !== "astral")) for (const l of G.SLOTS) sum += G.price(s, l);
   assert.equal(sum, 22500);
   assert.equal(G.pieceName("lava", "w"), "용암 무기");
 });
@@ -110,7 +110,9 @@ test("a stored value that is old or broken is read without throwing", () => {
   assert.deepEqual(G.readHero({}), G.emptyHero());
   assert.deepEqual(G.readHero({ hero: "x" }), G.emptyHero());
   const h = G.readHero({ hero: { sex: "f", rank: "nope", own: { "ice-h": 1, "bad-key": 1, "ice-z": 1 }, eq: { h: "ice", t: "lava", w: 3 } } });
-  assert.deepEqual(h, { sex: "f", rank: null, own: { "ice-h": 1 }, eq: { h: "ice", t: null, w: null } });
+  assert.deepEqual(h, { sex: "f", rank: null, own: { "ice-h": 1 }, eq: { h: "ice", t: null, w: null }, up: { h: 0, t: 0, w: 0 } });
+  // an upgrade counts only on an owned sanctum piece, two at most
+  assert.deepEqual(G.readHero({ hero: { own: { "astral-h": 1 }, up: { h: 7, t: 2 } } }).up, { h: 2, t: 0, w: 0 });
   assert.equal(G.setSex(empty(), "f").hero.sex, "f");
 });
 
@@ -172,7 +174,8 @@ test("every portrait layer has its 2x and 3x file (Herdr stretches images smooth
   const eqs = [{}];
   for (const s of G.SETS) eqs.push({ h: s }, { t: s }, { w: s }, { h: s, t: s, w: s });
   const names = new Set();
-  for (const sex of ["m", "f"]) for (const r of G.RANKS.map((x) => x.key ?? x)) for (const eq of eqs) for (const n of G.layers(sex, r, eq)) names.add(n);
+  // (the sanctum set has a drawing per upgrade)
+  for (const sex of ["m", "f"]) for (const r of G.RANKS.map((x) => x.key ?? x)) for (const eq of eqs) for (const k of [0, 1, 2]) for (const n of G.layers(sex, r, eq, { h: k, t: k, w: k })) names.add(n);
   for (const n of names) for (const d of ["", "x2/", "x3/"]) {
     const f = new URL(`${n.replace("hero/", `hero/${d}`)}.png`, art);
     assert.ok(existsSync(f), `missing ${f.pathname}`);

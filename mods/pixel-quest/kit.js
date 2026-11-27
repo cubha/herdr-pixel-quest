@@ -11,12 +11,13 @@ import { div, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { standing } from "./update.js";
 import { settings, theme, shared, setShared, openOverlay, run, watchFolder, appHome, spaces, focused, readTextFile, writeTextFile, notify, window as hwin } from "herdr";
-import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick } from "./progress.js";
+import { FACES, BASE, ROWS, autoPool, faceLevel, bestAfter, progressAt, pick, TALL_FRAMES } from "./progress.js";
 import { renameSpec } from "./dialogs.js";
 import { read as readEco, fmt, medalGold, medalPet, medalZone } from "./economy.js";
-import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim, sidebarW, heroPx } from "./look.js";
-import { zoneOf, lookTheme, paletteOf, DRAWN, DRESS } from "./zones.js";
-import { readHero, rankNow, layers, PORTRAIT } from "./gear.js";
+import { lookNow, lookArt, layoutWith, panelState, mainArea, bucketOf, dim, sidebarW, heroPx, timeless } from "./look.js";
+import { zoneOf, lookTheme, paletteOf, artOf, DRAWN, DRESS, ASTRAL_FRAME } from "./zones.js";
+import { readHero, rankNow, layers, icon as gearArt, PORTRAIT } from "./gear.js";
+import { readReborn, reborn, settle, mult, canReborn } from "./reborn.js";
 
 export const ART = "mods/pixel-quest/art";
 export const SND = "mods/pixel-quest/sounds";
@@ -51,6 +52,9 @@ export const P = {
   light: false,
   // the zone with art of its own (zones.js DRAWN), or null (the dungeon, the sunlit chamber)
   zone: null,
+  // the sanctum of stars: its art by stage (astral1..astral5, zones.js artOf) and its gold
+  // frames' own ramp (brighter with the stars); null everywhere else
+  stage: null, f1: null, f2: null, f3: null,
 };
 
 // The daylight palette for the pixel-quest-light layout: blue-grey slate
@@ -68,6 +72,8 @@ const LIGHT = {
 const LIGHT_ART = new Set(["floor", "strip", "sill"]);
 /** Art each zone draws its own way (`zone/<zone>/<name>.png`, art-src/gen_zones.py). */
 const ZONE_ART = new Set(["floor", "strip", "sill", "knob-gold", "emblem", "wordmark", "orn-l", "orn-r", "chain", "torch", "torch-glow", "sconce", "sconce-b", "sconce-halo"]);
+/** ... of which the sanctum draws these per stage (`zone/astralN/<name>.png`, art-src/gen_astral.py). */
+const STAGE_ART = new Set(["floor", "strip", "sill", "knob-gold"]);
 
 /** Light when the shown theme's terminal background is light. */
 function isLight() {
@@ -79,7 +85,7 @@ function isLight() {
 
 // Frame bevels: gold and bronze follow the zone's metal (read at draw time).
 const RAMPS = {
-  gold: () => ({ tl: P.g3, br: P.g1, mid: P.g2 }),
+  gold: () => ({ tl: P.f3 ?? P.g3, br: P.f1 ?? P.g1, mid: P.f2 ?? P.g2 }),
   bronze: () => ({ tl: P.b3, br: P.b1, mid: P.b2 }),
   red: () => ({ tl: "#e0564f", br: "#8a1a1a", mid: "#c0392b" }),
 };
@@ -103,7 +109,10 @@ export function unit(o = {}) {
   // A zone repaints the stone and the gold (zones.js), never in the light look.
   const zk = light ? null : zoneNow();
   P.zone = DRAWN.includes(zk) ? zk : null;
-  if (P.zone) Object.assign(P, paletteOf(P.zone));
+  // The sanctum grows with the stars: its stage picks the art and the frames' gold.
+  const stars = P.zone === "astral" ? reb().stars : 0;
+  if (P.zone) Object.assign(P, paletteOf(P.zone, stars));
+  P.stage = P.zone === "astral" ? artOf(P.zone, stars) : null;
   const lk = look();
   P.phase = light && o.dim !== false ? lk.phase : "none";
   if (light && o.dim !== false) for (const k of DIMMED) P[k] = dim(LIGHT[k], "light", lk.phase);
@@ -115,7 +124,7 @@ export function unit(o = {}) {
 
 /** A PNG from the art folder at its own size (w, h: file px). */
 export function pic(u, name, w, h = w) {
-  const file = P.zone && ZONE_ART.has(name) ? `zone/${P.zone}/${name}` : P.light && LIGHT_ART.has(name) ? `${name}-slate` : name;
+  const file = P.zone && ZONE_ART.has(name) ? `zone/${P.stage && STAGE_ART.has(name) ? P.stage : P.zone}/${name}` : P.light && LIGHT_ART.has(name) ? `${name}-slate` : name;
   return image(`${ART}/${file}.png`).flex_none().w(u(w)).h(u(h));
 }
 
@@ -151,8 +160,8 @@ export const FLOOR = ["floor", 480, 1600];
  * The box must be relative().overflow_hidden(). Same image each time, so
  * nothing more is loaded.
  */
-export function floorTiles(u, n = 6) {
-  return Array.from({ length: n }, (_, i) => pic(u, FLOOR[0], FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1] * i)));
+export function floorTiles(u, n = 6, name = FLOOR[0]) {
+  return Array.from({ length: n }, (_, i) => pic(u, name, FLOOR[1], FLOOR[2]).absolute().top(0).left(u(FLOOR[1] * i)));
 }
 
 /** A brick-band header for menus and small windows: the strip texture behind a gold caption. */
@@ -214,11 +223,13 @@ export function frame(u, kind, content, o = {}) {
   const dressed = o.floor && DRESS[P.zone];
   if (o.floor || o.web || o.edge) inner = inner.relative().overflow_hidden();
   // The floor is 480px wide: more copies cover windows wider than that.
-  if (o.floor) inner = inner.children(floorTiles(u, o.tiles ?? 2))
+  // The sanctum has two floors, as its mockup's two sidebar panels: the party's panel (the
+  // one whose cobweb hangs top right) lies lower on the galaxy band than every other window.
+  if (o.floor) inner = inner.children(floorTiles(u, o.tiles ?? 2, P.stage && o.web === "tr" ? `zone/${P.stage}/floor-b` : undefined))
     .when(Boolean(veil()), (el) => el.child(veil()));
   // A zone's panel edges and corner thing (ice, crystal, throne) in place of the cobweb.
   if (dressed) inner = inner.child(dressing(u, o.web ? (o.web === "bl" ? "bl" : "br") : null, o.thin));
-  else if (o.web) inner = inner.child(web(u, o.web));
+  else if (o.web && !P.stage) inner = inner.child(web(u, o.web));   // no cobwebs under the stars
   // The season on a sidebar panel's floor (snow, petals, leaves) and on its top edge.
   const se = o.edge ? look().season : "none";
   const th = P.light ? "light" : "dark";
@@ -234,7 +245,30 @@ export function frame(u, kind, content, o = {}) {
     el = el.child(k("top", "left")).child(k("top", "right")).child(k("bottom", "left")).child(k("bottom", "right"));
   }
   if (CAPS.has(se)) el = el.child(seasonCap(u, se));
+  // The sanctum's windows (the floored frames, not the short notifications) wear starlight.
+  if (P.stage && kind === "gold" && o.floor && !o.thin) return starFrame(u, el, o.margin ?? 4, o.knobs !== false);
   return zoneTop(u, el, kind);
+}
+
+// A sanctum frame by stage (zone/astralN, art-src/gen_astral.py; zones.js ASTRAL_FRAME): stars
+// set in the top and bottom edges, the galaxies' sheen along all four, and starlight
+// spreading from the corners (a 108px picture over each knob, the frame's corner at 44, 44).
+// m: the frame's margin; its gold lines start 2px further in. The pictures' rows and
+// columns 2..5 lie on the gold.
+function starFrame(u, el, m, knobs) {
+  const n = Number(P.stage.slice(-1)), f = (x) => `${ART}/zone/${P.stage}/${x}.png`;
+  // The bottom and right edges show another stretch of the same picture.
+  const h = (v, shift) => div().absolute()[v](u(m)).left(u(m + 2)).right(u(m + 2)).h(u(8)).overflow_hidden()
+    .child(image(f("edge-h")).absolute().top(0).left(u(shift)).w(u(2560)).h(u(8)));
+  const v = (side, shift) => div().absolute()[side](u(m)).top(u(m + 2)).bottom(u(m + 2)).w(u(8)).overflow_hidden()
+    .child(image(f("edge-v")).absolute().left(0).top(u(shift)).w(u(8)).h(u(1600)));
+  if (n >= ASTRAL_FRAME.edgeV) el = el.child(v("left", 0)).child(v("right", -500));
+  if (n >= ASTRAL_FRAME.edgeH) el = el.child(h("top", 0)).child(h("bottom", -700));
+  if (knobs && n >= ASTRAL_FRAME.corner) {
+    const c = (name, y, x) => image(f(`corner-${name}`)).absolute()[y](u(m - 48))[x](u(m - 48)).w(u(108)).h(u(108));
+    el = el.child(c("tl", "top", "left")).child(c("tr", "top", "right")).child(c("bl", "bottom", "left")).child(c("br", "bottom", "right"));
+  }
+  return el;
 }
 
 // A zone's panel dressing (zones.js DRESS): the top and bottom bands as two halves pinned
@@ -349,8 +383,8 @@ export const lvInfo = () => progressAt(quests(), shared("pq.floor"));
 export const best = () => Math.max(bestAfter(shared("pq.best"), quests()), lvInfo().lv);
 
 /** Opens the adventure log (levels, unlocks, looks, recent quests). */
-export function openJournal(tab = "map") {
-  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 520, props: { role: "journal", tab } });
+export function openJournal(tab, guide = false) {
+  openOverlay({ mod: "pixel-quest", kind: "dialog", frame: "none", width: 380, height: 520, props: { role: "journal", tab, guide } });
 }
 
 // ---- gold, medals and pets (economy.js; all in shared pq.eco) ----
@@ -382,16 +416,17 @@ export function heroPortrait(u, h, eq = h.eq, size = PORTRAIT) {
   return div().flex_none().border(u(2)).border_color(P.ink)
     .child(div().border(u(1)).border_color(P.g2)
       .child(div().relative().w(u(w)).h(u(ht)).bg(HERO_BG)
-        .children(layers(h.sex, h.shown, eq).map((n) => image(`${ART}/${n.replace("hero/", `hero/${dir}`)}.png`).absolute().top(0).left(0).w(u(w)).h(u(ht))))));
+        .children(layers(h.sex, h.shown, eq, h.up).map((n) => image(`${ART}/${n.replace("hero/", `hero/${dir}`)}.png`).absolute().top(0).left(0).w(u(w)).h(u(ht))))));
 }
 // A piece's picture (art-src/gen_hero_icons.py): helmet 38x38, armor 58x38, weapon 18x38,
 // the weapon large (its slot in the window) 26x84. All show the whole piece.
 const ICON = { h: [38, 38], t: [58, 38], w: [18, 38], wl: [26, 84] };
 /** o.large: the weapon's large picture; o.shade: the black shape (a locked zone's piece);
- *  o.scale: drawn smaller (the shop's pick lines). */
+ *  o.scale: drawn smaller (the shop's pick lines); o.up: the sanctum piece's upgrades to show
+ *  ({ h, t, w }; the hero's own unless given). */
 export function gearIcon(u, set, slot, o = {}) {
   const k = slot === "w" && o.large ? "wl" : slot, s = o.scale ?? 1;
-  return image(`${ART}/hero/it-${set}-${k}${o.shade ? "-x" : ""}.png`).flex_none().w(u(ICON[k][0] * s)).h(u(ICON[k][1] * s));
+  return image(`${ART}/${gearArt(set, slot, o.up ?? hero().up, k)}${o.shade ? "-x" : ""}.png`).flex_none().w(u(ICON[k][0] * s)).h(u(ICON[k][1] * s));
 }
 /** A gear slot: sunk and faint while empty, a bronze plate with the piece on it when worn.
  *  o: { w, h, large (the weapon's large picture), aim (gold: the hovered piece goes here), tooltip, onHover }. */
@@ -413,6 +448,23 @@ export function gearSlot(u, id, slot, set, onClick, o = {}) {
 export function gearGhost(u, slot, large = false) {
   const k = slot === "w" && large ? "wl" : slot;
   return image(`${ART}/hero/ghost-${k}.png`).flex_none().w(u(ICON[k][0])).h(u(ICON[k][1]));
+}
+// ---- rebirth (reborn.js; stars and shards live in pq.eco, the run's EXP is pq.quests) ----
+/** { stars, shards, shardLv, over } */
+export const reb = () => readReborn(eco());
+/** The star shard (the star shop's money). */
+export const shard = (u) => pic(u, "shard", 16);
+/** EXP as shown: whole, or one decimal under a star (quests are worth 1.5, 2.5). */
+export const expText = (n) => (Number.isInteger(n) ? fmt(n) : `${fmt(Math.floor(n))}.${Math.round((n % 1) * 10)}`);
+/** A rebirth, if the run is at Lv.20: one more star, the run's EXP back to 0, the look redrawn. */
+export function doReborn() {
+  const r = reborn(eco(), lvInfo().lv, quests());
+  if (!r.ok) return r;
+  setEco(r.eco);
+  setShared("pq.quests", 0);
+  setShared("pq.floor", null);
+  applyLook();
+  return r;
 }
 /** The gold coin (8x8 art px). */
 export const coin = (u) => pic(u, "coin", 16);
@@ -471,12 +523,15 @@ export async function applyLook() {
   try {
     const name = String(shared("layout") ?? "");
     if (!name.startsWith("pixel-quest")) return;
-    const theme = lookTheme(name);
+    const stars = reb().stars;
+    const theme = lookTheme(name, stars);
     const now = lookNow(new Date(), { time: shared("pq.time") !== false, seasons: shared("pq.seasons") !== false, season: shared("pq.season") });
     // pixel-quest.look_phase / look_season: try another time or season (shared pq.lookTest).
     const test = shared("pq.lookTest") ?? {};
     if (test.phase) now.phase = test.phase;
     if (test.season) now.season = test.season;
+    // The sanctum of stars has neither (look.js timeless), whatever the settings or a try say.
+    if (timeless(theme)) now.phase = now.season = "none";
     const path = `${appHome()}/layouts/${name}.json`;
     const text = await readTextFile(path);
     if (!text) return;
@@ -487,13 +542,15 @@ export async function applyLook() {
     const area = box.workW ? mainArea({ vw: box.vw, vh: box.vh, workW: box.workW, panel: panelState(file, state) }) : { w: 0, h: 0 };
     // Two windows share the file: only the active one says which shape to draw for,
     // the other keeps the file's (no flip-flop between differently sized windows).
-    const kept = Number(/deco-[a-z]+-[a-z]+-(\d+)\.png/.exec(text)?.[1]);
+    const kept = Number(/deco-[a-z0-9]+-[a-z]+-(\d+)\.png/.exec(text)?.[1]);
     const bucket = hwin()?.active === false && kept ? kept : bucketOf(area.w, area.h);
     const art = lookArt({ theme, ...now, bucket });
     const prev = shared("pq.look");
     if (!prev || prev.theme !== theme || prev.phase !== now.phase || prev.season !== now.season) setShared("pq.look", { theme, ...now });
     const panelColor = theme === "light" ? dim(LIGHT.fill, "light", now.phase) : undefined;
-    const next = layoutWith(text, { art, fontSize: Number(shared("pq.font_size")) || undefined, panelColor, heroPx: heroPx(shared("pq.hero"), sidebarW(file, state)) });
+    // The sanctum's focused pane wears its frames' gold, brighter with the stars.
+    const focus = timeless(theme) ? paletteOf("astral", stars).f2 : undefined;
+    const next = layoutWith(text, { art, fontSize: Number(shared("pq.font_size")) || undefined, panelColor, heroPx: heroPx(shared("pq.hero"), sidebarW(file, state)), focus });
     if (next && next !== text) await writeTextFile(path, next, text);
   } catch { /* a stale read (someone else wrote the file): the next tick tries again */ } finally {
     busy = false;
@@ -640,13 +697,18 @@ export function agentFace(u, entry, fallback, size = 24) {
 }
 
 /** The party's frame (pq.frame), or wood while the chosen one is locked. */
-export const frameKey = () => pick("frame", shared("pq.frame"), best());
+export const frameKey = () => pick("frame", shared("pq.frame"), best(), eco().frames);
+/** A frame's picture at full size: 36 wide; the crown rises 8px above its ring, the star 10px. */
+export const FRAME_H = { crown: 44, star: 46 };
+export function framePic(u, key) {
+  return TALL_FRAMES.includes(key) ? pic(u, `pf-${key}`, 36, FRAME_H[key]) : pic(u, `pf-${key}`, 36);
+}
 
 /** A portrait in the party's frame: 36x36 (the crown frame rises 8px above). */
 export function portrait(u, faceEl) {
   const f = frameKey();
   return div().relative().flex_none().w(u(36)).h(u(36))
-    .child(f === "crown" ? pic(u, "pf-crown", 36, 44).absolute().bottom(0).left(0) : pic(u, `pf-${f}`, 36).absolute().top(0).left(0))
+    .child(TALL_FRAMES.includes(f) ? framePic(u, f).absolute().bottom(0).left(0) : framePic(u, f).absolute().top(0).left(0))
     .when(f === "rune", (el) => el.child(pic(u, "pf-rune-glow", 36).absolute().top(0).left(0).loop("opacity", { from: 0.2, to: 1, period: 1400 })))
     .child(faceEl.absolute().top(u(6)).left(u(6)));
 }

@@ -131,9 +131,18 @@ export default class Tabs {
     const torchPool = lit ? [P.light
       ? pic(u, "look/glow-candle-torch", 260, 48).absolute().top(u(4)).left(u(60)).opacity(pool)
       : pic(u, "look/glow-torch", 180, 48).absolute().top(u(4)).left(u(100)).opacity(pool * 0.9)] : [];
+    // The sanctum of stars (kit.js P.stage, astral1..astral5): no torch, no sconces, no windows.
+    // Five star lamps hang in their place, one lit per star (the picture has them all, its
+    // top on the bar's top), and the wall band is the night's top edge with its aurora.
+    const star = P.stage;
+    const onWall = star ? [pic(u, `zone/${star}/lamps`, 380, 48).absolute().top(u(14)).left(0)] : [
+      ...torchPool, ...windows, ...wreaths, ...sconce("l", 116, 520), ...sconce("r", 248, 650),
+      pic(u, art("torch-glow"), 96, 60).absolute().top(0).left(u(142)).loop("opacity", { from: 0.7, to: 1, period: 1600 }),
+      pic(u, art("torch"), 18, 38).absolute().top(u(12)).left(u(181)),
+    ];
     return pxRoot(u, h_flex().size_full().min_w(0).relative().overflow_hidden().px(u(10)).pl(lightsPadding).gap(u(4)).items_center().bg(P.chrome).border_b(u(2)).border_color(P.ink)
       // Brick band behind everything, cut to the bar.
-      .child(texture(u, "strip", 2560, 48))
+      .child(texture(u, star ? `zone/${star}/strip-top` : "strip", 2560, 48))
       .when(Boolean(veil()), (el) => el.child(veil()))
       // The throne room hangs red pennants from the top of the wall (the mockup's).
       .when(P.zone === "throne", (el) => el.children([160, 196, 232, 612, 644, 676].map((x) => pic(u, "pennant-red", 16, 32).absolute().top(u(2)).left(u(x)))))
@@ -142,14 +151,7 @@ export default class Tabs {
       // The torch hangs in the middle of the bar, its glow dithered behind it.
       .child(div().absolute().top(u(-14)).left(u(0)).right(u(0)).flex().justify_center()
         // ... flanked by two wall sconces.
-        .child(div().relative().w(u(380)).h(u(60))
-          .children(torchPool)
-          .children(windows)
-          .children(wreaths)
-          .children(sconce("l", 116, 520))
-          .children(sconce("r", 248, 650))
-          .child(pic(u, art("torch-glow"), 96, 60).absolute().top(0).left(u(142)).loop("opacity", { from: 0.7, to: 1, period: 1600 }))
-          .child(pic(u, art("torch"), 18, 38).absolute().top(u(12)).left(u(181)))))
+        .child(div().relative().w(u(380)).h(u(60)).children(onWall)))
       .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(u(4)).overflow_x_scrollbar().children(shown.map(item)))
       .child(button("tab-new", div().text_color(P.gt).child("+"), () => openOverlay({ mod: "pixel-quest", kind: "popup", width: 250, height: 534, props: { role: "newmenu" }, frame: "none" }), { tooltip: "새 탭" }))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "소지품", "ico-chest")))

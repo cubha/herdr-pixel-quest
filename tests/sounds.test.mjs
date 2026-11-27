@@ -6,9 +6,9 @@ import * as S from "../mods/pixel-quest/sounds.js";
 import { empty } from "../mods/pixel-quest/economy.js";
 import { ITEMS } from "../mods/pixel-quest/loot.js";
 
-test("seven sets in the mockup's order: two open, three for gold, a medal one, a dex one", () => {
-  assert.deepEqual(S.SOUND_SETS.map((s) => s.key), ["herdr", "q8", "box", "arcade", "slime", "horn", "chest"]);
-  assert.deepEqual(S.SOUND_SETS.map((s) => s.name), ["Herdr 기본", "8비트 퀘스트", "오르골", "아케이드", "슬라임", "용사의 나팔", "보물 상자"]);
+test("seven sets in the mockup's order (two open, three for gold, a medal one, a dex one) and the star shop's", () => {
+  assert.deepEqual(S.SOUND_SETS.map((s) => s.key), ["herdr", "q8", "box", "arcade", "slime", "horn", "chest", "star"]);
+  assert.deepEqual(S.SOUND_SETS.map((s) => s.name), ["Herdr 기본", "8비트 퀘스트", "오르골", "아케이드", "슬라임", "용사의 나팔", "보물 상자", "별의 종"]);
   assert.deepEqual(["box", "arcade", "slime"].map((k) => S.soundBy(k).open.gold), [500, 800, 1200]);
   assert.equal(S.soundBy("horn").open.medal, "knight");
   assert.equal(S.soundBy("chest").open.dex, 35);

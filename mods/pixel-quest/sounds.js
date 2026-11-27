@@ -5,7 +5,7 @@
 // Bought sets live in pq.eco.sounds: [key]. No Herdr imports (tests/sounds.test.mjs).
 // Copyright (c) 2026 cubha. MIT License.
 
-import { fmt, josa, medalOf } from "./economy.js";
+import { fmt, josa, medalOf, short, pay, costText } from "./economy.js";
 import { dexCount, ITEMS } from "./loot.js";
 
 const DIR = "mods/pixel-quest/sounds";
@@ -17,6 +17,7 @@ export const SOUND_SETS = [
   { key: "slime", name: "슬라임", desc: "통통 튀는 소리", open: { gold: 1200 } },
   { key: "horn", name: "용사의 나팔", desc: "짧은 팡파르", open: { medal: "knight" } },
   { key: "chest", name: "보물 상자", desc: "뚜껑 소리와 금화", open: { dex: ITEMS.length } },
+  { key: "star", name: "별의 종", desc: "맑게 울리는 별 소리", open: { shard: 4, gold: 300 } },
 ];
 export const soundBy = (key) => SOUND_SETS.find((s) => s.key === key) ?? null;
 
@@ -49,6 +50,7 @@ export function soundOpen(eco, key) {
 /** How a set opens, as its row says it. */
 export function howOpenSound(key) {
   const o = soundBy(key)?.open ?? {};
+  if (o.shard) return costText(o);
   if (o.gold) return `${fmt(o.gold)} G`;
   if (o.medal) return `훈장 "${medalOf(o.medal)?.name ?? o.medal}"`;
   if (o.dex) return `전리품 도감 ${o.dex}종`;
@@ -61,8 +63,13 @@ export function buySound(eco, key) {
   if (!s || !s.open.gold) return { eco, ok: false, msg: "골드로 여는 세트가 아닙니다" };
   if (soundOpen(eco, key)) return { eco, ok: false, msg: `${s.name}: 이미 열린 세트입니다` };
   const g = eco.gold ?? 0;
+  if (s.open.shard) {
+    if (!(Number(eco.stars) > 0)) return { eco, ok: false, msg: `${s.name}: 첫 환생 뒤에 열 수 있습니다` };
+    const miss = short(eco, s.open);
+    if (miss) return { eco, ok: false, msg: `${s.name}: ${miss}` };
+  }
   if (g < s.open.gold) return { eco, ok: false, msg: `${s.name}: 골드가 ${fmt(s.open.gold - g)} G 부족합니다` };
-  return { eco: { ...eco, gold: g - s.open.gold, sounds: [...bought(eco), key] }, ok: true, msg: `${josa(s.name, "이/가")} 열렸습니다 · [고르기]로 바꿀 수 있습니다` };
+  return { eco: { ...pay(eco, s.open), sounds: [...bought(eco), key] }, ok: true, msg: `${josa(s.name, "이/가")} 열렸습니다 · [고르기]로 바꿀 수 있습니다` };
 }
 
 /** settings.json with the set picked (data: the parsed file; the rest is kept). */

@@ -103,8 +103,15 @@ export function heroPx(v, sideW) {
   return mode === "big" && canBig(sideW) ? heroBig(sideW).px : HERO_PX.open;
 }
 
-/** The art for a look: { tablet, deco, wall } (wall: the light layout's outer wall, else null). */
+/** The sanctum of stars (themes astral1..astral5) is a night sky outside the clock and the
+ *  calendar: no time of day, no season, whatever the settings say. */
+export const timeless = (theme) => /^astral[1-5]$/.test(String(theme));
+
+/** The art for a look: { tablet, deco, wall } (wall: the light layout's outer wall or the
+ *  sanctum's outer night, else null). */
 export function lookArt({ theme, phase, season, bucket }) {
+  // The sanctum: the whole scene is the decoration (one per stage and box shape), the tablet a plain night.
+  if (timeless(theme)) return { tablet: `${LOOK}/tablet-astral-none.png`, deco: `${LOOK}/deco-${theme}-none-${bucket}.png`, wall: `${ART}/zone/${theme}/bg-work.png` };
   const light = theme === "light";
   const dim = light && phase !== "day" && phase !== "none";
   return {
@@ -126,12 +133,13 @@ export function lookNow(d, { time = true, seasons = true, season = null } = {}) 
 
 /**
  * The layout file's text with the look in it, or null when it isn't a Pixel Quest
- * layout. o: { art, fontSize?, panelColor?, heroPx? (the hero panel's height) }. Moves an older file to the two-layer
+ * layout. o: { art, fontSize?, panelColor?, heroPx? (the hero panel's height), focus? (the
+ * focused pane's border: the sanctum's gold by stage) }. Moves an older file to the two-layer
  * shape (main inside main-wrap, the party drawer on main-wrap). Everything else stays
  * as written, the panel's hidden flag included (layout.set would drop it).
  * Returns the same text when nothing changes.
  */
-export function layoutWith(text, { art, fontSize, panelColor, heroPx } = {}) {
+export function layoutWith(text, { art, fontSize, panelColor, heroPx, focus } = {}) {
   let root;
   try { root = JSON.parse(text); } catch { return null; }
   const body = find(root, "work-body");
@@ -172,6 +180,7 @@ export function layoutWith(text, { art, fontSize, panelColor, heroPx } = {}) {
   wrap.background = { image: art.tablet, fit: "cover" };
   main.background = { image: art.deco, fit: "cover" };
   if (art.wall) root.background = { image: art.wall, fit: "cover" };
+  if (focus && main.content?.pane?.focus) main.content.pane.focus.color = focus;
   root.terminal_opacity = 0;
   // Notifications (Herdr's own and every notify()) in the theme, unless the file names another mod.
   if (root.toast == null) root.toast = "pixel-quest";

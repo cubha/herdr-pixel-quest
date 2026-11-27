@@ -5,7 +5,7 @@
 // so tests/zones.test.mjs runs it under node.
 // Copyright (c) 2026 cubha. MIT License.
 
-// open: best level, a medal (economy.js MEDALS id), or bought in the shop (gold).
+// open: best level, a medal (economy.js MEDALS id), bought in the shop (gold), or stars (rebirths).
 export const ZONES = [
   { key: "dungeon", name: "던전", layout: "pixel-quest", open: {} },
   { key: "sunlit", name: "햇빛 석실", layout: "pixel-quest-light", open: {} },
@@ -14,6 +14,8 @@ export const ZONES = [
   { key: "lava", name: "용암 굴", open: { level: 12 } },
   { key: "crystal", name: "수정 광산", open: { gold: 3000 } },
   { key: "throne", name: "왕좌의 방", open: { medal: "legend", medalName: "전설" } },
+  // The sanctum of stars: the first rebirth opens it, and it grows with the stars (reborn.js).
+  { key: "astral", name: "별의 성소", open: { stars: 1 } },
 ];
 export const zoneBy = (key) => ZONES.find((z) => z.key === key) ?? null;
 
@@ -26,15 +28,21 @@ export function zoneOf(name) {
   return ZONES.find((z) => layoutOf(z.key) === n)?.key ?? null;
 }
 
-/** The look's name in the art's file names: dark, light, or the zone's own key. */
-export function lookTheme(name) {
+// The sanctum of stars grows with the stars: one zone, one layout, one theme, and its art
+// in five stages (astral1..astral5, art-src/gen_astral.py). Past five stars it stays the fifth.
+export const stageOf = (stars) => Math.max(1, Math.min(5, Math.floor(Number(stars) || 1)));
+/** A zone's art name: its key, the sanctum's with its stage. */
+export const artOf = (key, stars) => (key === "astral" ? `astral${stageOf(stars)}` : key);
+
+/** The look's name in the art's file names: dark, light, or the zone's own (zones.js artOf). */
+export function lookTheme(name, stars) {
   const k = zoneOf(name);
-  return k === "sunlit" ? "light" : k && k !== "dungeon" ? k : "dark";
+  return k === "sunlit" ? "light" : k && k !== "dungeon" ? artOf(k, stars) : "dark";
 }
 
 const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-/** Open now? at: { best, medals (id -> when), zones (keys bought) }. */
+/** Open now? at: { best, medals (id -> when), zones (keys bought), stars }. */
 export function isOpen(key, at = {}) {
   const z = zoneBy(key);
   if (!z) return false;
@@ -42,6 +50,7 @@ export function isOpen(key, at = {}) {
   if (o.level) return (Number(at.best) || 1) >= o.level;
   if (o.medal) return Boolean(at.medals?.[o.medal]);
   if (o.gold) return Array.isArray(at.zones) && at.zones.includes(key);
+  if (o.stars) return (Number(at.stars) || 0) >= o.stars;
   return true;
 }
 
@@ -51,6 +60,7 @@ export function howOpen(key) {
   if (o.level) return `Lv.${o.level}`;
   if (o.medal) return `훈장 "${o.medalName}"`;
   if (o.gold) return `상점 ${fmt(o.gold)} G`;
+  if (o.stars) return "첫 환생";
   return "처음부터";
 }
 
@@ -80,10 +90,27 @@ const PALETTES = {
     ink: "#080c0a", wall: "#131c17", chrome: "#19261f", fill: "#203128", raised: "#2c4237", hover: "#3b5548", stone: "#496054", well: "#080c0a", dim: "#80907e",
     g0: "#22260e", g1: "#56581e", g2: "#9a963c", g3: "#d6d47c", g4: "#f6f6c8", b0: "#22260e", b1: "#25290f", b2: "#51531c", b3: "#848232", gt: "#d6d47c", gt2: "#9a963c",
   },
+  // The sanctum of stars (the rebirth theme's mockup: chrome4 rest 226 / 0.8 / 0.9, its gold ramp).
+  astral: {
+    ink: "#06070b", wall: "#0d1019", chrome: "#111522", fill: "#161b2c", raised: "#1f253b", hover: "#2a324c", stone: "#383f56", well: "#06070b", dim: "#7c8aaa",
+    g0: "#3a2a10", g1: "#8a6426", g2: "#d8ac4e", g3: "#ffe6a0", g4: "#fffbe6", b0: "#3a2a10", b1: "#3f2e11", b2: "#825f24", b3: "#bf9541", gt: "#ffe6a0", gt2: "#d8ac4e",
+  },
 };
 
-/** What a zone changes in the drawing kit's palette (the dungeon and sunlit: nothing). */
-export const paletteOf = (key) => ({ ...(PALETTES[key] ?? {}) });
+// The sanctum's gold frames brighten with the stars (the mockup's adorn): how bright by stage.
+// Only the frames (palette f1..f3): gold text and buttons keep the ramp.
+const ASTRAL_GOLD = [0.74, 0.86, 0.96, 1.04, 1.1];
+const scaled = (hex, k) => "#" + [1, 3, 5].map((i) => Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k)).toString(16).padStart(2, "0")).join("");
+// From which stage a sanctum frame has what (zone/astralN/corner-*.png, edge-h.png, edge-v.png).
+export const ASTRAL_FRAME = { corner: 2, edgeH: 2, edgeV: 3 };
+
+/** What a zone changes in the drawing kit's palette (the dungeon and sunlit: nothing).
+ *  stars: the sanctum's frame gold by stage (f1..f3 in place of g1..g3 on a gold frame). */
+export function paletteOf(key, stars) {
+  const p = { ...(PALETTES[key] ?? {}) };
+  if (key === "astral") for (const n of [1, 2, 3]) p[`f${n}`] = scaled(p[`g${n}`], ASTRAL_GOLD[stageOf(stars) - 1]);
+  return p;
+}
 
 /** The zones with art of their own (everything but the dungeon and the sunlit chamber). */
 export const DRAWN = Object.keys(PALETTES);

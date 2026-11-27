@@ -14,6 +14,11 @@
 // notification, one level per press: error, warning, success, info), shop, pet_try (step the
 // pet through its moods), medal_try (a sample medal notification; nothing is given).
 //
+// Rebirth (reborn.js): under a star a quest is worth more EXP (pq.quests is the run's EXP),
+// star shards come along a later run's levels and for every 40 EXP past Lv.20 (settle: paid
+// here after each quest, and once at start for what came before); the star and the shards
+// show on the right plate (click: the shop's 별 tab).
+//
 // Gold, medals and the pet (economy.js, shared pq.eco): a quest pays +10 G and the pet's
 // bond, a new best level +50 G, medals their own gold; update day pays for the past once.
 // The coin and gold sit on the right plate (click: the pet shop). The pet lives right of
@@ -34,12 +39,14 @@
 
 import { div, svg } from "gpui-kit";
 import { h_flex, v_flex, Popup } from "gpui-base";
-import { spaces, agents, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify, exec, checking } from "herdr";
-import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, openHero, coin, announce, openUpdate, updateState, zoneNow } from "../kit.js";
+import { spaces, agents, panes, run, window, keys, shared, setShared, openOverlay, closeOverlay, nextCommand, readTextFile, appHome, watchFolder, notify, exec, checking } from "herdr";
+import { P, unit, root, small, button, pic, texture, cells, usageWindow, span, USAGE_FILE, watchUsage, lvInfo, best, quests, openJournal, openPalette, openSettings, openGoto, openRename, openHelp, applyLook, lookBox, tryLook, veil, eco, setEco, openShop, openHero, coin, announce, openUpdate, updateState, zoneNow, reb, shard, expText, ART } from "../kit.js";
 import * as U from "../update.js";
 import { oldLevel, levelOf, progressAt, pushLog, pick, equipables } from "../progress.js";
 import * as E from "../economy.js";
-import { drop } from "../loot.js";
+import { agentNames, partyLines } from "../dialogs.js";
+import { drop, lootZone } from "../loot.js";
+import { settle, mult, overLeft, canReborn } from "../reborn.js";
 
 const COLOR = { working: P.working, blocked: P.blocked, done: P.done, idle: P.idle };
 const MOOD_KO = { sleep: "모두 쉼", walk: "작업 중", alert: "입력 대기", tired: "사용량 80% 넘음", hop: "퀘스트 완료" };
@@ -102,6 +109,9 @@ export default class Status {
       setEco(r.eco);
       this.medalQueue.push(...r.got);
     }
+    // Star shards for EXP from before (overflow past Lv.20 that was never paid): once, at start.
+    this.noteQueue = [];
+    this.shards(quests());
     // The pet: where it is on its lane (0 = home, right of the party bar, to 1), and
     // where it heads next every 3.2 s while it walks or crawls (a native spring).
     this.pet = { x: 0, ms: 0, easing: "linear", right: false };
@@ -126,6 +136,7 @@ export default class Status {
     // (measured), so they go out from this timer.
     cx.timer.every(500, (cx) => {
       if (this.medalQueue.length) { const got = this.medalQueue; this.medalQueue = []; announce(got); }
+      if (this.noteQueue.length) { const ns = this.noteQueue; this.noteQueue = []; for (const n of ns) notify(n); }
       // The patch notes after an update, once the saves have settled (three quiet seconds).
       if (shared("pq.update.notes") && Date.now() - this.bornAt > 3000) { setShared("pq.update.notes", null); openUpdate(true); }
       if (this.hopUntil && Date.now() > this.hopUntil) { this.hopUntil = 0; cx.notify(); }
@@ -172,6 +183,7 @@ export default class Status {
         else if (c === "look_phase") tryLook("phase");
         else if (c === "look_season") tryLook("season");
         else if (c === "shop") openShop();
+        else if (c === "star") openHero("shop", "star");
         else if (c === "hero") openHero();
         else if (c === "pet_try") {
           const list = [null, "sleep", "walk", "alert", "tired", "hop"];
@@ -279,11 +291,26 @@ export default class Status {
     }
   }
 
+  // Pays the star shards the run's EXP has earned (reborn.js settle) and says so. The words go
+  // out from the timer: a notify() made during render never shows.
+  shards(exp) {
+    const r = settle(eco(), exp);
+    if (r.eco !== eco()) setEco(r.eco);
+    if (r.got) this.noteQueue.push({ title: `별조각 ${r.got}개를 받았습니다.`, body: `별조각 상점에서 쓸 수 있습니다. (보유: ${E.fmt(r.eco.shards)}개)`, level: "success", icon: `${ART}/shard.png`, action: { name: "pixel-quest.star" } });
+  }
+
+  // A member's name as its party row shows it (the tab someone named or the agent's own
+  // title first, else its space: dialogs.js), so the banner, the log and the pet say the same.
+  nameOf(a) {
+    return partyLines(a, agentNames(agents(), panes(), spaces()).detail(a)).name || "agent";
+  }
+
   // try: a level to show the level-up banner for (pixel-quest.levelup, nothing counted).
   fanfare(a, count = true, tryLv = null) {
     const before = lvInfo().lv;
-    const n = (Number(shared("pq.quests")) || 0) + (count ? 1 : 0);
-    const title = a.space_name || a.program?.name || "agent";
+    // Under a star a quest is worth more EXP (1.5 to 3).
+    const n = (Number(shared("pq.quests")) || 0) + (count ? mult(reb().stars) : 0);
+    const title = this.nameOf(a);
     let gold = 0, loot = null;
     if (count) {
       setShared("pq.quests", n);
@@ -291,10 +318,11 @@ export default class Status {
       setShared("pq.best", Math.max(Number(shared("pq.best")) || 1, progressAt(n, shared("pq.floor")).lv));
       // Gold, the day's count, the pet's bond, new medals (level gold follows pq.best).
       const working = agents().filter((x) => x.status === "working").length;
-      const r = E.onQuest(eco(), { now: new Date(), best: best(), working });
+      const r = E.onQuest(eco(), { now: new Date(), best: best(), lv: lvInfo().lv, working });
       // The shown zone's loot may drop (loot.js): a legendary again or a zone's five pay gold.
-      const d = drop(r.eco, zoneNow());
+      const d = drop(r.eco, lootZone(zoneNow()));
       setEco(d.eco);
+      this.shards(n);
       gold = r.gained + (d.got?.gold ?? 0);
       loot = d.got;
       this.medalQueue.push(...r.got);
@@ -303,13 +331,15 @@ export default class Status {
     const after = tryLv ?? progressAt(n, shared("pq.floor")).lv;
     const up = Boolean(tryLv) || (count && after > before);
     const wear = up ? equipables(after, { frame: shared("pq.frame"), banner: shared("pq.bannerStyle") }) : [];
+    // The level that opens a rebirth: the banner says so (with the guide, before the first one).
+    const reborn = up && canReborn(eco(), after) && (Boolean(tryLv) || !canReborn(eco(), before));
     if (shared("pq.banner") === false && !up) return;
     const prev = shared("pq.banner.open");
     if (prev) closeOverlay(prev);
     const style = pick("banner", shared("pq.bannerStyle"), best());
     const id = openOverlay({
-      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: (wear.length ? 142 : 112) + (gold ? 16 : 0) + (loot ? 34 : 0),
-      props: { role: "quest", title, agent: a.address, pane: a.pane, quests: n, style, levelUp: up ? after : null, gold, loot },
+      mod: "pixel-quest", kind: "window", key: "pq-quest", frame: "none", width: 360, height: (wear.length ? 142 : 112) + (gold ? 16 : 0) + (loot ? 34 : 0) + (reborn ? 26 : 0),
+      props: { role: "quest", title, agent: a.address, pane: a.pane, quests: expText(n), exp: mult(reb().stars), style, levelUp: up ? after : null, gold, loot, reborn: reborn ? (reb().stars ? "again" : "first") : null },
     });
     setShared("pq.banner.open", id);
   }
@@ -357,9 +387,8 @@ export default class Status {
         .tooltip("상점에서 펫을 구매하면 여기서 함께 다닙니다 · 누르면 상점").on_click(() => openShop("dex"))
         .child(small(u, "펫 없음", P.dim)));
     }
-    const bond = e.pets[key]?.bond ?? 0;
     const crouch = mood === "sleep" || mood === "tired";
-    const art = E.petArt(key, bond, crouch, this.pet.right);
+    const art = E.petArt(key, e.pets[key] ?? 0, crouch, this.pet.right);
     // The pet stands in line with the plates; its box reaches up over the sill and the spacer
     // (the tall status block draws them), so the marks stand above its head as in the
     // mockup: Z at the top right, "!" and the battery centred over it.
@@ -384,13 +413,13 @@ export default class Status {
     }
     const room = Math.max(0, this.laneW - u(boxW));
     const ctx = { now: new Date(), best: best() };
-    const say = E.bubble(e, ctx, { mood, who: waiting ? (waiting.space_name || waiting.program?.name || "에이전트") : "", drain: drain ?? { label: "5시간", pct: 80 } });
+    const say = E.bubble(e, ctx, { mood, who: waiting ? this.nameOf(waiting) : "", drain: drain ?? { label: "5시간", pct: 80 } });
     const name = E.petOf(key)?.name ?? key;
     // While it speaks, the bar draws the bubble beside it (bubble(): after the moss, which
     // would cover it otherwise).
     const speaking = this.sayAt && Date.now() - this.sayAt <= E.TALK.show;
     this.speech = speaking ? {
-      words: this.sayMood === mood ? say : E.bubble(e, ctx, { mood: this.sayMood, who: waiting ? (waiting.space_name || waiting.program?.name || "에이전트") : "", drain: drain ?? { label: "5시간", pct: 80 } }),
+      words: this.sayMood === mood ? say : E.bubble(e, ctx, { mood: this.sayMood, who: waiting ? this.nameOf(waiting) : "", drain: drain ?? { label: "5시간", pct: 80 } }),
       at: room * this.pet.x, w: u(boxW), room,
     } : null;
     const box = div().id("pet").absolute().top(u(-up)).h(u(H)).w(u(boxW)).left(room * this.pet.x)
@@ -437,13 +466,25 @@ export default class Status {
       .child(this.gauge(u, "use-5h", "5H", "5시간", use.five_hour))
       .child(this.gauge(u, "use-7d", "7D", "7일", use.seven_day)) : null;
     const lv = lvInfo();
-    const e = eco();
+    const e = eco(), rb = reb();
+    // Under a star the count is EXP (a quest is worth more than one); past Lv.20 it also says
+    // how far the next overflow shard is, and that a rebirth is open.
+    const over = overLeft(lv.q);
+    const tip = (rb.stars ? `★${rb.stars} · 퀘스트 1개 = 경험치 ${mult(rb.stars)} · ` : "퀘스트 = 에이전트가 일을 끝낸 횟수 · ")
+      + `Lv.${lv.lv} · 다음 레벨까지 ${expText(lv.left)}`
+      + (over != null ? ` · 별조각까지 ${expText(over)}` : "");
     const right = plate()
       .child(h_flex().id("quests").gap(u(6)).items_center().cursor_pointer()
-        .tooltip(`퀘스트 = 에이전트가 일을 끝낸 횟수 · Lv.${lv.lv} · 다음 레벨까지 ${lv.left}`)
+        .tooltip(tip)
         .on_click(() => openJournal())
-        .child(small(u, `퀘스트 ${lv.q}`, P.gt2))
+        .when(rb.stars > 0, (el) => el.child(small(u, `★${rb.stars}`, P.g3)))
+        .child(small(u, `${rb.stars ? "경험치" : "퀘스트"} ${expText(lv.q)}`, P.gt2))
         .child(cells(u, { pct: lv.frac * 100, tone: P.g2 }, 10, 4, 10)))
+      .when(rb.stars > 0 || rb.shards > 0 || canReborn(e, lv.lv), (el) => el.child(h_flex().id("shards").gap(u(4)).items_center().cursor_pointer()
+        .tooltip(`별조각 ${E.fmt(rb.shards)}개 · 누르면 별조각 상점`)
+        .on_click(() => openHero("shop", "star"))
+        .child(shard(u))
+        .child(small(u, E.fmt(rb.shards), P.gt))))
       .child(h_flex().id("gold").gap(u(4)).items_center().cursor_pointer()
         .tooltip(`골드 ${E.fmt(e.gold)} G · 누적 ${E.fmt(e.earned)} G · 누르면 상점`)
         .on_click(() => openShop())
