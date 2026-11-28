@@ -5,7 +5,7 @@
 // Copyright (c) 2026 cubha. MIT License.
 
 /** This build. mod.json's "version" and the release tag (v<this>) say the same (tests check). */
-export const VERSION = "1.2.1";
+export const VERSION = "1.2.2";
 export const REPO = "cubha/herdr-pixel-quest";
 /** Public, no sign-in: 60 requests an hour per address, and this asks four times a day. */
 export const LATEST_URL = `https://api.github.com/repos/${REPO}/releases/latest`;

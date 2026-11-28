@@ -95,6 +95,46 @@ def scene(bucket):
     return np.pad(full, ((OY, HB - OY - tab5.TH), (OX, W - OX - wt), (0, 0)), mode='reflect')
 
 
+TOP = 34                                            # the pane header over the scene's top
+
+
+def rim(a, S):
+    """The terminal frame's sheen and starlight (the mockup's astral.adorn on its gold), drawn
+    just inside it: Herdr draws the frame itself (a 2 px gold line, color only) on the scene's
+    edge, and the pane header covers the scene's top TOP px (measured on a 1280 x 820 window,
+    2026-11-28). Galaxy sheen from stage 3, starlight running from each corner along the
+    edges from stage 2. The scene is fit by cover, so a box far from its shape bucket crops a
+    few px of it off one pair of edges."""
+    if S < 2:
+        return a
+    a = a.astype(np.float32)
+    H, W = a.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W]
+    d = np.minimum(np.minimum(xx, W - 1 - xx), np.minimum(np.where(yy >= TOP, yy - TOP, 99), H - 1 - yy))
+    near = d < 12
+    sh = [0, 0, 0.22, 0.36, 0.5][S - 1]
+    if sh:
+        cs = np.array(GC[:S] + GC[:1], np.float32)
+        ph = ((xx + yy * 0.6) / 150.0) % S
+        i0 = np.floor(ph).astype(int)
+        col = cs[i0] + (cs[i0 + 1] - cs[i0]) * (ph - i0)[..., None]
+        wv = (0.5 + 0.5 * np.sin((xx - yy) / 38.0)) ** 2
+        f = np.clip(1 - d / 6.0, 0, 1) ** 1.5                       # brightest against the gold, gone 6 px in
+        m = np.round(sh * wv * f * 1.2 * 4) / 4                     # 4 steps: a smooth ramp would cost ~30 KB a scene
+        a[near] = a[near] + np.round(col[near] / 16) * 16 * m[near][:, None]
+    Lr = [0, 14, 24, 36, 50][S - 1] * 2                            # the mockup's light was on a 2-px-per-dot screen
+    k = 0
+    for cx, cy, sx, sy in ((1, TOP + 1, 1, 1), (W - 3, TOP + 1, -1, 1), (1, H - 3, 1, -1), (W - 3, H - 3, -1, -1)):
+        g = np.array(GC[k % S], np.float32); k += 1
+        for q in range(0, Lr, 2):
+            f = 1 - q / Lr
+            c = (np.array((255, 252, 240), np.float32) * f + g * (1 - f)) if f > 0.5 else g * (0.35 + 1.3 * f)
+            for (x, y) in ((cx + sx * q, cy), (cx, cy + sy * q)):
+                a[y:y + 2, x:x + 2] = np.maximum(a[y:y + 2, x:x + 2], c)
+        A.glow(a, cx + sx * 2, cy + sy * 2, 10 + 2 * S, tuple(g), 0.18 + 0.04 * S)
+    return a
+
+
 # ───────────── walls, floors, the ledge ─────────────
 def strip(rows):
     """A wall band (2560 x 48) from 48 rows of the night: mirrored at 1280 so it has no seam,
@@ -253,7 +293,7 @@ def stage(S):
     name = f'{KEY}{S}'
     Z = os.path.join(ART, 'zone', name)
     for b in GZS.BUCKETS:
-        GZS.save(np.clip(scene(b), 0, 255).astype(np.uint8), os.path.join(LOOK, f'deco-{name}-none-{b}.png'))   # as the mockup saves it, every color kept (a cut rings the tree's glow)
+        GZS.save(np.clip(rim(scene(b), S), 0, 255).astype(np.uint8), os.path.join(LOOK, f'deco-{name}-none-{b}.png'))   # as the mockup saves it, every color kept (a cut rings the tree's glow)
     save(GZS.wall(KEY, os.path.join(ART, 'bg-work.png'), 800, 1280)[::2, ::2], os.path.join(Z, 'bg-work.png'))
     night = c4.up(A.wall(3))
     save(strip(night[:48]), os.path.join(Z, 'strip-top.png'))

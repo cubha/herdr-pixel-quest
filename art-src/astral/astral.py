@@ -112,11 +112,15 @@ def floor(seed=7):
     bb = np.clip(b, 0, 1)[..., None]
     if S >= 2: t = t + np.clip(n1 - 0.45, 0, 1)[..., None] * bb * np.array((150, 30, 110), np.float32) * min(1, k * 1.6)      # 장밋빛
     if S >= 3: t = t + np.clip(n2 - 0.45, 0, 1)[..., None] * bb * np.array((0, 130, 120), np.float32) * k * 1.2             # 청록
-    if S >= 4: t = t + np.clip(n3 - 0.5, 0, 1)[..., None] * bb * np.array((150, 100, 10), np.float32) * (0.7 if S == 4 else 1.1)   # 금빛 먼지
+    if S >= 4: t = t + np.clip(n3 - (0.44 if S == 4 else 0.5), 0, 1)[..., None] * bb * np.array((150, 100, 10), np.float32) * (1.05 if S == 4 else 1.1)   # 금빛 먼지(★4도 ★3과 한눈에 다르게)
     DIMT = lambda tn: [tuple(v * 1.15 for v in c) for c in TONE[tn][:6]] + [tuple(v * 0.8 for v in TONE[tn][6])]
-    for i, (gx, gy, gr) in enumerate([(98, 356, 20), (40, 104, 17), (104, 190, 16), (36, 268, 15)]):
+    # (x, y, r, tilt, seed, tone) by the stage that lights it. The first sits high in the lower
+    # panel (y 268 = about 106 px under its top), so ★2~4 show it with the hero's panel open;
+    # ★5 adds the one further down. ★5 has the same four as the mockup.
+    for i, (gx, gy, gr, tl, sd, tn) in enumerate([(36, 268, 15, 0.5, 10, 'v'), (40, 104, 17, -0.1, 8, 't'),
+                                                  (104, 190, 16, 0.2, 9, 'g'), (98, 356, 20, -0.4, 7, 'r')]):
         if S >= i + 2:
-            t = t + quant(spiral(h, w, gx, gy, gr, -0.4 + 0.3 * i, 0.45, seed=i + 7) ** 0.75, DIMT(TN[i + 1]), h, w)
+            t = t + quant(spiral(h, w, gx, gy, gr, tl, 0.45, seed=sd) ** 0.75, DIMT(tn), h, w)
     rnd = random.Random(seed)
     for _ in range(1100 + 500 * (S - 1)):
         x, y = rnd.randrange(w), rnd.randrange(h)
