@@ -8,7 +8,7 @@ const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h, 0);
 const NOV12 = at(2026, 11, 12, 14);
 
 test("gold amounts and a thousands comma", () => {
-  assert.deepEqual(E.GOLD, { quest: 10, level: 50, bronze: 100, silver: 300, gold: 1000 });
+  assert.deepEqual(E.GOLD, { quest: 20, level: 50, bronze: 100, silver: 300, gold: 1000 });
   assert.deepEqual([0, 300, 1400, 15600, 1234567].map(E.fmt), ["0", "300", "1,400", "15,600", "1,234,567"]);
 });
 
@@ -49,10 +49,11 @@ test("days keep the last sixty", () => {
   assert.equal(E.addDay({ "2026-11-12": 4 }, "2026-11-12")["2026-11-12"], 5);
 });
 
-test("update day: 90 quests at best Lv.9 start with 1,400 G and the first medal", () => {
+test("update day: 90 quests at best Lv.9 start with 2,300 G and the first medal", () => {
   const { eco, got } = E.start(90, 9, NOV12);
-  assert.equal(eco.gold, 1400);
-  assert.equal(eco.earned, 1400);
+  assert.equal(eco.gold, 2300);
+  assert.equal(eco.earned, 2300);
+  assert.equal(eco.rate, 20);
   assert.equal(eco.total, 90);
   assert.equal(eco.lvPaid, 9);
   assert.deepEqual(got.map((m) => m.id), ["first"]);
@@ -64,13 +65,13 @@ test("update day: 90 quests at best Lv.9 start with 1,400 G and the first medal"
   assert.deepEqual(E.start(0, 1, NOV12).got, []);
 });
 
-test("a quest: +10 G, the day and season counted, the pet's bond up, lifetime count up", () => {
+test("a quest: +20 G, the day and season counted, the pet's bond up, lifetime count up", () => {
   let { eco } = E.start(90, 9, NOV12);
   eco = E.choose(E.buy(eco, "slime").eco, "slime").eco;
   const r = E.onQuest(eco, { now: NOV12, best: 9, working: 1 });
-  assert.equal(r.gained, 10);
-  assert.equal(r.eco.gold, 1400 - 300 + 10);
-  assert.equal(r.eco.earned, 1410);
+  assert.equal(r.gained, 20);
+  assert.equal(r.eco.gold, 2300 - 300 + 20);
+  assert.equal(r.eco.earned, 2320);
   assert.equal(r.eco.total, 91);
   assert.equal(r.eco.days["2026-11-12"], 1);
   assert.deepEqual(r.eco.qseasons, ["autumn"]);
@@ -83,13 +84,13 @@ test("a quest: +10 G, the day and season counted, the pet's bond up, lifetime co
 test("level-up gold follows the best level only, so a reset never pays twice", () => {
   let { eco } = E.start(90, 9, NOV12);
   const r = E.onQuest(eco, { now: NOV12, best: 10, working: 1 });
-  assert.equal(r.gained, 10 + 50 + 300);            // quest, level, 기사 서임 (silver)
+  assert.equal(r.gained, 20 + 50 + 300);            // quest, level, 기사 서임 (silver)
   assert.ok(r.got.some((m) => m.id === "knight"));
   assert.equal(r.eco.lvPaid, 10);
   const again = E.onQuest(r.eco, { now: NOV12, best: 10, working: 1 });
-  assert.equal(again.gained, 10);
+  assert.equal(again.gained, 20);
   const two = E.onQuest(E.start(5, 3, NOV12).eco, { now: NOV12, best: 5, working: 0 });
-  assert.equal(two.gained, 10 + 100);
+  assert.equal(two.gained, 20 + 100);
 });
 
 test("medals from the quest's moment: today 10 and 30, the hour, the 100th on the lifetime count", () => {
@@ -119,7 +120,7 @@ test("the full party: four agents working at once, and the most seen so far", ()
   assert.equal(E.onParty(r.eco, 1, { now: NOV12, best: 2 }).eco.partyMax, 2);
   r = E.onParty(r.eco, 4, { now: NOV12, best: 2 });
   assert.deepEqual(r.got.map((m) => m.id), ["party"]);
-  assert.equal(r.eco.gold, 10 * 10 + 50 + 100 + 300);
+  assert.equal(r.eco.gold, 10 * 20 + 50 + 100 + 300);
 });
 
 test("streak medals and the four seasons", () => {
@@ -127,19 +128,42 @@ test("streak medals and the four seasons", () => {
   eco = { ...eco, days: { "2026-11-10": 1, "2026-11-11": 1 }, qseasons: ["spring", "summer", "winter"] };
   const r = E.onQuest(eco, { now: NOV12, best: 2, working: 1 });
   assert.deepEqual(r.got.map((m) => m.id).sort(), ["seasons", "streak3"]);
+  // Five days in a row (a working week) is 닷새 출석; four is not yet.
+  const days = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`2026-11-${11 - i}`.replace(/-(\d)$/, "-0$1"), 1]));
+  const got = (n) => E.onQuest({ ...E.start(10, 2, NOV12).eco, days: days(n) }, { now: NOV12, best: 2, working: 1 }).got.map((m) => m.id);
+  assert.equal(got(3).includes("streak7"), false);
+  assert.equal(got(4).includes("streak7"), true);
+  assert.equal(E.medalOf("streak7").name, "닷새 출석");
+});
+
+test("the raise to 20 G: quests done at 10 G get the difference once", () => {
+  const old = { ...E.empty(), gold: 7000, earned: 10000, total: 715 };   // a state from before: no rate
+  const r = E.raise(old);
+  assert.equal(r.got, 7150);
+  assert.equal(r.eco.gold, 14150);
+  assert.equal(r.eco.earned, 17150);
+  assert.equal(r.eco.rate, 20);
+  const again = E.raise(r.eco);
+  assert.equal(again.got, 0);
+  assert.equal(again.eco, r.eco);
+  // A state started at 20 G, and one with no quests: nothing due.
+  const fresh = E.start(90, 9, NOV12).eco;
+  assert.equal(E.raise(fresh).eco, fresh);
+  assert.equal(E.raise(E.empty()).got, 0);
+  assert.equal(E.raise(E.read({ gold: 5, total: 2 })).eco.gold, 25);
 });
 
 test("the shop: buy at once with enough gold, the shortfall otherwise, no second copy, medal pets not for sale", () => {
   const { eco } = E.start(90, 9, NOV12);
   const a = E.buy(eco, "cat");
   assert.equal(a.ok, true);
-  assert.equal(a.eco.gold, 200);
+  assert.equal(a.eco.gold, 1100);
   assert.deepEqual(a.eco.pets.cat, { bond: 0 });
   assert.equal(a.eco.pet, "cat", "the first pet comes along at once");
   const b = E.buy(a.eco, "dragon");
   assert.equal(b.ok, false);
   assert.equal(b.eco, a.eco);
-  assert.equal(b.msg, "새끼 용: 골드가 4,800 G 부족합니다");
+  assert.equal(b.msg, "새끼 용: 골드가 3,900 G 부족합니다");
   assert.equal(E.buy(a.eco, "cat").msg, "고양이: 이미 보유한 펫입니다");
   assert.equal(E.buy(a.eco, "owl").ok, false);
   assert.equal(E.buy(a.eco, "nope").ok, false);
@@ -230,7 +254,7 @@ test("the bubble: today, the streak and the nearest medal; waiting and drained s
   const e = { ...eco, days: { "2026-11-12": 7 } };
   const ctx = { now: NOV12, best: 9 };
   assert.equal(E.bubble(e, ctx, { mood: "sleep" }), "오늘 퀘스트 7개 · 연속 1일 · 훈장 \"부지런한 하루\"까지 3개");
-  assert.equal(E.bubble(e, ctx, { mood: "hop" }), "퀘스트 완료! +10 G · 오늘 7개째");
+  assert.equal(E.bubble(e, ctx, { mood: "hop" }), "퀘스트 완료! +20 G · 오늘 7개째");
   assert.equal(E.bubble(e, ctx, { mood: "alert", who: "notes-app" }), "notes-app이 입력을 기다립니다 · 누르면 이동");
   assert.equal(E.bubble(e, ctx, { mood: "alert", who: "모험" }), "모험이 입력을 기다립니다 · 누르면 이동");
   assert.equal(E.bubble(e, ctx, { mood: "alert", who: "파티" }), "파티가 입력을 기다립니다 · 누르면 이동");

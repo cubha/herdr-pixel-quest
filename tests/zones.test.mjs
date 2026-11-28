@@ -66,7 +66,7 @@ test("opening: crystal once bought in the shop; dungeon and sunlit always", () =
 
 test("how to open, as the settings card says it", () => {
   assert.deepEqual(Z.ZONES.map((z) => Z.howOpen(z.key)),
-    ["처음부터", "처음부터", "Lv.4", '훈장 "일주일 출석"', "Lv.12", "상점 3,000 G", '훈장 "전설"', "첫 환생"]);
+    ["처음부터", "처음부터", "Lv.4", '훈장 "닷새 출석"', "Lv.12", "상점 3,000 G", '훈장 "전설"', "첫 환생"]);
 });
 
 test("each new zone repaints the surfaces and the gold, keeps the meanings", () => {

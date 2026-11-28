@@ -10,7 +10,7 @@ export const ZONES = [
   { key: "dungeon", name: "던전", layout: "pixel-quest", open: {} },
   { key: "sunlit", name: "햇빛 석실", layout: "pixel-quest-light", open: {} },
   { key: "ice", name: "얼음 동굴", open: { level: 4 } },
-  { key: "moss", name: "이끼 유적", open: { medal: "streak7", medalName: "일주일 출석" } },
+  { key: "moss", name: "이끼 유적", open: { medal: "streak7", medalName: "닷새 출석" } },
   { key: "lava", name: "용암 굴", open: { level: 12 } },
   { key: "crystal", name: "수정 광산", open: { gold: 3000 } },
   { key: "throne", name: "왕좌의 방", open: { medal: "legend", medalName: "전설" } },

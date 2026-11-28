@@ -77,7 +77,7 @@ test("level-up gold is paid again in each run (by the run's level, not the best 
   let e = eco({ lvPaid: 20, stars: 1, medals: Object.fromEntries(E.MEDALS.map((m) => [m.id, 1])) });
   e = R.reborn(e, 20).eco;
   const r = E.onQuest(e, { now: new Date(2026, 10, 27, 12), best: 20, lv: 2 });
-  assert.equal(r.gained, 10 + 50);
+  assert.equal(r.gained, 20 + 50);
   assert.equal(r.eco.lvPaid, 2);
 });
 

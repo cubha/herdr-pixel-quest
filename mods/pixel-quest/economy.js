@@ -1,7 +1,7 @@
 // Pixel Quest economy: gold, medals, the pet shop and the pet's moods.
 // Plain data and arithmetic (no Herdr imports) so tests/economy.test.mjs can run it
 // under node. Everything lives in one shared value, `pq.eco`:
-//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones, hero }
+//   { gold, earned, total, lvPaid, days, medals, pets, pet, qseasons, partyMax, zones, hero, rate }
 // (and the rebirth's own: stars, shards, shardLv, over, frames; reborn.js)
 // (hero: the player's portrait and gear, gear.js; every function here carries it along as it is)
 // total: quests ever (a quest reset leaves it), lvPaid: the best level already paid
@@ -13,7 +13,7 @@
 
 import { ZONES } from "./zones.js";
 
-export const GOLD = { quest: 10, level: 50, bronze: 100, silver: 300, gold: 1000 };
+export const GOLD = { quest: 20, level: 50, bronze: 100, silver: 300, gold: 1000 };
 
 /** Thousands with commas (this runtime's toLocaleString may ignore the locale). */
 export const fmt = (n) => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -70,7 +70,7 @@ export const MEDALS = [
   { id: "busy", art: "bronze-sun", name: "부지런한 하루", cond: "하루에 10개" },
   { id: "blaze", art: "silver-sun", name: "불타는 하루", cond: "하루에 30개" },
   { id: "streak3", art: "bronze-flame", name: "사흘 출석", cond: "3일 연속" },
-  { id: "streak7", art: "silver-flame", name: "일주일 출석", cond: "7일 연속" },
+  { id: "streak7", art: "silver-flame", name: "닷새 출석", cond: "5일 연속" },   // the id is the stored key: it was seven days once
   { id: "streak30", art: "gold-flame", name: "한 달 출석", cond: "30일 연속" },
   { id: "owl", art: "silver-moon", name: "올빼미", cond: "0시~4시에 퀘스트 완료" },
   { id: "rooster", art: "bronze-dawn", name: "새벽닭", cond: "5시~7시에 퀘스트 완료" },
@@ -138,7 +138,7 @@ function count(m, eco, ctx) {
     case "busy": return [today(eco, now), 10];
     case "blaze": return [today(eco, now), 30];
     case "streak3": return [streak(eco.days, now), 3];
-    case "streak7": return [streak(eco.days, now), 7];
+    case "streak7": return [streak(eco.days, now), 5];
     case "streak30": return [streak(eco.days, now), 30];
     case "party": return [eco.partyMax, 4];
     case "knight": return [best, 10];
@@ -196,7 +196,16 @@ export function award(eco, ctx) {
 export function start(quests, best, now) {
   const q = Math.max(0, Number(quests) || 0), b = Math.max(1, Number(best) || 1);
   const g = q * GOLD.quest + (b - 1) * GOLD.level;
-  return award({ ...empty(), gold: g, earned: g, total: q, lvPaid: b }, { now, best: b });
+  return award({ ...empty(), gold: g, earned: g, total: q, lvPaid: b, rate: GOLD.quest }, { now, best: b });
+}
+
+/** A quest was 10 G before v1.2.3: quests already done get the difference, once (eco.rate:
+ *  the quest gold this state has been paid at). Returns { eco, got }; the same state back when nothing is due. */
+export function raise(eco) {
+  const was = Number(eco.rate) || 10;
+  if (was >= GOLD.quest) return { eco, got: 0 };
+  const got = Math.max(0, Number(eco.total) || 0) * (GOLD.quest - was);
+  return { eco: { ...eco, gold: eco.gold + got, earned: eco.earned + got, rate: GOLD.quest }, got };
 }
 
 /** A finished quest. ctx: { now, best (after this quest), working }. Returns the new

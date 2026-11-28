@@ -4,7 +4,7 @@
 // level-up banner instead, listing what the new level gives. It leaves by
 // itself after a few seconds. Click: go to that agent's pane (level up: open
 // the adventure log). A new frame or banner can be put on right there (바로 착용). props.gold:
-// the gold the quest made (one more line, "+10 G"). props.loot: the item that dropped
+// the gold the quest made (one more line, "+20 G"). props.loot: the item that dropped
 // (loot.js drop's got): its picture and name, new to the dex or how many now. Copyright (c) 2026 cubha. MIT License.
 
 import { div } from "gpui-kit";

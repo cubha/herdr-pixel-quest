@@ -19,7 +19,7 @@
 // here after each quest, and once at start for what came before); the star and the shards
 // show on the right plate (click: the shop's 별 tab).
 //
-// Gold, medals and the pet (economy.js, shared pq.eco): a quest pays +10 G and the pet's
+// Gold, medals and the pet (economy.js, shared pq.eco): a quest pays +20 G and the pet's
 // bond, a new best level +50 G, medals their own gold; update day pays for the past once.
 // The coin and gold sit on the right plate (click: the pet shop). The pet lives right of
 // the party bar and shows how things are: asleep at home (all resting), walking out and
@@ -111,6 +111,10 @@ export default class Status {
     }
     // Star shards for EXP from before (overflow past Lv.20 that was never paid): once, at start.
     this.noteQueue = [];
+    // A quest's gold went from 10 G to 20 G: the quests done before get the difference, once.
+    const was = eco(), up = E.raise(was);
+    if (up.eco !== was) setEco(up.eco);
+    if (up.got) this.noteQueue.push({ title: "퀘스트 골드가 20 G로 올랐습니다.", body: `지금까지 완료한 퀘스트 ${E.fmt(up.eco.total)}개만큼 ${E.fmt(up.got)} G를 받았습니다.`, level: "success" });
     this.shards(quests());
     // The pet: where it is on its lane (0 = home, right of the party bar, to 1), and
     // where it heads next every 3.2 s while it walks or crawls (a native spring).
